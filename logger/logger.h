@@ -15,7 +15,7 @@ extern "C" {
 #define LOGGER_TIMESTAMP_SIZE 32
 #define LOGGER_LEVEL_SIZE     16
 #define LOGGER_MSG_BUF_SIZE   (64 - sizeof(u32))
-#define FIFO_BUF_SIZE         (1024 * 1024)
+#define LOGGER_FIFO_BUF_SIZE  (1024 * 1024)
 
 typedef enum {
   LOGGER_LEVEL_DATA,  // 数据
@@ -39,7 +39,7 @@ typedef struct {
 
 typedef struct {
   fifo_t fifo;
-  u8     buf[FIFO_BUF_SIZE];
+  u8     buf[LOGGER_FIFO_BUF_SIZE];
 } logger_lo_t;
 
 typedef void (*logger_print_f)(FILE *file, char *str, u32 len);

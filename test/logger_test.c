@@ -6,8 +6,6 @@
 
 logger_t logger;
 
-pthread_t flush_thread;
-
 static inline void print(FILE *file, char *str, u32 len) {
   printf("%s", str);
 }
@@ -58,6 +56,7 @@ int main() {
   logger.ops.f_print = print;
   logger_init(&logger, logger_cfg);
 
+  pthread_t flush_thread;
   pthread_create(&flush_thread, NULL, flush_thread_func, &logger);
 
   pthread_t threads[THREAD_COUNT];

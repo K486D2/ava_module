@@ -40,7 +40,7 @@ static inline void spin_unlock(spinlock_t *lock) {
 }
 
 typedef struct {
-  u8        *data; // 缓冲区指针
+  void      *buf;  // 缓冲区指针
   size_t     size; // 缓冲区大小(必须是2的幂)
   size_t     in;   // 写入位置索引
   size_t     out;  // 读取位置索引
@@ -51,7 +51,7 @@ static void fifo_init(fifo_t *fifo, void *buf, size_t size) {
   if (!IS_POWER_OF_2(size))
     size = ROUNDUP_POW_OF_2(size);
 
-  fifo->data = (u8 *)buf;
+  fifo->buf  = buf;
   fifo->size = size;
   fifo->in = fifo->out = 0;
   fifo->lock           = 0;
@@ -86,9 +86,9 @@ static size_t fifo_peek(fifo_t *fifo, void *buf, size_t size) {
   size_t off = fifo->out & (fifo->size - 1);
 
   size_t len = MIN(size, fifo->size - off);
-  memcpy(buf, fifo->data + off, len);
+  memcpy(buf, fifo->buf + off, len);
 
-  memcpy(buf + len, fifo->data, size - len);
+  memcpy(buf + len, fifo->buf, size - len);
   return size;
 }
 
@@ -97,9 +97,9 @@ static size_t __fifo_in(fifo_t *fifo, const void *buf, size_t size) {
   __sync_synchronize();
 
   size_t len = MIN(size, fifo->size - (fifo->in & (fifo->size - 1)));
-  memcpy(fifo->data + (fifo->in & (fifo->size - 1)), buf, len);
+  memcpy(fifo->buf + (fifo->in & (fifo->size - 1)), buf, len);
 
-  memcpy(fifo->data, buf + len, size - len);
+  memcpy(fifo->buf, buf + len, size - len);
   __sync_synchronize();
 
   fifo->in += size;
@@ -111,9 +111,9 @@ static size_t __fifo_out(fifo_t *fifo, void *buf, size_t size) {
   __sync_synchronize();
 
   size_t len = MIN(size, fifo->size - (fifo->out & (fifo->size - 1)));
-  memcpy(buf, fifo->data + (fifo->out & (fifo->size - 1)), len);
+  memcpy(buf, fifo->buf + (fifo->out & (fifo->size - 1)), len);
 
-  memcpy(buf + len, fifo->data, size - len);
+  memcpy(buf + len, fifo->buf, size - len);
   __sync_synchronize();
 
   fifo->out += size;
