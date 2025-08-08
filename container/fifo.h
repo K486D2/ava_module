@@ -81,55 +81,55 @@ static bool fifo_is_full(fifo_t *fifo) {
   return fifo_len(fifo) == fifo->size;
 }
 
-static size_t fifo_peek(fifo_t *fifo, void *buf, size_t size) {
+static size_t fifo_peek(fifo_t *fifo, void *data, size_t size) {
   size       = MIN(size, fifo_len(fifo));
   size_t off = fifo->out & (fifo->size - 1);
 
   size_t len = MIN(size, fifo->size - off);
-  memcpy(buf, fifo->buf + off, len);
+  memcpy(data, (u8 *)fifo->buf + off, len);
 
-  memcpy(buf + len, fifo->buf, size - len);
+  memcpy((u8 *)data + len, (u8 *)fifo->buf, size - len);
   return size;
 }
 
-static size_t __fifo_in(fifo_t *fifo, const void *buf, size_t size) {
+static size_t __fifo_in(fifo_t *fifo, const void *data, size_t size) {
   size = MIN(size, fifo->size - fifo->in + fifo->out);
   __sync_synchronize();
 
   size_t len = MIN(size, fifo->size - (fifo->in & (fifo->size - 1)));
-  memcpy(fifo->buf + (fifo->in & (fifo->size - 1)), buf, len);
+  memcpy((u8 *)fifo->buf + (fifo->in & (fifo->size - 1)), data, len);
 
-  memcpy(fifo->buf, buf + len, size - len);
+  memcpy((u8 *)fifo->buf, (u8 *)data + len, size - len);
   __sync_synchronize();
 
   fifo->in += size;
   return size;
 }
 
-static size_t __fifo_out(fifo_t *fifo, void *buf, size_t size) {
+static size_t __fifo_out(fifo_t *fifo, void *data, size_t size) {
   size = MIN(size, fifo->in - fifo->out);
   __sync_synchronize();
 
   size_t len = MIN(size, fifo->size - (fifo->out & (fifo->size - 1)));
-  memcpy(buf, fifo->buf + (fifo->out & (fifo->size - 1)), len);
+  memcpy(data, (u8 *)fifo->buf + (fifo->out & (fifo->size - 1)), len);
 
-  memcpy(buf + len, fifo->buf, size - len);
+  memcpy((u8 *)data + len, (u8 *)fifo->buf, size - len);
   __sync_synchronize();
 
   fifo->out += size;
   return size;
 }
 
-static size_t fifo_in(fifo_t *fifo, const void *buf, size_t size) {
+static size_t fifo_in(fifo_t *fifo, const void *data, size_t size) {
   spin_lock(&fifo->lock);
-  size_t ret = __fifo_in(fifo, buf, size);
+  size_t ret = __fifo_in(fifo, (u8 *)data, size);
   spin_unlock(&fifo->lock);
   return ret;
 }
 
-static size_t fifo_out(fifo_t *fifo, void *buf, size_t size) {
+static size_t fifo_out(fifo_t *fifo, void *data, size_t size) {
   spin_lock(&fifo->lock);
-  size_t ret = __fifo_out(fifo, buf, size);
+  size_t ret = __fifo_out(fifo, (u8 *)data, size);
   spin_unlock(&fifo->lock);
   return ret;
 }

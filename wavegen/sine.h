@@ -58,7 +58,7 @@ static inline void sine_init(sine_t *sine, sine_cfg_t sine_cfg) {
 static inline void sine_exec(sine_t *sine) {
   DECL_SINE_PTRS(sine);
 
-  lo->phase_incr = TAU * cfg->wave_freq * HZ_TO_S(cfg->fs);
+  lo->phase_incr = TAU * cfg->wave_freq / cfg->fs;
   out->val       = cfg->amp * SIN(cfg->phase) + cfg->offset;
   cfg->phase += lo->phase_incr;
   WARP_TAU(cfg->phase);

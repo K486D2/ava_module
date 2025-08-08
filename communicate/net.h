@@ -26,6 +26,8 @@ typedef SOCKET socket_t;
 #endif
 
 #include <stdio.h>
+#include <time.h>
+#include <unistd.h>
 
 #include "../container/list.h"
 #include "../util/util.h"
@@ -39,6 +41,11 @@ typedef enum {
   NET_TYPE_UDP,
   NET_TYPE_TCP,
 } net_type_e;
+
+typedef enum {
+  NET_RECV_YIELD,
+  NET_RECV_SPIN,
+} net_recv_e;
 
 typedef enum {
   NET_LOG_SEND,
@@ -69,7 +76,7 @@ typedef struct {
   u16          remote_port, local_port;
   socket_t     sock;
   net_logger_f f_logger;
-  u32          tx_flag, rx_flag;
+  net_recv_e   recv_mode;
 } net_ch_t;
 
 typedef struct {
@@ -116,6 +123,22 @@ static int net_init(net_t *net, net_cfg_t net_cfg) {
   return 0;
 }
 
+static int net_set_nonblock(net_ch_t *ch) {
+#ifdef __linux__
+  int flags = fcntl(ch->sock, F_GETFL, 0);
+  if (flags < 0)
+    return flags;
+
+  flags |= O_NONBLOCK;
+  int ret = fcntl(ch->sock, F_SETFL, flags);
+  return ret;
+#elif defined(_WIN32)
+  unsigned long mode = 1;
+  int           ret  = ioctlsocket(ch->sock, FIONBIO, &mode);
+  return ret;
+#endif
+}
+
 static int net_add_ch(net_t *net, net_ch_t *ch) {
   DECL_NET_PTRS(net);
 
@@ -130,37 +153,26 @@ static int net_add_ch(net_t *net, net_ch_t *ch) {
     break;
   }
 
+  int ret;
+  ret = net_set_nonblock(ch);
+  if (ret < 0)
+    return ret;
+
   struct sockaddr_in remote_addr = {0};
   remote_addr.sin_family         = AF_INET;
   remote_addr.sin_port           = htons(ch->remote_port);
   remote_addr.sin_addr.s_addr    = inet_addr(ch->remote_ip);
 
-  struct sockaddr_in local_addr = {0};
-  local_addr.sin_family         = AF_INET;
-  local_addr.sin_port           = htons(ch->local_port);
-  local_addr.sin_addr.s_addr    = inet_addr(ch->local_ip);
+  if (strlen(ch->local_ip) != 0 && ch->local_port != 0) {
+    struct sockaddr_in local_addr = {0};
+    local_addr.sin_family         = AF_INET;
+    local_addr.sin_port           = htons(ch->local_port);
+    local_addr.sin_addr.s_addr    = inet_addr(ch->local_ip);
 
-  int ret;
-  // #ifdef __linux__
-  //   int flags = fcntl(ch->sock, F_GETFL, 0);
-  //   if (flags < 0) {
-  //     ret = flags;
-  //     goto cleanup;
-  //   }
-  //   flags |= O_NONBLOCK;
-  //   ret = fcntl(ch->sock, F_SETFL, flags);
-  //   if (ret < 0)
-  //     goto cleanup;
-  // #elif defined(_WIN32)
-  //   unsigned long mode = 1;
-  //   ret                = ioctlsocket(ch->sock, FIONBIO, &mode);
-  //   if (ret < 0)
-  //     goto cleanup;
-  // #endif
-
-  ret = bind(ch->sock, (struct sockaddr *)&local_addr, sizeof(local_addr));
-  if (ret < 0)
-    goto cleanup;
+    ret = bind(ch->sock, (struct sockaddr *)&local_addr, sizeof(local_addr));
+    if (ret < 0)
+      goto cleanup;
+  }
 
   ret = connect(ch->sock, (struct sockaddr *)&remote_addr, sizeof(remote_addr));
   if (ret < 0)
@@ -175,17 +187,74 @@ cleanup:
 }
 
 static int net_send(net_ch_t *ch, void *txbuf, u32 size) {
-  int ret = send(ch->sock, txbuf, size, ch->tx_flag);
+#ifdef __linux__
+  int ret = send(ch->sock, txbuf, size, 0);
+#elif defined(_WIN32)
+  int ret = send(ch->sock, (const char *)txbuf, size, 0);
+#endif
   return ret;
+}
+
+static int net_recv_yield(net_ch_t *ch, void *rxbuf, u32 size, u32 timeout_ms) {
+  struct timeval tv = {
+      .tv_sec  = timeout_ms / 1000,                      // 秒
+      .tv_usec = (timeout_ms - tv.tv_sec * 1000) * 1000, // 微秒
+  };
+
+#ifdef __linux__
+  setsockopt(ch->sock, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
+  int ret = recv(ch->sock, rxbuf, size, 0);
+#elif defined(_WIN32)
+  setsockopt(ch->sock, SOL_SOCKET, SO_RCVTIMEO, (const char *)&tv, sizeof(tv));
+  int ret = recv(ch->sock, (char *)rxbuf, size, 0);
+#endif
+  return ret;
+}
+
+static int net_recv_spin(net_ch_t *ch, void *rxbuf, u32 size, u32 timeout_ms) {
+  struct timespec ts;
+  clock_gettime(CLOCK_MONOTONIC, &ts);
+  u64 start_ns = (u64)ts.tv_sec * 1e9 + (u64)ts.tv_nsec;
+  u64 curr_ns  = 0;
+  while (curr_ns < start_ns + (u64)(timeout_ms * 1e6)) {
+#ifdef __linux__
+    int ret = recv(ch->sock, rxbuf, size, 0);
+#elif defined(_WIN32)
+    int ret = recv(ch->sock, (char *)rxbuf, size, 0);
+#endif
+    if (ret > 0)
+      return ret;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    curr_ns = (u64)ts.tv_sec * 1e9 + (u64)ts.tv_nsec;
+  }
+  return -1;
 }
 
 static int net_recv(net_ch_t *ch, void *rxbuf, u32 size, u32 timeout_ms) {
-  int ret = recv(ch->sock, rxbuf, size, ch->rx_flag);
+  int ret;
+  switch (ch->recv_mode) {
+  case NET_RECV_YIELD:
+    ret = net_recv_yield(ch, rxbuf, size, timeout_ms);
+    break;
+  case NET_RECV_SPIN:
+    ret = net_recv_spin(ch, rxbuf, size, timeout_ms);
+    break;
+  default:
+    return -EINVAL;
+  }
   return ret;
 }
 
-static int net_send_recv(net_ch_t *ch, void *txbuf, u32 tx_size, void *rxbuf, u32 rx_size) {
-  return 0;
+static int
+net_send_recv(net_ch_t *ch, void *txbuf, u32 tx_size, void *rxbuf, u32 rx_size, u32 timeout_ms) {
+  int ret;
+
+  ret = net_send(ch, txbuf, tx_size);
+  if (ret <= 0)
+    return ret;
+
+  ret = net_recv(ch, rxbuf, rx_size, timeout_ms);
+  return ret;
 }
 
 typedef struct {

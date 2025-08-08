@@ -6,7 +6,7 @@ fifo_t fifo;
 
 pthread_t writer_t, reader_t;
 
-static void shm_writer(void) {
+void *shm_writer(void *) {
   shm_t     shm     = {0};
   shm_cfg_t shm_cfg = {
       .name   = "Local\\shm",
@@ -25,9 +25,11 @@ static void shm_writer(void) {
     __fifo_in(&fifo, &cnt, sizeof(u32));
     printf("write cnt: %u\n", cnt);
   }
+
+  return NULL;
 }
 
-static void shm_reader(void) {
+void *shm_reader(void *) {
   shm_t     shm     = {0};
   shm_cfg_t shm_cfg = {
       .name   = "Local\\shm",
@@ -45,6 +47,8 @@ static void shm_reader(void) {
     __fifo_out(&fifo, &cnt, sizeof(u32));
     printf("read cnt: %u\n", cnt);
   }
+
+  return NULL;
 }
 
 static int init(void) {

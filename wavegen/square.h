@@ -59,7 +59,7 @@ static inline void square_init(square_t *square, square_cfg_t square_cfg) {
 static inline void square_exec(square_t *square) {
   DECL_SQUARE_PTRS(square);
 
-  lo->phase_incr = TAU * cfg->wave_freq * HZ_TO_S(cfg->fs);
+  lo->phase_incr = TAU * cfg->wave_freq / cfg->fs;
 
   if (cfg->phase < (cfg->duty_cycle * TAU))
     out->val = cfg->amp + cfg->offset;
