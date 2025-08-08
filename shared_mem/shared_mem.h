@@ -65,7 +65,7 @@ static int shm_init(shm_t *shm, shm_cfg_t shm_cfg) {
                                  SHM_BUF_SIZE,         // 内存大小低32位
                                  cfg->name);           // 命名对象
     if (!lo->file)
-      return -EACCES;
+      return -MEACCES;
 
     lo->is_creator = true;
   } else
@@ -80,7 +80,7 @@ static int shm_init(shm_t *shm, shm_cfg_t shm_cfg) {
 
   if (!lo->buf) {
     CloseHandle(lo->file);
-    return -EACCES;
+    return -MEACCES;
   }
 
   return 0;

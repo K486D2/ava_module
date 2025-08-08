@@ -154,7 +154,7 @@ static i32 sched_set_task_state(sched_t *sched, u32 task_id, sched_task_state_e 
   DECL_SCHED_PTRS(sched);
 
   if (task_id >= lo->tasks_num)
-    return -EINVAL;
+    return -MEINVAL;
 
   sched_task_t *task = &lo->tasks[task_id];
   task->status.state = state;
@@ -187,7 +187,7 @@ static i32 sched_init(sched_t *sched, sched_cfg_t sched_cfg) {
     ops->f_get_task = sched_get_task;
     break;
   default:
-    return -EINVAL;
+    return -MEINVAL;
   }
 
   // only run on Linux/Windows
@@ -204,7 +204,7 @@ static i32 sched_exec(sched_t *sched) {
   if (!task->cfg.f_cb) {
     sched_remove_ready(lo, task);
     task->status.state = SCHED_TASK_STATE_SUSPENDED;
-    return -EFAULT;
+    return -MEFAULT;
   }
 
   if (lo->curr_ts < task->status.next_exec_ts)

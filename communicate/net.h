@@ -32,9 +32,9 @@ typedef SOCKET socket_t;
 #include "../container/list.h"
 #include "../util/util.h"
 
-#define MAX_IP_SIZE   16U
-#define MAX_RESP_SIZE 1024U
-#define MAX_IP_NUM    255U
+#define MAX_IP_SIZE       16
+#define MAX_RESP_BUF_SIZE 1024
+#define MAX_IP_NUM        255
 
 typedef enum {
   NET_TYPE_NULL,
@@ -197,8 +197,8 @@ static int net_send(net_ch_t *ch, void *txbuf, u32 size) {
 
 static int net_recv_yield(net_ch_t *ch, void *rxbuf, u32 size, u32 timeout_ms) {
   struct timeval tv = {
-      .tv_sec  = timeout_ms / 1000,                      // 秒
-      .tv_usec = (timeout_ms - tv.tv_sec * 1000) * 1000, // 微秒
+      .tv_sec  = (i32)timeout_ms / 1000,                      // 秒
+      .tv_usec = (i32)(timeout_ms - tv.tv_sec * 1000) * 1000, // 微秒
   };
 
 #ifdef __linux__
@@ -214,9 +214,9 @@ static int net_recv_yield(net_ch_t *ch, void *rxbuf, u32 size, u32 timeout_ms) {
 static int net_recv_spin(net_ch_t *ch, void *rxbuf, u32 size, u32 timeout_ms) {
   struct timespec ts;
   clock_gettime(CLOCK_MONOTONIC, &ts);
-  u64 start_ns = (u64)ts.tv_sec * 1e9 + (u64)ts.tv_nsec;
-  u64 curr_ns  = 0;
-  while (curr_ns < start_ns + (u64)(timeout_ms * 1e6)) {
+  u64 start_ts_ns = (u64)ts.tv_sec * 1e9 + (u64)ts.tv_nsec;
+  u64 curr_ts_ns  = 0;
+  while (curr_ts_ns < start_ts_ns + (u64)(timeout_ms * 1e6)) {
 #ifdef __linux__
     int ret = recv(ch->sock, rxbuf, size, 0);
 #elif defined(_WIN32)
@@ -225,9 +225,9 @@ static int net_recv_spin(net_ch_t *ch, void *rxbuf, u32 size, u32 timeout_ms) {
     if (ret > 0)
       return ret;
     clock_gettime(CLOCK_MONOTONIC, &ts);
-    curr_ns = (u64)ts.tv_sec * 1e9 + (u64)ts.tv_nsec;
+    curr_ts_ns = (u64)ts.tv_sec * 1e9 + (u64)ts.tv_nsec;
   }
-  return -1;
+  return -METIMEOUT;
 }
 
 static int net_recv(net_ch_t *ch, void *rxbuf, u32 size, u32 timeout_ms) {
@@ -240,7 +240,7 @@ static int net_recv(net_ch_t *ch, void *rxbuf, u32 size, u32 timeout_ms) {
     ret = net_recv_spin(ch, rxbuf, size, timeout_ms);
     break;
   default:
-    return -EINVAL;
+    return -MEINVAL;
   }
   return ret;
 }
@@ -259,7 +259,7 @@ net_send_recv(net_ch_t *ch, void *txbuf, u32 tx_size, void *rxbuf, u32 rx_size, 
 
 typedef struct {
   char remote_ip[MAX_IP_SIZE];
-  char resp[MAX_RESP_SIZE];
+  char resp[MAX_RESP_BUF_SIZE];
 } net_broadcast_t;
 
 static int net_broadcast(const char      *remote_ip,

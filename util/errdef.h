@@ -5,10 +5,11 @@
 extern "C" {
 #endif
 
-#define EINVAL 1
-#define EBUSY  2
-#define EACCES 3
-#define EFAULT 4
+#define MEINVAL   1
+#define MEBUSY    2
+#define MEACCES   3
+#define MEFAULT   4
+#define METIMEOUT 5
 
 #ifdef __cpluscplus
 }
