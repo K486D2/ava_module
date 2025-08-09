@@ -8,16 +8,16 @@ extern "C" {
 #include "../util/util.h"
 
 typedef struct {
-  fp32 fs; // 采样频率
-  fp32 fc; // 截止频率
+  f32 fs; // 采样频率
+  f32 fc; // 截止频率
 } lpf_cfg_t;
 
 typedef struct {
-  fp32 raw_val;
+  f32 raw_val;
 } lpf_in_t;
 
 typedef struct {
-  fp32 filter_val;
+  f32 filter_val;
 } lpf_out_t;
 
 typedef struct {

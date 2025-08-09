@@ -9,25 +9,25 @@ extern "C" {
 #include "../util/util.h"
 
 typedef struct {
-  fp32        fs;
+  f32         fs;
   motor_cfg_t motor_cfg;
-  fp32        k_slide;
-  fp32        es0;
+  f32         k_slide;
+  f32         es0;
 } smo_cfg_t;
 
 typedef struct {
-  fp32_ab_t i_ab, v_ab;
+  f32_ab_t i_ab, v_ab;
 } smo_in_t;
 
 typedef struct {
-  fp32 theta;
-  fp32 omega;
+  f32 theta;
+  f32 omega;
 } smo_out_t;
 
 typedef struct {
-  fp32_ab_t    est_i_ab;
-  fp32_ab_t    est_i_ab_err;
-  fp32_ab_t    est_emf_v_ab;
+  f32_ab_t    est_i_ab;
+  f32_ab_t    est_i_ab_err;
+  f32_ab_t    est_emf_v_ab;
   pll_filter_t pll;
 } smo_lo_t;
 
@@ -112,7 +112,7 @@ static void smo_exec(smo_obs_t *smo) {
   WARP_TAU(out->theta);
 }
 
-static void smo_exec_in(smo_obs_t *smo, fp32_ab_t i_ab, fp32_ab_t v_ab) {
+static void smo_exec_in(smo_obs_t *smo, f32_ab_t i_ab, f32_ab_t v_ab) {
   DECL_SMO_PTRS(smo);
 
   in->i_ab = i_ab;

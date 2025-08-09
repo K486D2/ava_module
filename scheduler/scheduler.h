@@ -19,7 +19,7 @@ typedef enum {
 } sched_type_e;
 
 typedef struct {
-  fp32         exec_freq; // 时间戳更新频率
+  f32          exec_freq; // 时间戳更新频率
   u8           cpu_id;
   sched_type_e type;
 } sched_cfg_t;
@@ -59,7 +59,7 @@ typedef struct {
 
 typedef struct {
   u32          elapsed;
-  fp32         elapsed_us;
+  f32          elapsed_us;
   sched_task_t tasks[SCHED_TASK_MAX];
   u32          tasks_num;
   u64          curr_ts;

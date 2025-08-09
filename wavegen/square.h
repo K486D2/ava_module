@@ -8,20 +8,20 @@ extern "C" {
 #include "../util/def.h"
 
 typedef struct {
-  fp32 fs;
-  fp32 wave_freq;  // 方波频率 (Hz)
-  fp32 amp;        // 方波幅度
-  fp32 phase;      // 当前相位 (rad)
-  fp32 offset;     // 直流偏移量
-  fp32 duty_cycle; // 占空比 (0~1)
+  f32 fs;
+  f32 wave_freq;  // 方波频率 (Hz)
+  f32 amp;        // 方波幅度
+  f32 phase;      // 当前相位 (rad)
+  f32 offset;     // 直流偏移量
+  f32 duty_cycle; // 占空比 (0~1)
 } square_cfg_t;
 
 typedef struct {
-  fp32 val;
+  f32 val;
 } square_out_t;
 
 typedef struct {
-  fp32 phase_incr;
+  f32 phase_incr;
 } square_lo_t;
 
 typedef struct {

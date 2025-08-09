@@ -4,40 +4,40 @@
 #include "../util/util.h"
 
 typedef struct {
-  fp32 fs;
-  fp32 lpf_fc;
-  fp32 lpf_ffd_fc;
-  fp32 damp;
-  fp32 kp;
-  fp32 ki;
+  f32 fs;
+  f32 lpf_fc;
+  f32 lpf_ffd_fc;
+  f32 damp;
+  f32 kp;
+  f32 ki;
 } pll_cfg_t;
 
 typedef struct {
-  fp32_ab_t val_ab;
+  f32_ab_t val_ab;
 } pll_in_t;
 
 typedef struct {
-  fp32 theta;
+  f32 theta;
 } pll_theta_in_t;
 
 typedef struct {
-  fp32 filter_theta;
-  fp32 omega;
-  fp32 filter_omega;
+  f32 filter_theta;
+  f32 omega;
+  f32 filter_omega;
 } pll_out_t;
 
 typedef struct {
-  fp32 theta_err;
-  fp32 ki_out;
-  fp32 pll_ffd;
+  f32 theta_err;
+  f32 ki_out;
+  f32 pll_ffd;
 } pll_lo_t;
 
 typedef struct {
-  fp32 theta_err;
-  fp32 prev_theta;
-  fp32 ffd_omega;
-  fp32 ki_out;
-  fp32 filter_ffd_omega;
+  f32 theta_err;
+  f32 prev_theta;
+  f32 ffd_omega;
+  f32 ki_out;
+  f32 filter_ffd_omega;
 } pll_theta_lo_t;
 
 typedef struct {
@@ -124,7 +124,7 @@ static void pll_exec(pll_filter_t *pll) {
   WARP_TAU(out->filter_theta);
 }
 
-static void pll_exec_in(pll_filter_t *pll, fp32_ab_t val_ab) {
+static void pll_exec_in(pll_filter_t *pll, f32_ab_t val_ab) {
   DECL_PLL_PTRS(pll);
 
   in->val_ab = val_ab;
@@ -158,7 +158,7 @@ static void pll_theta_exec(pll_theta_filter_t *pll) {
   WARP_TAU(out->filter_theta);
 }
 
-static void pll_theta_exec_in(pll_theta_filter_t *pll, fp32 theta) {
+static void pll_theta_exec_in(pll_theta_filter_t *pll, f32 theta) {
   DECL_PLL_THETA_PTRS(pll);
 
   in->theta = theta;

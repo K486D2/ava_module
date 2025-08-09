@@ -17,48 +17,48 @@ typedef struct {
 } adc_raw_t;
 
 typedef struct {
-  fp32       v_max, v_min, v_avg;
-  fp32_uvw_t fp32_pwm_duty;
-  u32_uvw_t  u32_pwm_duty;
+  f32       v_max, v_min, v_avg;
+  f32_uvw_t fp32_pwm_duty;
+  u32_uvw_t u32_pwm_duty;
 } svpwm_t;
 
 typedef struct {
   // 电气角度
-  fp32 theta, comp_theta, omega;
-  fp32 force_theta, force_omega;
-  fp32 sensor_theta, sensor_comp_theta, sensor_omega;
-  fp32 obs_theta, obs_omega;
-  fp32 fusion_theta_err;
+  f32 theta, comp_theta, omega;
+  f32 force_theta, force_omega;
+  f32 sensor_theta, sensor_comp_theta, sensor_omega;
+  f32 obs_theta, obs_omega;
+  f32 fusion_theta_err;
   // 机械角度
-  i32  mech_cycle_cnt;
-  fp32 mech_theta, mech_prev_theta, mech_total_theta;
+  i32 mech_cycle_cnt;
+  f32 mech_theta, mech_prev_theta, mech_total_theta;
 } theta_t;
 
 typedef struct {
-  fp32         exec_freq;
-  fp32         sensor_theta_comp_gain, theta_comp_gain;
+  f32          exec_freq;
+  f32          sensor_theta_comp_gain, theta_comp_gain;
   adc_raw_t    adc_offset;
-  fp32         theta_offset;
+  f32          theta_offset;
   bool         is_adc_cail;
   motor_cfg_t  motor_cfg;
   periph_cfg_t periph_cfg;
 } foc_cfg_t;
 
 typedef struct {
-  adc_raw_t  adc_raw;
-  theta_t    theta;
-  fp32_uvw_t fp32_i_uvw, fp32_v_uvw;
-  fp32_ab_t  i_ab, v_ab;
-  fp32_dq_t  i_dq, v_dq;
-  fp32       v_bus;
+  adc_raw_t adc_raw;
+  theta_t   theta;
+  f32_uvw_t fp32_i_uvw, fp32_v_uvw;
+  f32_ab_t  i_ab, v_ab;
+  f32_dq_t  i_dq, v_dq;
+  f32       v_bus;
 } foc_in_t;
 
 typedef struct {
-  fp32_uvw_t fp32_i_uvw, fp32_v_uvw;
-  fp32_ab_t  i_ab, v_ab;
-  fp32_ab_t  v_ab_sv;
-  fp32_dq_t  i_dq, v_dq;
-  svpwm_t    svpwm;
+  f32_uvw_t fp32_i_uvw, fp32_v_uvw;
+  f32_ab_t  i_ab, v_ab;
+  f32_ab_t  v_ab_sv;
+  f32_dq_t  i_dq, v_dq;
+  svpwm_t   svpwm;
 } foc_out_t;
 
 typedef enum {
@@ -83,19 +83,19 @@ typedef struct {
 typedef struct {
   u64                exec_cnt;
   u32                elapsed;
-  fp32               elapsed_us;
+  f32                elapsed_us;
   foc_fault_t        fault;
   u32                adc_cail_cnt;
   foc_state_e        state;
   foc_theta_e        theta;
-  fp32_dq_t          v_dq_ffd;
+  f32_dq_t           v_dq_ffd;
   pid_ctl_t          id_pid, iq_pid;
   pll_theta_filter_t theta_pll;
   smo_obs_t          smo;
 } foc_lo_t;
 
 typedef adc_raw_t (*foc_get_adc_f)(void);
-typedef fp32 (*foc_get_theta_f)(void);
+typedef f32 (*foc_get_theta_f)(void);
 typedef void (*foc_set_pwm_f)(u32 pwm_cnt_max, u32_uvw_t u32_pwm_duty);
 typedef void (*foc_set_drv_f)(bool enable);
 
@@ -243,7 +243,7 @@ static void foc_exec(foc_t *foc) {
     in->theta.mech_cycle_cnt++;
   else if (in->theta.mech_theta - in->theta.mech_prev_theta > TAU * 0.5f)
     in->theta.mech_cycle_cnt--;
-  in->theta.mech_total_theta = (fp32)in->theta.mech_cycle_cnt * TAU + in->theta.mech_theta;
+  in->theta.mech_total_theta = (f32)in->theta.mech_cycle_cnt * TAU + in->theta.mech_theta;
   in->theta.mech_prev_theta  = in->theta.mech_theta;
 
   // 电角度计算

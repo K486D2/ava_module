@@ -8,19 +8,19 @@ extern "C" {
 #include "../util/def.h"
 
 typedef struct {
-  fp32 fs;
-  fp32 wave_freq;
-  fp32 amp;
-  fp32 phase;
-  fp32 offset;
+  f32 fs;
+  f32 wave_freq;
+  f32 amp;
+  f32 phase;
+  f32 offset;
 } sine_cfg_t;
 
 typedef struct {
-  fp32 val;
+  f32 val;
 } sine_out_t;
 
 typedef struct {
-  fp32 phase_incr;
+  f32 phase_incr;
 } sine_lo_t;
 
 typedef struct {

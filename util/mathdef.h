@@ -46,7 +46,7 @@ extern "C" {
 #ifndef PI
 #define PI 3.1415926F
 #endif
-#define TAU                            6.2831853F
+#define TAU 6.2831853F
 // #define E                              2.7182818F
 #define DIV_PI_BY_2                    1.5707963F
 #define LN2                            0.6931471F
@@ -97,7 +97,7 @@ extern "C" {
 
 #define THETA_DERIVATIVE(ret, theta, prev_theta, gain, fs)                                         \
   do {                                                                                             \
-    fp32 theta_diff = (theta) - (prev_theta);                                                      \
+    f32 theta_diff = (theta) - (prev_theta);                                                       \
     WARP_PI(theta_diff);                                                                           \
     (ret)        = (gain) * (theta_diff) * (fs);                                                   \
     (prev_theta) = (theta);                                                                        \
@@ -105,9 +105,9 @@ extern "C" {
 
 #define LOWPASS(ret, val, fc, fs)                                                                  \
   do {                                                                                             \
-    fp32 rc    = 1.0F / (TAU * fc);                                                                \
-    fp32 alpha = 1.0F / (1.0F + rc * fs);                                                          \
-    (ret)      = (alpha) * (val) + (1.0F - alpha) * (ret);                                         \
+    f32 rc    = 1.0F / (TAU * fc);                                                                 \
+    f32 alpha = 1.0F / (1.0F + rc * fs);                                                           \
+    (ret)     = (alpha) * (val) + (1.0F - alpha) * (ret);                                          \
   } while (0)
 
 #define CLAMP(ret, min, max) (ret) = ((ret) <= (min)) ? (min) : MIN(ret, max)

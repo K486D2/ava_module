@@ -38,7 +38,7 @@ typedef struct {
   const char *name;
   u32         cycles_total;
   u32         cycles_per_op;
-  fp32        ret;
+  f32         ret;
 } benchmark_t;
 
 /* 整数运算 */                                                                                     \
@@ -251,16 +251,16 @@ typedef struct {
 
 #define RUN_MATH_BENCHMARKS(results, iterations)                                                   \
   do {                                                                                             \
-    volatile u32  cnt   = 0;                                                                       \
-    volatile fp32 r     = 0;                                                                       \
-    volatile i32  int_a = 123456, int_b = 789;                                                     \
-    volatile fp32 float_a = 123.456f, float_b = 7.89f;                                             \
-    volatile fp32 angle    = 0.785398f; /* 45 degrees in radians */                                \
-    volatile fp32 sqrt_val = 2.0f;                                                                 \
-    volatile fp32 y_val1 = 1.0f, x_val1 = 1.0f;                                                    \
-    volatile fp32 y_val2 = 1.0f, x_val2 = -1.0f;                                                   \
-    volatile fp32 y_val3 = -1.0f, x_val3 = -1.0f;                                                  \
-    volatile fp32 y_val4 = -1.0f, x_val4 = 1.0f;                                                   \
+    volatile u32 cnt   = 0;                                                                        \
+    volatile f32 r     = 0;                                                                        \
+    volatile i32 int_a = 123456, int_b = 789;                                                      \
+    volatile f32 float_a = 123.456f, float_b = 7.89f;                                              \
+    volatile f32 angle    = 0.785398f; /* 45 degrees in radians */                                 \
+    volatile f32 sqrt_val = 2.0f;                                                                  \
+    volatile f32 y_val1 = 1.0f, x_val1 = 1.0f;                                                     \
+    volatile f32 y_val2 = 1.0f, x_val2 = -1.0f;                                                    \
+    volatile f32 y_val3 = -1.0f, x_val3 = -1.0f;                                                   \
+    volatile f32 y_val4 = -1.0f, x_val4 = 1.0f;                                                    \
     TEST_INT_ADD(results[cnt], iterations);                                                        \
     TEST_INT_MUL(results[cnt], iterations);                                                        \
     TEST_INT_DIV(results[cnt], iterations);                                                        \

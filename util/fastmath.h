@@ -11,7 +11,7 @@ extern "C" {
 
 #define FP32_HOLLYST 0.017453292519943295769236907684886F
 
-static const fp32 SIN_TABLE[] = {
+static const f32 SIN_TABLE[] = {
     0.0f,                                // sin(0)
     0.17364817766693034885171662676931f, // sin(10)
     0.34202014332566873304409961468226f, // sin(20)
@@ -24,7 +24,7 @@ static const fp32 SIN_TABLE[] = {
     1.0f                                 // sin(90)
 };
 
-static const fp32 COS_TABLE[] = {
+static const f32 COS_TABLE[] = {
     1.0f,                                // cos(0)
     0.99984769515639123915701155881391f, // cos(10)
     0.99939082701909573000624344004393f, // cos(20)
@@ -37,7 +37,7 @@ static const fp32 COS_TABLE[] = {
     0.98768834059513772619004024769344f  // cos(90)
 };
 
-static inline fp32 fast_sinf(fp32 x) {
+static inline f32 fast_sinf(f32 x) {
   x = (x) * (57.295779513082320876798154814105f);
 
   i32 sig = 0;
@@ -56,42 +56,42 @@ static inline fp32 fast_sinf(fp32 x) {
 
   x = (x > 90.0f) ? (180.0f - x) : x;
 
-  i32  a = x * 0.1f;
-  fp32 b = x - 10.0f * a;
+  i32 a = x * 0.1f;
+  f32 b = x - 10.0f * a;
 
-  fp32 y = SIN_TABLE[a] * COS_TABLE[(i32)b] + b * FP32_HOLLYST * SIN_TABLE[9u - a];
+  f32 y = SIN_TABLE[a] * COS_TABLE[(i32)b] + b * FP32_HOLLYST * SIN_TABLE[9u - a];
   return (sig > 0) ? -y : y;
 }
 
-static inline fp32 fast_cosf(fp32 x) {
+static inline f32 fast_cosf(f32 x) {
   return fast_sinf(x + 1.5707963267948966192313216916398f);
 }
 
-static inline fp32 fast_tanf(fp32 x) {
+static inline f32 fast_tanf(f32 x) {
   return fast_sinf(x) / fast_cosf(x);
 }
 
-static inline fp32 fast_expf(fp32 x) {
+static inline f32 fast_expf(f32 x) {
   union {
-    u32  i;
-    fp32 f;
+    u32 i;
+    f32 f;
   } v;
   v.i = (1u << 23u) * (1.4426950409f * x + 126.93490512f);
   return v.f;
 }
 
-static inline fp32 fast_absf(fp32 x) {
-  fp32 y = x;
+static inline f32 fast_absf(f32 x) {
+  f32 y = x;
   if (x < 0.0f)
     y = -x;
   return y;
 }
 
-static inline fp32 fast_sqrtf(fp32 x) {
+static inline f32 fast_sqrtf(f32 x) {
   return sqrtf(x);
 }
 
-static inline fp32 fast_modf(fp32 x, fp32 y) {
+static inline f32 fast_modf(f32 x, f32 y) {
   return fmodf(x, y);
 }
 

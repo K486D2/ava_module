@@ -19,23 +19,23 @@ extern "C" {
 #include "../util/util.h"
 
 typedef struct {
-  fp32 fs;
-  u8   flag;
+  f32 fs;
+  u8  flag;
 #ifdef ARM_MATH
   arm_rfft_fast_instance_f32 S;
 #endif
 } fft_cfg_t;
 
 typedef struct {
-  fp32 buf[FFT_POINT_SIZE];
+  f32 buf[FFT_POINT_SIZE];
 } fft_in_t;
 
 typedef struct {
-  fp32 buf[FFT_POINT_SIZE];
-  fp32 mod[FFT_POINT_SIZE];
-  u32  res_idx;
-  fp32 val_max;
-  fp32 freq_max;
+  f32 buf[FFT_POINT_SIZE];
+  f32 mod[FFT_POINT_SIZE];
+  u32 res_idx;
+  f32 val_max;
+  f32 freq_max;
 } fft_out_t;
 
 typedef struct {
@@ -74,7 +74,7 @@ typedef struct {
   ARG_UNUSED(prefix##_out);                                                                        \
   ARG_UNUSED(prefix##_lo);
 
-static void fft_add_value(fft_t *fft, fp32 value) {
+static void fft_add_value(fft_t *fft, f32 value) {
   DECL_FFT_PTRS(fft);
 
   if (!lo->is_cal_finish)

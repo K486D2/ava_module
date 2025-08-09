@@ -18,8 +18,8 @@ typedef signed int   i32;
 typedef unsigned long long u64;
 typedef signed long long   i64;
 
-typedef float  fp32;
-typedef double fp64;
+typedef float  f32;
+typedef double f64;
 
 #ifndef __cplusplus
 #define bool  u8
@@ -40,43 +40,43 @@ typedef struct {
 } i32_uvw_t;
 
 typedef struct {
-  fp32 u;
-  fp32 v;
-  fp32 w;
-} fp32_uvw_t;
+  f32 u;
+  f32 v;
+  f32 w;
+} f32_uvw_t;
 
 typedef struct {
-  fp32 a;
-  fp32 b;
-} fp32_ab_t;
+  f32 a;
+  f32 b;
+} f32_ab_t;
 
 typedef struct {
-  fp32 d;
-  fp32 q;
-} fp32_dq_t;
+  f32 d;
+  f32 q;
+} f32_dq_t;
 
 typedef struct {
-  u32  npp;
-  fp32 ld;
-  fp32 lq;
-  fp32 ls;
-  fp32 rs;
-  fp32 psi;
+  u32 npp;
+  f32 ld;
+  f32 lq;
+  f32 ls;
+  f32 rs;
+  f32 psi;
 } motor_cfg_t;
 
 typedef struct {
   /* ADC */
-  u32  adc_cnt_max;
-  u32  adc_cail_cnt_max;
-  fp32 cur_range, vbus_range;
-  fp32 adc2cur, adc2vbus;
+  u32 adc_cnt_max;
+  u32 adc_cail_cnt_max;
+  f32 cur_range, vbus_range;
+  f32 adc2cur, adc2vbus;
 
   /* PWM */
-  u32  timer_freq;
-  u32  pwm_freq;
-  u32  pwm_cnt_max;
-  fp32 mi;
-  fp32 fp32_pwm_min, fp32_pwm_max;
+  u32 timer_freq;
+  u32 pwm_freq;
+  u32 pwm_cnt_max;
+  f32 mi;
+  f32 fp32_pwm_min, fp32_pwm_max;
 } periph_cfg_t;
 
 #ifdef __cplusplus

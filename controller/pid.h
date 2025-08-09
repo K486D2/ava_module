@@ -8,30 +8,30 @@ extern "C" {
 #include "../util/util.h"
 
 typedef struct {
-  fp32 fs;
-  fp32 kp;
-  fp32 ki;
-  fp32 kd;
-  fp32 ki_out_max;
-  fp32 out_max;
+  f32 fs;
+  f32 kp;
+  f32 ki;
+  f32 kd;
+  f32 ki_out_max;
+  f32 out_max;
 } pid_cfg_t;
 
 typedef struct {
-  fp32 ref;
-  fp32 ffd;
-  fp32 fdb;
+  f32 ref;
+  f32 ffd;
+  f32 fdb;
 } pid_in_t;
 
 typedef struct {
-  fp32 val;
+  f32 val;
 } pid_out_t;
 
 typedef struct {
-  fp32 err;
-  fp32 prev_err;
-  fp32 kp_out;
-  fp32 ki_out;
-  fp32 kd_out;
+  f32 err;
+  f32 prev_err;
+  f32 kp_out;
+  f32 ki_out;
+  f32 kd_out;
 } pid_lo_t;
 
 typedef struct {
@@ -85,7 +85,7 @@ static void pid_exec(pid_ctl_t *pid) {
   CLAMP(out->val, -cfg->out_max, cfg->out_max);
 }
 
-static void pid_exec_in(pid_ctl_t *pid, fp32 ref, fp32 fdb, fp32 ffd) {
+static void pid_exec_in(pid_ctl_t *pid, f32 ref, f32 fdb, f32 ffd) {
   DECL_PID_PTRS(pid);
 
   in->ref = ref;
