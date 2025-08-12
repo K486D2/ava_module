@@ -10,6 +10,7 @@ extern "C" {
 #include <fcntl.h>
 #include <sys/epoll.h>
 #include <sys/socket.h>
+#include <unistd.h>
 typedef int socket_t;
 #define CLOSE_SOCKET close
 #elif defined(__ZEPHYR__)

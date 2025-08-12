@@ -47,12 +47,12 @@ typedef struct {
   spinlock_t lock; // 自旋锁
 } fifo_t;
 
-static void fifo_init(fifo_t *fifo, void *buf, size_t size) {
-  if (!IS_POWER_OF_2(size))
-    size = ROUNDUP_POW_OF_2(size);
+static void fifo_init(fifo_t *fifo, void *buf, size_t buf_size) {
+  if (!IS_POWER_OF_2(buf_size))
+    buf_size = ROUNDUP_POW_OF_2(buf_size);
 
   fifo->buf  = buf;
-  fifo->size = size;
+  fifo->size = buf_size;
   fifo->in = fifo->out = 0;
   fifo->lock           = 0;
 
