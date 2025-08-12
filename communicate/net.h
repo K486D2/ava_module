@@ -26,8 +26,6 @@ typedef SOCKET socket_t;
 #endif
 
 #include <stdio.h>
-#include <time.h>
-#include <unistd.h>
 
 #include "../container/list.h"
 #include "../util/util.h"
@@ -212,9 +210,7 @@ static int net_recv_yield(net_ch_t *ch, void *rxbuf, u32 size, u32 timeout_ms) {
 }
 
 static int net_recv_spin(net_ch_t *ch, void *rxbuf, u32 size, u32 timeout_ms) {
-  struct timespec ts;
-  clock_gettime(CLOCK_MONOTONIC, &ts);
-  u64 start_ts_ns = (u64)ts.tv_sec * 1e9 + (u64)ts.tv_nsec;
+  u64 start_ts_ns = get_mono_ts_ns();
   u64 curr_ts_ns  = 0;
   while (curr_ts_ns < start_ts_ns + (u64)(timeout_ms * 1e6)) {
 #ifdef __linux__
@@ -224,8 +220,7 @@ static int net_recv_spin(net_ch_t *ch, void *rxbuf, u32 size, u32 timeout_ms) {
 #endif
     if (ret > 0)
       return ret;
-    clock_gettime(CLOCK_MONOTONIC, &ts);
-    curr_ts_ns = (u64)ts.tv_sec * 1e9 + (u64)ts.tv_nsec;
+    curr_ts_ns = get_mono_ts_ns();
   }
   return -METIMEOUT;
 }
