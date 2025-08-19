@@ -2,14 +2,12 @@
 
 #include "../shared_mem/shared_mem.h"
 
-fifo_t fifo;
-
 pthread_t writer_t, reader_t;
 
 void *shm_writer(void *) {
   shm_t     shm     = {0};
   shm_cfg_t shm_cfg = {
-      .name   = "Local\\shm",
+      .name   = "shm",
       .access = PAGE_READWRITE,
   };
 
@@ -17,7 +15,9 @@ void *shm_writer(void *) {
     printf("writer: shm init failed!\n");
     exit(-1);
   }
-  fifo_init(&fifo, shm.lo.buf, SHM_BUF_SIZE);
+
+  fifo_t *fifo = (fifo_t *)shm.lo.base;
+  fifo_init(&fifo, shm.lo.base + sizeof(*fifo), SHM_SIZE - sizeof(*fifo));
 
   u32 cnt = 0;
   while (true) {
@@ -32,7 +32,7 @@ void *shm_writer(void *) {
 void *shm_reader(void *) {
   shm_t     shm     = {0};
   shm_cfg_t shm_cfg = {
-      .name   = "Local\\shm",
+      .name   = "shm",
       .access = PAGE_READONLY,
   };
 
@@ -40,7 +40,9 @@ void *shm_reader(void *) {
     printf("reader: shm init failed!\n");
     exit(-1);
   }
-  fifo_init(&fifo, shm.lo.buf, SHM_BUF_SIZE);
+
+  fifo_t *fifo = (fifo_t *)shm.lo.base;
+  // fifo_init(&fifo, shm.lo.base + sizeof(*fifo), SHM_SIZE - sizeof(*fifo));
 
   u32 cnt = 0;
   while (true) {

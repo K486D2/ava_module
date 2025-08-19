@@ -14,9 +14,9 @@ extern "C" {
 #include "../container/fifo.h"
 #include "../util/util.h"
 
-#define SHM_NAME_SIZE 32
-#define SHM_BUF_SIZE  1024
+#define SHM_SIZE      1024
 
+#define SHM_NAME_SIZE 32
 typedef struct {
   char name[SHM_NAME_SIZE];
   u32  access;
@@ -25,7 +25,7 @@ typedef struct {
 typedef struct {
   bool   is_creator;
   HANDLE file;
-  void  *buf;
+  void  *base;
 } shm_lo_t;
 
 typedef struct {
@@ -62,29 +62,29 @@ static int shm_init(shm_t *shm, shm_cfg_t shm_cfg) {
                                  NULL,                 // 默认安全属性
                                  cfg->access,          // 可读可写
                                  0,                    // 内存大小高32位
-                                 SHM_BUF_SIZE,         // 内存大小低32位
+                                 SHM_SIZE,             // 内存大小低32位
                                  cfg->name);           // 命名对象
     if (!lo->file)
       return -MEACCES;
-
     lo->is_creator = true;
   } else
     lo->is_creator = false;
 
   // 映射到进程地址空间
-  lo->buf = MapViewOfFile(lo->file,            // 文件映射句柄
-                          FILE_MAP_ALL_ACCESS, // 读写权限
-                          0,
-                          0,             // 偏移量
-                          SHM_BUF_SIZE); // 映射大小
-
-  if (!lo->buf) {
+  lo->base = MapViewOfFile(lo->file,            // 文件映射句柄
+                           FILE_MAP_ALL_ACCESS, // 读写权限
+                           0,
+                           0,         // 偏移量
+                           SHM_SIZE); // 映射大小
+  if (!lo->base) {
+    UnmapViewOfFile(lo->base);
     CloseHandle(lo->file);
     return -MEACCES;
   }
 
   return 0;
 }
+
 #ifdef __cpluscplus
 }
 #endif

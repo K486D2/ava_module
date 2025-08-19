@@ -61,6 +61,19 @@ static void fifo_init(fifo_t *fifo, void *buf, size_t buf_size) {
 #endif
 }
 
+static void fifo_buf_init(fifo_t *fifo, size_t buf_size) {
+  if (!IS_POWER_OF_2(buf_size))
+    buf_size = ROUNDUP_POW_OF_2(buf_size);
+
+  fifo->size = buf_size;
+  fifo->in = fifo->out = 0;
+  fifo->lock           = 0;
+
+#if defined(__linux__) || defined(_WIN32)
+  pthread_spin_init(&fifo->lock, PTHREAD_PROCESS_PRIVATE);
+#endif
+}
+
 static void fifo_reset(fifo_t *fifo) {
   fifo->in = fifo->out = 0;
 }
@@ -106,6 +119,20 @@ static size_t __fifo_in(fifo_t *fifo, const void *data, size_t size) {
   return size;
 }
 
+static size_t __fifo_buf_in(fifo_t *fifo, void *buf, const void *data, size_t size) {
+  size = MIN(size, fifo->size - fifo->in + fifo->out);
+  __sync_synchronize();
+
+  size_t len = MIN(size, fifo->size - (fifo->in & (fifo->size - 1)));
+  memcpy((u8 *)buf + (fifo->in & (fifo->size - 1)), data, len);
+
+  memcpy((u8 *)buf, (u8 *)data + len, size - len);
+  __sync_synchronize();
+
+  fifo->in += size;
+  return size;
+}
+
 static size_t __fifo_out(fifo_t *fifo, void *data, size_t size) {
   size = MIN(size, fifo->in - fifo->out);
   __sync_synchronize();
@@ -120,6 +147,20 @@ static size_t __fifo_out(fifo_t *fifo, void *data, size_t size) {
   return size;
 }
 
+static size_t __fifo_buf_out(fifo_t *fifo, void *buf, void *data, size_t size) {
+  size = MIN(size, fifo->in - fifo->out);
+  __sync_synchronize();
+
+  size_t len = MIN(size, fifo->size - (fifo->out & (fifo->size - 1)));
+  memcpy(data, (u8 *)buf + (fifo->out & (fifo->size - 1)), len);
+
+  memcpy((u8 *)data + len, (u8 *)buf, size - len);
+  __sync_synchronize();
+
+  fifo->out += size;
+  return size;
+}
+
 static size_t fifo_in(fifo_t *fifo, const void *data, size_t size) {
   spin_lock(&fifo->lock);
   size_t ret = __fifo_in(fifo, (u8 *)data, size);
@@ -127,9 +168,23 @@ static size_t fifo_in(fifo_t *fifo, const void *data, size_t size) {
   return ret;
 }
 
+static size_t fifo_buf_in(fifo_t *fifo, void *buf, const void *data, size_t size) {
+  spin_lock(&fifo->lock);
+  size_t ret = __fifo_buf_in(fifo, buf, (u8 *)data, size);
+  spin_unlock(&fifo->lock);
+  return ret;
+}
+
 static size_t fifo_out(fifo_t *fifo, void *data, size_t size) {
   spin_lock(&fifo->lock);
   size_t ret = __fifo_out(fifo, (u8 *)data, size);
+  spin_unlock(&fifo->lock);
+  return ret;
+}
+
+static size_t fifo_buf_out(fifo_t *fifo, void *buf, void *data, size_t size) {
+  spin_lock(&fifo->lock);
+  size_t ret = __fifo_buf_out(fifo, buf, (u8 *)data, size);
   spin_unlock(&fifo->lock);
   return ret;
 }
