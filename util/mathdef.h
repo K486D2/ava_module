@@ -23,6 +23,7 @@ extern "C" {
 #define SQRT(x)      fast_sqrtf(x)
 #define MOD(x, y)    fast_modf(x, y) // __hardfp_fmodf
 #define CPYSGN(x, y) copysignf(x, y)
+#define LOG(x)       log(x)
 #elif defined(ARM_MATH)
 #define SIN(x)         arm_sin_f32(x)
 #define COS(x)         arm_cos_f32(x)
@@ -32,8 +33,10 @@ extern "C" {
 #define SQRT(x)        fast_sqrtf(x)
 #define MOD(x, y)      fast_modf(x, y) // __hardfp_fmodf
 #define CPYSGN(x, y)   copysignf(x, y)
+#define LOG(x)         log(x)
 #else
 #define SIN(x)       sinf(x)
+#define SINH(x)      sinhf(x)
 #define COS(x)       cosf(x)
 #define EXP(x)       expf(x)
 #define ATAN2(y, x)  atan2f(y, x)
@@ -41,6 +44,7 @@ extern "C" {
 #define SQRT(x)      sqrtf(x)
 #define MOD(x, y)    fmodf(x, y) // __hardfp_fmodf
 #define CPYSGN(x, y) copysignf(x, y)
+#define LOG(x)       logf(x)
 #endif
 
 #ifndef PI

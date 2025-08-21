@@ -14,16 +14,16 @@ typedef struct {
 } maf_cfg_t;
 
 typedef struct {
-  f32 raw_val;
+  f32 x;
 } maf_in_t;
 
 typedef struct {
-  f32 filter_val;
+  f32 y;
 } maf_out_t;
 
 typedef struct {
   fifo_t fifo;
-  f64    sum_val;
+  f64    x_sum;
 } maf_lo_t;
 
 typedef struct {
@@ -67,21 +67,21 @@ static void maf_init(maf_filter_t *maf, maf_cfg_t maf_cfg) {
 static void maf_exec(maf_filter_t *maf) {
   DECL_MAF_PTRS(maf);
 
-  f32 old_val;
-  fifo_out(&lo->fifo, &old_val, sizeof(old_val));
-  lo->sum_val -= old_val;
+  f32 prev_x;
+  fifo_out(&lo->fifo, &prev_x, sizeof(prev_x));
+  lo->x_sum -= prev_x;
 
-  fifo_in(&lo->fifo, &in->raw_val, sizeof(in->raw_val));
+  fifo_in(&lo->fifo, &in->x, sizeof(in->x));
 
-  lo->sum_val += in->raw_val;
+  lo->x_sum += in->x;
 
-  lo->sum_val /= (f32)cfg->buf_size;
+  lo->x_sum /= (f32)cfg->buf_size;
 }
 
-static void maf_exec_in(maf_filter_t *maf, f32 raw_val) {
+static void maf_exec_in(maf_filter_t *maf, f32 x) {
   DECL_MAF_PTRS(maf);
 
-  in->raw_val = raw_val;
+  in->x = x;
   maf_exec(maf);
 }
 

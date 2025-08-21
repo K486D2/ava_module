@@ -13,11 +13,11 @@ typedef struct {
 } lpf_cfg_t;
 
 typedef struct {
-  f32 raw_val;
+  f32 x;
 } lpf_in_t;
 
 typedef struct {
-  f32 filter_val;
+  f32 y;
 } lpf_out_t;
 
 typedef struct {
@@ -65,7 +65,7 @@ static void lpf_init(lpf_filter_t *lpf, lpf_cfg_t lpf_cfg) {
 static void lpf_exec(lpf_filter_t *lpf) {
   DECL_LPF_PTRS(lpf);
 
-  LOWPASS(out->filter_val, in->raw_val, cfg->fc, cfg->fs);
+  LOWPASS(out->y, in->x, cfg->fc, cfg->fs);
 }
 
 #ifdef __cpluscplus

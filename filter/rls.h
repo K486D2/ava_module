@@ -16,8 +16,8 @@ typedef struct {
 } rls_cfg_t;
 
 typedef struct {
-  f32 raw_val;
-  f32 ref_val;
+  f32 x;
+  f32 ref;
 } rls_in_t;
 
 typedef struct {
@@ -78,11 +78,11 @@ static int rls_exec(rls_filter_t *rls) {
 
   for (u32 i = cfg->order - 1; i > 0; i--)
     lo->x[i] = lo->x[i - 1];
-  lo->x[0] = in->raw_val;
+  lo->x[0] = in->x;
 
   for (u32 i = 0; i < cfg->order; i++)
     out->y_hat += lo->w[i] * lo->x[i];
-  lo->err = in->ref_val - out->y_hat;
+  lo->err = in->ref - out->y_hat;
 
   for (u32 i = 0; i < cfg->order; i++) {
     for (int j = 0; j < cfg->order; j++)
