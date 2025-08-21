@@ -5,6 +5,7 @@
 extern "C" {
 #endif
 
+#include "hfi.h"
 #include "smo.h"
 
 #ifdef __cpluscplus
