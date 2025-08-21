@@ -6,7 +6,9 @@ extern "C" {
 #endif
 
 #include "lpf.h"
+#include "maf.h"
 #include "pll.h"
+#include "rls.h"
 
 #ifdef __cpluscplus
 }

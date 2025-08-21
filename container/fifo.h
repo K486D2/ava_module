@@ -20,7 +20,6 @@ typedef u32 spinlock_t;
 #define ROUNDUP_POW_OF_2(n) ((n == 0) ? 1 : (1 << (sizeof(n) * 8 - __builtin_clz(n - 1))))
 
 static inline void spin_lock(spinlock_t *lock) {
-
 #if defined(__linux) || defined(_WIN32)
   pthread_spin_lock(lock);
 #else
