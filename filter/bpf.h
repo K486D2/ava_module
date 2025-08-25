@@ -102,6 +102,13 @@ static void bpf_exec(bpf_filter_t *bpf) {
   lo->y1 = out->y0;
 }
 
+static void bpf_exec_in(bpf_filter_t *bpf, f32 x0) {
+  DECL_BPF_PTRS(bpf);
+
+  in->x0 = x0;
+  bpf_exec(bpf);
+}
+
 #ifdef __cpluscplus
 }
 #endif
