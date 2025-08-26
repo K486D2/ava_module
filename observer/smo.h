@@ -25,9 +25,9 @@ typedef struct {
 } smo_out_t;
 
 typedef struct {
-  f32_ab_t    est_i_ab;
-  f32_ab_t    est_i_ab_err;
-  f32_ab_t    est_emf_v_ab;
+  f32_ab_t     est_i_ab;
+  f32_ab_t     est_i_ab_err;
+  f32_ab_t     est_emf_v_ab;
   pll_filter_t pll;
 } smo_lo_t;
 

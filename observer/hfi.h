@@ -11,12 +11,11 @@ extern "C" {
 #include "../util/util.h"
 
 typedef struct {
-  f32       fs;
-  f32       kp, ki;
-  f32       fh;   // 注入信号频率，单位：Hz
-  f32       vh;   // 注入信号幅值，单位：V
-  f32       id_h; // 注入信号幅值，单位：A
-  bpf_cfg_t id_bpf_cfg, iq_bpf_cfg;
+  f32 fs;
+  f32 kp, ki;
+  f32 fh;   // 注入信号频率，单位：Hz
+  f32 vh;   // 注入信号幅值，单位：V
+  f32 id_h; // 注入信号幅值，单位：A
 } hfi_cfg_t;
 
 typedef struct {
@@ -49,10 +48,10 @@ typedef struct {
   hfi_in_t  in;
   hfi_lo_t  lo;
   hfi_out_t out;
-} hfi_t;
+} hfi_obs_t;
 
 #define DECL_HFI_THETA_PTRS(hfi)                                                                   \
-  hfi_t     *p   = (hfi);                                                                          \
+  hfi_obs_t *p   = (hfi);                                                                          \
   hfi_cfg_t *cfg = &p->cfg;                                                                        \
   hfi_in_t  *in  = &p->in;                                                                         \
   hfi_out_t *out = &p->out;                                                                        \
@@ -64,7 +63,7 @@ typedef struct {
   ARG_UNUSED(lo);
 
 #define DECL_HFI_THETA_PTRS_PREFIX(hfi, prefix)                                                    \
-  hfi_t     *prefix##_p   = (hfi);                                                                 \
+  hfi_obs_t *prefix##_p   = (hfi);                                                                 \
   hfi_cfg_t *prefix##_cfg = &prefix##_p->cfg;                                                      \
   hfi_in_t  *prefix##_in  = &prefix##_p->in;                                                       \
   hfi_out_t *prefix##_out = &prefix##_p->out;                                                      \
@@ -75,15 +74,15 @@ typedef struct {
   ARG_UNUSED(prefix##_out);                                                                        \
   ARG_UNUSED(prefix##_lo);
 
-static void hfi_init(hfi_t *hfi, hfi_cfg_t hfi_cfg) {
+static void hfi_init(hfi_obs_t *hfi, hfi_cfg_t hfi_cfg) {
   DECL_HFI_THETA_PTRS(hfi);
 
   *cfg = hfi_cfg;
-  bpf_init(&lo->id_bpf, cfg->id_bpf_cfg);
-  bpf_init(&lo->iq_bpf, cfg->iq_bpf_cfg);
+  bpf_init(&lo->id_bpf, lo->id_bpf.cfg);
+  bpf_init(&lo->iq_bpf, lo->iq_bpf.cfg);
 }
 
-static void hfi_exec(hfi_t *hfi) {
+static void hfi_exec(hfi_obs_t *hfi) {
   DECL_HFI_THETA_PTRS(hfi);
   DECL_BPF_PTRS_PREFIX(&lo->id_bpf, id_bpf);
   DECL_BPF_PTRS_PREFIX(&lo->iq_bpf, iq_bpf);
@@ -125,7 +124,7 @@ static void hfi_exec(hfi_t *hfi) {
   WARP_PI(out->obs_theta);
 }
 
-static void hfi_exec_in(hfi_t *hfi, f32_ab_t i_ab) {
+static void hfi_exec_in(hfi_obs_t *hfi, f32_ab_t i_ab) {
   DECL_HFI_THETA_PTRS(hfi);
 
   in->i_ab = i_ab;

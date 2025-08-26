@@ -5,10 +5,10 @@
 extern "C" {
 #endif
 
-#include "../controller/pid.h"
-#include "../filter/pll.h"
-#include "../observer/smo.h"
-#include "../transform/clarkepark.h"
+#include "../controller/controller.h"
+#include "../filter/filter.h"
+#include "../observer/observer.h"
+#include "../transform/transform.h"
 #include "../util/util.h"
 
 typedef struct {
@@ -92,6 +92,7 @@ typedef struct {
   pid_ctl_t          id_pid, iq_pid;
   pll_theta_filter_t theta_pll;
   smo_obs_t          smo;
+  hfi_obs_t          hfi;
 } foc_lo_t;
 
 typedef adc_raw_t (*foc_get_adc_f)(void);
@@ -224,6 +225,7 @@ static void foc_init(foc_t *foc, foc_cfg_t foc_cfg) {
   pid_init(&lo->iq_pid, lo->iq_pid.cfg);
   pll_theta_init(&lo->theta_pll, lo->theta_pll.cfg);
   smo_init(&lo->smo, lo->smo.cfg);
+  hfi_init(&lo->hfi, lo->hfi.cfg);
 }
 
 static void foc_exec(foc_t *foc) {
@@ -307,11 +309,19 @@ static void foc_exec(foc_t *foc) {
   foc_obs(p);
   in->i_dq = park(in->i_ab, in->theta.theta);
 
+  // HFI
+  DECL_HFI_THETA_PTRS_PREFIX(lo->hfi, hfi)
+  hfi_exec_in(hfi_p, in->i_ab);
+  in->i_dq.d += hfi_out->id_in;
+
   // D轴电流环
   DECL_PID_PTRS_PREFIX(&lo->id_pid, id_pid);
   lo->v_dq_ffd.d = -in->theta.omega * cfg->motor_cfg.lq * in->i_dq.q * 0.7f;
   pid_exec_in(id_pid_p, out->i_dq.d, in->i_dq.d, lo->v_dq_ffd.d);
   out->v_dq.d = id_pid_out->val;
+
+  // HFI
+  out->v_dq.d += hfi_out->vd_h;
 
   // Q轴电流环
   DECL_PID_PTRS_PREFIX(&lo->iq_pid, iq_pid);
@@ -322,6 +332,7 @@ static void foc_exec(foc_t *foc) {
   // 电角度补偿
   in->theta.comp_theta = cfg->theta_comp_gain * in->theta.omega / cfg->exec_freq;
 
+  // 反帕克变换
   out->v_ab = inv_park(out->v_dq, in->theta.theta + in->theta.comp_theta);
 
   // 标幺
