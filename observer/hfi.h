@@ -107,20 +107,16 @@ static void hfi_exec(hfi_obs_t *hfi) {
 
   // Polarity
   out->id_in = 0.0f;
-  if (++lo->polar_cnt > (u32)(cfg->fs * 0.3f)) {
-//    out->theta    = 1;
-    lo->polar_cnt = (u32)(cfg->fs * 0.3f) + 1.0f;
-  }
+  if (++lo->polar_cnt > (u32)(cfg->fs * 0.3f))
+    lo->polar_cnt = (u32)(cfg->fs * 0.3f + 1.0f);
 
   if ((lo->polar_cnt > (u32)(cfg->fs * 0.1f)) && (lo->polar_cnt <= (u32)(cfg->fs * 0.2f))) {
-    out->theta = 2;
     out->id_in = cfg->id_h;
     lo->id_pos += ABS(lo->lpf_id);
   } else if ((lo->polar_cnt > (u32)(cfg->fs * 0.2f)) && (lo->polar_cnt <= (u32)(cfg->fs * 0.3f))) {
     out->id_in = -cfg->id_h;
     lo->id_neg += ABS(lo->lpf_id);
     if (lo->polar_cnt == (u32)(cfg->fs * 0.3f)) {
-      out->theta       = 3;
       cfg->vh          = (ABS(lo->id_pos) > ABS(lo->id_neg)) ? cfg->vh : -cfg->vh;
       lo->polar_offset = (ABS(lo->id_pos) > ABS(lo->id_neg)) ? 0.0f : PI;
     }
