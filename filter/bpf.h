@@ -22,9 +22,10 @@ typedef struct {
 } bpf_out_t;
 
 typedef struct {
+  f32 q;
   f32 w0;
   f32 alpha;
-  f32 cosw0;
+  f32 cosw;
 
   // 滤波器状态变量
   f32 x1, x2; // 前两个输入
@@ -71,17 +72,18 @@ static void bpf_init(bpf_filter_t *bpf, bpf_cfg_t bpf_cfg) {
 
   *cfg = bpf_cfg;
 
-  lo->w0    = 2.0f * PI * cfg->f_center / cfg->fs;
-  lo->alpha = SIN(lo->w0) * SINH(LOG(2.0f) / 2.0f * cfg->bw * lo->w0 / SIN(lo->w0));
-  lo->cosw0 = COS(lo->w0);
+  lo->q     = cfg->f_center / cfg->bw;
+  lo->w0    = TAU * cfg->f_center / cfg->fs;
+  lo->alpha = SIN(lo->w0) / (2.0f * lo->q);
+  lo->cosw  = COS(lo->w0);
 
   lo->a0 = 1.0f + lo->alpha;
 
   lo->b0 = lo->alpha / lo->a0;
-  lo->b1 = 0.0f;
+  lo->b1 = 0.0f / lo->a0;
   lo->b2 = -lo->alpha / lo->a0;
-  lo->a1 = -2.0f * lo->cosw0 / lo->a0;
-  lo->a2 = (1.0f - lo->alpha) / lo->a0;
+  lo->a1 = -2.0f * lo->cosw / lo->a0;
+  lo->a2 = 1.0f - lo->alpha / lo->a0;
 }
 
 /**

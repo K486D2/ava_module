@@ -81,7 +81,7 @@ typedef struct {
 } foc_fault_t;
 
 typedef struct {
-  u64                exec_cnt;
+  u32                exec_cnt;
   u32                elapsed;
   f32                elapsed_us;
   foc_fault_t        fault;
@@ -310,7 +310,7 @@ static void foc_exec(foc_t *foc) {
   in->i_dq = park(in->i_ab, in->theta.theta);
 
   // HFI
-  DECL_HFI_THETA_PTRS_PREFIX(lo->hfi, hfi)
+  DECL_HFI_PTRS_PREFIX(&lo->hfi, hfi)
   hfi_exec_in(hfi_p, in->i_ab);
   in->i_dq.d += hfi_out->id_in;
 
@@ -322,6 +322,7 @@ static void foc_exec(foc_t *foc) {
 
   // HFI
   out->v_dq.d += hfi_out->vd_h;
+  in->theta.theta = hfi_out->obs_theta;
 
   // Q轴电流环
   DECL_PID_PTRS_PREFIX(&lo->iq_pid, iq_pid);

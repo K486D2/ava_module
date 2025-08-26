@@ -67,13 +67,13 @@ typedef struct {
   ARG_UNUSED(prefix##_out);                                                                        \
   ARG_UNUSED(prefix##_lo);
 
-static int rls_init(rls_filter_t *rls, rls_cfg_t rls_cfg) {
+static void rls_init(rls_filter_t *rls, rls_cfg_t rls_cfg) {
   DECL_RLS_PTRS(rls);
 
   *cfg = rls_cfg;
 }
 
-static int rls_exec(rls_filter_t *rls) {
+static void rls_exec(rls_filter_t *rls) {
   DECL_RLS_PTRS(rls);
 
   for (u32 i = cfg->order - 1; i > 0; i--)

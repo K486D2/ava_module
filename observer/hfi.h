@@ -50,7 +50,7 @@ typedef struct {
   hfi_out_t out;
 } hfi_obs_t;
 
-#define DECL_HFI_THETA_PTRS(hfi)                                                                   \
+#define DECL_HFI_PTRS(hfi)                                                                         \
   hfi_obs_t *p   = (hfi);                                                                          \
   hfi_cfg_t *cfg = &p->cfg;                                                                        \
   hfi_in_t  *in  = &p->in;                                                                         \
@@ -62,7 +62,7 @@ typedef struct {
   ARG_UNUSED(out);                                                                                 \
   ARG_UNUSED(lo);
 
-#define DECL_HFI_THETA_PTRS_PREFIX(hfi, prefix)                                                    \
+#define DECL_HFI_PTRS_PREFIX(hfi, prefix)                                                          \
   hfi_obs_t *prefix##_p   = (hfi);                                                                 \
   hfi_cfg_t *prefix##_cfg = &prefix##_p->cfg;                                                      \
   hfi_in_t  *prefix##_in  = &prefix##_p->in;                                                       \
@@ -75,7 +75,7 @@ typedef struct {
   ARG_UNUSED(prefix##_lo);
 
 static void hfi_init(hfi_obs_t *hfi, hfi_cfg_t hfi_cfg) {
-  DECL_HFI_THETA_PTRS(hfi);
+  DECL_HFI_PTRS(hfi);
 
   *cfg = hfi_cfg;
   bpf_init(&lo->id_bpf, lo->id_bpf.cfg);
@@ -83,11 +83,11 @@ static void hfi_init(hfi_obs_t *hfi, hfi_cfg_t hfi_cfg) {
 }
 
 static void hfi_exec(hfi_obs_t *hfi) {
-  DECL_HFI_THETA_PTRS(hfi);
+  DECL_HFI_PTRS(hfi);
   DECL_BPF_PTRS_PREFIX(&lo->id_bpf, id_bpf);
   DECL_BPF_PTRS_PREFIX(&lo->iq_bpf, iq_bpf);
 
-  park(in->i_ab, lo->hfi_theta);
+  lo->i_dq_hat = park(in->i_ab, lo->hfi_theta);
   bpf_exec_in(&lo->id_bpf, lo->i_dq_hat.d);
   bpf_exec_in(&lo->iq_bpf, lo->i_dq_hat.q);
 
@@ -95,37 +95,43 @@ static void hfi_exec(hfi_obs_t *hfi) {
   LOWPASS(lo->hfi_theta_err, iq_bpf_out->y0 * SIN(lo->theta_h), 300.0f, cfg->fs);
 
   // PLL
-  lo->hfi_theta_err_integ += cfg->ki * lo->hfi_theta_err;
+  lo->hfi_theta_err_integ += cfg->ki / cfg->fs * lo->hfi_theta_err;
   out->omega = lo->hfi_theta_err_integ + cfg->kp * lo->hfi_theta_err;
-  out->theta += out->omega / cfg->fs;
-  WARP_PI(out->theta);
+  lo->hfi_theta += out->omega / cfg->fs;
+  WARP_PI(lo->hfi_theta);
 
   // Inject
-  lo->theta_h += cfg->fh / cfg->fs;
+  lo->theta_h += TAU * cfg->fh / cfg->fs;
   WARP_TAU(lo->theta_h);
   out->vd_h = cfg->vh * COS(lo->theta_h);
 
   // Polarity
   out->id_in = 0.0f;
-  if (++lo->polar_cnt > cfg->fs * 0.3f)
-    lo->polar_cnt = cfg->fs * 0.3f + 1.0f;
-  if ((lo->polar_cnt > cfg->fs * 0.1f) && (lo->polar_cnt <= cfg->fs * 0.2f)) {
+  if (++lo->polar_cnt > (u32)(cfg->fs * 0.3f)) {
+//    out->theta    = 1;
+    lo->polar_cnt = (u32)(cfg->fs * 0.3f) + 1.0f;
+  }
+
+  if ((lo->polar_cnt > (u32)(cfg->fs * 0.1f)) && (lo->polar_cnt <= (u32)(cfg->fs * 0.2f))) {
+    out->theta = 2;
     out->id_in = cfg->id_h;
     lo->id_pos += ABS(lo->lpf_id);
-  } else if ((lo->polar_cnt > cfg->fs * 0.2f) && (lo->polar_cnt <= cfg->fs * 0.3f)) {
+  } else if ((lo->polar_cnt > (u32)(cfg->fs * 0.2f)) && (lo->polar_cnt <= (u32)(cfg->fs * 0.3f))) {
     out->id_in = -cfg->id_h;
     lo->id_neg += ABS(lo->lpf_id);
-    if (lo->polar_cnt == cfg->fs * 0.3f) {
+    if (lo->polar_cnt == (u32)(cfg->fs * 0.3f)) {
+      out->theta       = 3;
       cfg->vh          = (ABS(lo->id_pos) > ABS(lo->id_neg)) ? cfg->vh : -cfg->vh;
       lo->polar_offset = (ABS(lo->id_pos) > ABS(lo->id_neg)) ? 0.0f : PI;
     }
   }
+
   out->obs_theta = lo->hfi_theta + lo->polar_offset;
   WARP_PI(out->obs_theta);
 }
 
 static void hfi_exec_in(hfi_obs_t *hfi, f32_ab_t i_ab) {
-  DECL_HFI_THETA_PTRS(hfi);
+  DECL_HFI_PTRS(hfi);
 
   in->i_ab = i_ab;
   hfi_exec(hfi);
