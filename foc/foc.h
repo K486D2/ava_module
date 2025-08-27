@@ -88,12 +88,12 @@ typedef struct {
   u32         adc_cail_cnt;
   foc_state_e state;
   foc_theta_e theta;
-  f32_dq_t    v_dq_ffd;
+  f32_dq_t    ffd_v_dq;
 
-  pid_ctl_t          id_pid, iq_pid;
-  pll_theta_filter_t theta_pll;
-  smo_obs_t          smo;
-  hfi_obs_t          hfi;
+  pid_ctl_t    id_pid, iq_pid;
+  pll_filter_t pll;
+  smo_obs_t    smo;
+  hfi_obs_t    hfi;
 } foc_lo_t;
 
 typedef adc_raw_t (*foc_get_adc_f)(void);
@@ -207,7 +207,7 @@ static inline void foc_disable(foc_t *foc) {
   ops->f_set_drv(false);
 
   RESET_OUT(p);
-  RESET_OUT(&p->lo.theta_pll);
+  RESET_OUT(&p->lo.pll);
   RESET_OUT(&p->lo.id_pid);
   RESET_OUT(&p->lo.iq_pid);
   RESET_OUT(&p->lo.smo);
@@ -227,7 +227,7 @@ static void foc_init(foc_t *foc, foc_cfg_t foc_cfg) {
 
   pid_init(&lo->id_pid, lo->id_pid.cfg);
   pid_init(&lo->iq_pid, lo->iq_pid.cfg);
-  pll_theta_init(&lo->theta_pll, lo->theta_pll.cfg);
+  pll_init(&lo->pll, lo->pll.cfg);
   smo_init(&lo->smo, lo->smo.cfg);
   hfi_init(&lo->hfi, lo->hfi.cfg);
 }
@@ -262,9 +262,9 @@ static void foc_exec(foc_t *foc) {
   WARP_TAU(in->theta.sensor_theta);
 
   // 电角速度计算
-  DECL_PLL_THETA_PTRS_PREFIX(&lo->theta_pll, theta_pll)
-  pll_theta_exec_in(theta_pll_p, in->theta.sensor_theta);
-  in->theta.sensor_omega = theta_pll_out->filter_omega;
+  DECL_PLL_PTRS_PREFIX(&lo->theta_pll, theta_pll)
+  pll_exec_theta_in(theta_pll_p, in->theta.sensor_theta);
+  in->theta.sensor_omega = theta_pll_out->lpf_omega;
 
   // 电角度源选择
   switch (lo->theta) {
@@ -320,8 +320,8 @@ static void foc_exec(foc_t *foc) {
 
   // D轴电流环
   DECL_PID_PTRS_PREFIX(&lo->id_pid, id_pid);
-  lo->v_dq_ffd.d = -in->theta.omega * cfg->motor_cfg.lq * in->i_dq.q * 0.7f;
-  pid_exec_in(id_pid_p, out->i_dq.d, in->i_dq.d, lo->v_dq_ffd.d);
+  lo->ffd_v_dq.d = -in->theta.omega * cfg->motor_cfg.lq * in->i_dq.q * 0.7f;
+  pid_exec_in(id_pid_p, out->i_dq.d, in->i_dq.d, lo->ffd_v_dq.d);
   out->v_dq.d = id_pid_out->val;
 
   // HFI
@@ -330,8 +330,8 @@ static void foc_exec(foc_t *foc) {
 
   // Q轴电流环
   DECL_PID_PTRS_PREFIX(&lo->iq_pid, iq_pid);
-  lo->v_dq_ffd.q = in->theta.omega * cfg->motor_cfg.psi * 0.7f;
-  pid_exec_in(iq_pid_p, out->i_dq.q, in->i_dq.q, lo->v_dq_ffd.q);
+  lo->ffd_v_dq.q = in->theta.omega * cfg->motor_cfg.psi * 0.7f;
+  pid_exec_in(iq_pid_p, out->i_dq.q, in->i_dq.q, lo->ffd_v_dq.q);
   out->v_dq.q = iq_pid_out->val;
 
   // 电角度补偿

@@ -5,40 +5,28 @@
 
 typedef struct {
   f32 fs;
-  f32 lpf_fc;
-  f32 lpf_ffd_fc;
   f32 damp;
   f32 kp;
   f32 ki;
+  f32 lpf_fc, lpf_ffd_fc;
 } pll_cfg_t;
 
 typedef struct {
-  f32_ab_t val_ab;
+  f32_ab_t ab;
+  f32      theta;
 } pll_in_t;
 
 typedef struct {
-  f32 theta;
-} pll_theta_in_t;
-
-typedef struct {
-  f32 filter_theta;
-  f32 omega;
-  f32 filter_omega;
+  f32 lpf_theta;
+  f32 omega, lpf_omega;
 } pll_out_t;
 
 typedef struct {
-  f32 theta_err;
-  f32 ki_out;
-  f32 pll_ffd;
-} pll_lo_t;
-
-typedef struct {
-  f32 theta_err;
   f32 prev_theta;
-  f32 ffd_omega;
+  f32 theta_err;
   f32 ki_out;
-  f32 filter_ffd_omega;
-} pll_theta_lo_t;
+  f32 ffd_omega, lpf_ffd_omega;
+} pll_lo_t;
 
 typedef struct {
   pll_cfg_t cfg;
@@ -46,13 +34,6 @@ typedef struct {
   pll_out_t out;
   pll_lo_t  lo;
 } pll_filter_t;
-
-typedef struct {
-  pll_cfg_t      cfg;
-  pll_theta_in_t in;
-  pll_out_t      out;
-  pll_theta_lo_t lo;
-} pll_theta_filter_t;
 
 #define DECL_PLL_PTRS(pll)                                                                         \
   pll_filter_t *p   = (pll);                                                                       \
@@ -78,30 +59,6 @@ typedef struct {
   ARG_UNUSED(prefix##_out);                                                                        \
   ARG_UNUSED(prefix##_lo);
 
-#define DECL_PLL_THETA_PTRS(pll)                                                                   \
-  pll_theta_filter_t *p   = (pll);                                                                 \
-  pll_cfg_t          *cfg = &p->cfg;                                                               \
-  pll_theta_in_t     *in  = &p->in;                                                                \
-  pll_out_t          *out = &p->out;                                                               \
-  pll_theta_lo_t     *lo  = &p->lo;                                                                \
-  ARG_UNUSED(p);                                                                                   \
-  ARG_UNUSED(cfg);                                                                                 \
-  ARG_UNUSED(in);                                                                                  \
-  ARG_UNUSED(out);                                                                                 \
-  ARG_UNUSED(lo);
-
-#define DECL_PLL_THETA_PTRS_PREFIX(pll, prefix)                                                    \
-  pll_theta_filter_t *prefix##_p   = (pll);                                                        \
-  pll_cfg_t          *prefix##_cfg = &prefix##_p->cfg;                                             \
-  pll_theta_in_t     *prefix##_in  = &prefix##_p->in;                                              \
-  pll_out_t          *prefix##_out = &prefix##_p->out;                                             \
-  pll_theta_lo_t     *prefix##_lo  = &prefix##_p->lo;                                              \
-  ARG_UNUSED(prefix##_p);                                                                          \
-  ARG_UNUSED(prefix##_cfg);                                                                        \
-  ARG_UNUSED(prefix##_in);                                                                         \
-  ARG_UNUSED(prefix##_out);                                                                        \
-  ARG_UNUSED(prefix##_lo);
-
 static void pll_init(pll_filter_t *pll, pll_cfg_t pll_cfg) {
   DECL_PLL_PTRS(pll);
 
@@ -111,58 +68,41 @@ static void pll_init(pll_filter_t *pll, pll_cfg_t pll_cfg) {
 static void pll_exec(pll_filter_t *pll) {
   DECL_PLL_PTRS(pll);
 
-  // PD鉴相器
-  lo->theta_err = in->val_ab.b * COS(out->filter_theta) - in->val_ab.a * SIN(out->filter_theta);
-
   // LF环路滤波器
   INTEGRATOR(lo->ki_out, lo->theta_err, cfg->ki, cfg->fs);
   out->omega = cfg->kp * lo->theta_err + lo->ki_out;
-  LOWPASS(out->filter_omega, out->omega, cfg->lpf_fc, cfg->fs);
+  LOWPASS(out->lpf_omega, out->omega, cfg->lpf_fc, cfg->fs);
 
   // VCO压控振荡器
-  INTEGRATOR(out->filter_theta, out->omega, 1.0f, cfg->fs);
-  WARP_TAU(out->filter_theta);
+  INTEGRATOR(out->lpf_theta, out->omega, 1.0f, cfg->fs);
+  WARP_TAU(out->lpf_theta);
 }
 
-static void pll_exec_in(pll_filter_t *pll, f32_ab_t val_ab) {
+static void pll_exec_ab_in(pll_filter_t *pll, f32_ab_t ab) {
   DECL_PLL_PTRS(pll);
 
-  in->val_ab = val_ab;
+  in->ab = ab;
+
+  // PD鉴相器
+  lo->theta_err = in->ab.b * COS(out->lpf_theta) - in->ab.a * SIN(out->lpf_theta);
+
   pll_exec(p);
 }
 
-static void pll_theta_init(pll_theta_filter_t *theta_pll, pll_cfg_t pll_cfg) {
-  DECL_PLL_THETA_PTRS(theta_pll);
+static void pll_exec_theta_in(pll_filter_t *pll, f32 theta) {
+  DECL_PLL_PTRS(pll);
 
-  *cfg = pll_cfg;
-}
-
-static void pll_theta_exec(pll_theta_filter_t *pll) {
-  DECL_PLL_THETA_PTRS(pll);
+  in->theta = theta;
 
   // 前馈速度计算
   THETA_DERIVATIVE(lo->ffd_omega, in->theta, lo->prev_theta, 1.0f, cfg->fs);
-  LOWPASS(lo->filter_ffd_omega, lo->ffd_omega, cfg->lpf_fc, cfg->fs);
+  LOWPASS(lo->lpf_ffd_omega, lo->ffd_omega, cfg->lpf_fc, cfg->fs);
 
   // PD鉴相器
-  lo->theta_err = in->theta - out->filter_theta;
+  lo->theta_err = in->theta - out->lpf_theta;
   WARP_PI(lo->theta_err);
 
-  // LF环路滤波器
-  INTEGRATOR(lo->ki_out, lo->theta_err, cfg->ki, cfg->fs);
-  out->omega = cfg->kp * lo->theta_err + lo->ki_out + lo->filter_ffd_omega;
-  LOWPASS(out->filter_omega, out->omega, cfg->lpf_fc, cfg->fs);
-
-  // VCO压控振荡器
-  INTEGRATOR(out->filter_theta, out->omega, 1.0f, cfg->fs);
-  WARP_TAU(out->filter_theta);
-}
-
-static void pll_theta_exec_in(pll_theta_filter_t *pll, f32 theta) {
-  DECL_PLL_THETA_PTRS(pll);
-
-  in->theta = theta;
-  pll_theta_exec(p);
+  pll_exec(p);
 }
 
 #endif // !PLL_H

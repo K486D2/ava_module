@@ -105,7 +105,7 @@ static void smo_exec(smo_obs_t *smo) {
                            ? CPYSGN(cfg->k_slide, lo->est_i_ab_err.b)
                            : (cfg->k_slide * lo->est_i_ab_err.b / cfg->es0);
 
-  pll_exec_in(&lo->pll, lo->est_emf_v_ab);
+  pll_exec_ab_in(&lo->pll, lo->est_emf_v_ab);
   out->omega = pll_p->out.omega;
 
   out->theta = ATAN2(-lo->est_emf_v_ab.a * out->omega, lo->est_emf_v_ab.b * out->omega);
