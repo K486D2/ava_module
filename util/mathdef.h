@@ -88,9 +88,6 @@ extern "C" {
 #define LF(n)                          (1U << (n))
 #define RF(n)                          (1U >> (n))
 
-#define SELF_LF(x, n)                  ((x) <<= (n))
-#define SELF_RF(x, n)                  ((x) >>= (n))
-
 #define INTEGRATOR(ret, val, gain, fs) (ret) += (gain) * (val) / (fs)
 
 #define DERIVATIVE(ret, val, prev_val, gain, fs)                                                   \

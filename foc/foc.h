@@ -36,10 +36,10 @@ typedef struct {
 
 typedef struct {
   f32          exec_freq;
-  f32          sensor_theta_comp_gain, theta_comp_gain;
+  bool         is_adc_cail, is_theta_cail;
   adc_raw_t    adc_offset;
   f32          theta_offset;
-  bool         is_adc_cail;
+  f32          sensor_theta_comp_gain, theta_comp_gain;
   motor_cfg_t  motor_cfg;
   periph_cfg_t periph_cfg;
 } foc_cfg_t;
@@ -76,19 +76,28 @@ typedef enum {
   FOC_THETA_SENSORFUSION,
 } foc_theta_e;
 
+typedef enum {
+  FOC_OBS_NULL,
+  FOC_OBS_SMO,
+  FOC_OBS_HFI,
+} foc_obs_e;
+
 typedef struct {
   u32 NULL_FUNC_PTR : 1;
 } foc_fault_t;
 
 typedef struct {
-  u32         exec_cnt;
-  u32         elapsed;
-  f32         elapsed_us;
+  u32      exec_cnt;
+  u32      elapsed;
+  f32      elapsed_us;
+  u32      adc_cail_cnt;
+  f32_dq_t ffd_v_dq;
+
   foc_fault_t fault;
-  u32         adc_cail_cnt;
+
   foc_state_e state;
   foc_theta_e theta;
-  f32_dq_t    ffd_v_dq;
+  foc_obs_e   obs;
 
   pid_ctl_t    id_pid, iq_pid;
   pll_filter_t pll;
@@ -146,12 +155,23 @@ typedef struct {
 
 static inline void foc_obs(foc_t *foc) {
   DECL_FOC_PTRS(foc);
-  DECL_SMO_PTRS_PREFIX(&lo->smo, smo);
 
-  // 观测器电角度计算
-  smo_exec_in(smo_p, in->i_ab, out->v_ab);
-  in->theta.obs_theta = smo_out->theta;
-  in->theta.obs_omega = smo_out->omega;
+  switch (lo->obs) {
+  case FOC_OBS_SMO:
+    DECL_SMO_PTRS_PREFIX(&lo->smo, smo);
+    smo_exec_in(smo_p, in->i_ab, out->v_ab);
+    in->theta.obs_theta = smo_out->theta;
+    in->theta.obs_omega = smo_out->omega;
+    break;
+  case FOC_OBS_HFI:
+    DECL_HFI_PTRS_PREFIX(&lo->hfi, hfi)
+    hfi_exec_in(hfi_p, in->i_ab);
+    in->theta.obs_theta = hfi_out->obs_theta;
+    in->theta.obs_omega = hfi_out->obs_omega;
+    in->i_dq.d += hfi_out->id_in;
+  default:
+    break;
+  }
 
   // 观测器电角度和传感器电角度误差计算
   in->theta.fusion_theta_err = in->theta.sensor_theta - in->theta.obs_theta;
@@ -189,9 +209,9 @@ static inline void foc_cali(foc_t *foc) {
   in->adc_raw = ops->f_get_adc();
   UVW_ADD_VEC_IP(cfg->adc_offset.i32_i_uvw, in->adc_raw.i32_i_uvw);
   if (++lo->adc_cail_cnt >= LF(cfg->periph_cfg.adc_cail_cnt_max)) {
-    SELF_RF(cfg->adc_offset.i32_i_uvw.u, cfg->periph_cfg.adc_cail_cnt_max);
-    SELF_RF(cfg->adc_offset.i32_i_uvw.v, cfg->periph_cfg.adc_cail_cnt_max);
-    SELF_RF(cfg->adc_offset.i32_i_uvw.w, cfg->periph_cfg.adc_cail_cnt_max);
+    cfg->adc_offset.i32_i_uvw.u <<= cfg->periph_cfg.adc_cail_cnt_max;
+    cfg->adc_offset.i32_i_uvw.v <<= cfg->periph_cfg.adc_cail_cnt_max;
+    cfg->adc_offset.i32_i_uvw.w <<= cfg->periph_cfg.adc_cail_cnt_max;
     cfg->is_adc_cail = true;
     lo->state        = FOC_STATE_READY;
   }
@@ -237,11 +257,34 @@ static void foc_exec(foc_t *foc) {
 
   lo->exec_cnt++;
 
+  // FOC状态切换
+  switch (lo->state) {
+  case FOC_STATE_CALI:
+    foc_cali(p);
+    return;
+  case FOC_STATE_READY:
+    foc_ready(p);
+    return;
+  case FOC_STATE_DISABLE:
+    foc_disable(p);
+    return;
+  case FOC_STATE_ENABLE:
+    foc_enable(p);
+    break;
+  default:
+    return;
+  }
+
+  /* --------------- only FOC_STATE_ENABLE can run below code!!! -------------- */
+
   // ADC采样
   in->adc_raw = ops->f_get_adc();
   UVW_SUB_VEC_IP(in->adc_raw.i32_i_uvw, cfg->adc_offset.i32_i_uvw);
   UVW_MUL(in->fp32_i_uvw, in->adc_raw.i32_i_uvw, cfg->periph_cfg.adc2cur);
   in->v_bus = in->adc_raw.i32_v_bus * cfg->periph_cfg.adc2vbus;
+
+  // 克拉克变换
+  in->i_ab = clarke(in->fp32_i_uvw, cfg->periph_cfg.mi);
 
   // 机械角度获取与圈数计算
   in->theta.mech_theta = ops->f_get_theta();
@@ -266,6 +309,9 @@ static void foc_exec(foc_t *foc) {
   pll_exec_theta_in(theta_pll_p, in->theta.sensor_theta);
   in->theta.sensor_omega = theta_pll_out->lpf_omega;
 
+  // 无感观测器
+  foc_obs(p);
+
   // 电角度源选择
   switch (lo->theta) {
   case FOC_THETA_NULL:
@@ -288,35 +334,8 @@ static void foc_exec(foc_t *foc) {
     break;
   }
 
-  // FOC状态机
-  switch (lo->state) {
-  case FOC_STATE_CALI:
-    foc_cali(p);
-    return;
-  case FOC_STATE_READY:
-    foc_ready(p);
-    return;
-  case FOC_STATE_DISABLE:
-    foc_disable(p);
-    return;
-  case FOC_STATE_ENABLE:
-    foc_enable(p);
-    break;
-  default:
-    return;
-  }
-
-  /* --------------- only FOC_STATE_ENABLE can run below code!!! -------------- */
-
-  // 坐标变换
-  in->i_ab = clarke(in->fp32_i_uvw, cfg->periph_cfg.mi);
-  foc_obs(p);
+  // 帕克变换
   in->i_dq = park(in->i_ab, in->theta.theta);
-
-  // HFI
-  DECL_HFI_PTRS_PREFIX(&lo->hfi, hfi)
-  hfi_exec_in(hfi_p, in->i_ab);
-  in->i_dq.d += hfi_out->id_in;
 
   // D轴电流环
   DECL_PID_PTRS_PREFIX(&lo->id_pid, id_pid);
@@ -324,9 +343,8 @@ static void foc_exec(foc_t *foc) {
   pid_exec_in(id_pid_p, out->i_dq.d, in->i_dq.d, lo->ffd_v_dq.d);
   out->v_dq.d = id_pid_out->val;
 
-  // HFI
+  // 高频注入
   out->v_dq.d += hfi_out->vd_h;
-  in->theta.theta = hfi_out->obs_theta;
 
   // Q轴电流环
   DECL_PID_PTRS_PREFIX(&lo->iq_pid, iq_pid);
