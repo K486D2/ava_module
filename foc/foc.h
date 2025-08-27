@@ -81,14 +81,15 @@ typedef struct {
 } foc_fault_t;
 
 typedef struct {
-  u32                exec_cnt;
-  u32                elapsed;
-  f32                elapsed_us;
-  foc_fault_t        fault;
-  u32                adc_cail_cnt;
-  foc_state_e        state;
-  foc_theta_e        theta;
-  f32_dq_t           v_dq_ffd;
+  u32         exec_cnt;
+  u32         elapsed;
+  f32         elapsed_us;
+  foc_fault_t fault;
+  u32         adc_cail_cnt;
+  foc_state_e state;
+  foc_theta_e theta;
+  f32_dq_t    v_dq_ffd;
+
   pid_ctl_t          id_pid, iq_pid;
   pll_theta_filter_t theta_pll;
   smo_obs_t          smo;
@@ -202,12 +203,15 @@ static inline void foc_ready(foc_t *foc) {
 
 static inline void foc_disable(foc_t *foc) {
   DECL_FOC_PTRS(foc);
-  DECL_SMO_PTRS_PREFIX(&p->lo.smo, smo);
 
   ops->f_set_drv(false);
 
   RESET_OUT(p);
-  RESET_OUT(smo_p);
+  RESET_OUT(&p->lo.theta_pll);
+  RESET_OUT(&p->lo.id_pid);
+  RESET_OUT(&p->lo.iq_pid);
+  RESET_OUT(&p->lo.smo);
+  RESET_OUT(&p->lo.hfi);
 }
 
 static inline void foc_enable(foc_t *foc) {

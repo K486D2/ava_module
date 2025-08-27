@@ -123,7 +123,7 @@ static void hfi_exec(hfi_obs_t *hfi) {
   }
 
   out->obs_theta = lo->hfi_theta + lo->polar_offset;
-  WARP_PI(out->obs_theta);
+  WARP_TAU(out->obs_theta);
 }
 
 static void hfi_exec_in(hfi_obs_t *hfi, f32_ab_t i_ab) {
