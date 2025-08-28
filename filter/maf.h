@@ -74,7 +74,6 @@ static void maf_exec(maf_filter_t *maf) {
   fifo_in(&lo->fifo, &in->x, sizeof(in->x));
 
   lo->x_sum += in->x;
-
   lo->x_sum /= (f32)cfg->buf_size;
 }
 

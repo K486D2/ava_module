@@ -9,17 +9,14 @@ extern "C" {
 
 typedef struct {
   f32 fs;
-  f32 kp;
-  f32 ki;
-  f32 kd;
-  f32 ki_out_max;
-  f32 out_max;
+  f32 kp, ki, kd;
+  f32 ki_out_max, out_max;
 } pid_cfg_t;
 
 typedef struct {
   f32 ref;
-  f32 ffd;
   f32 fdb;
+  f32 ffd;
 } pid_in_t;
 
 typedef struct {
@@ -29,9 +26,7 @@ typedef struct {
 typedef struct {
   f32 err;
   f32 prev_err;
-  f32 kp_out;
-  f32 ki_out;
-  f32 kd_out;
+  f32 kp_out, ki_out, kd_out;
 } pid_lo_t;
 
 typedef struct {
