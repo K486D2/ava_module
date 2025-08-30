@@ -11,7 +11,7 @@ extern "C" {
 typedef struct {
   f32         fs;
   motor_cfg_t motor_cfg;
-  f32         k_slide;
+  f32         ks;
   f32         es0;
 } smo_cfg_t;
 
@@ -98,12 +98,12 @@ static void smo_exec(smo_obs_t *smo) {
 
   // 反电动势估算
   lo->est_emf_v_ab.a = (ABS(lo->est_i_ab_err.a) > cfg->es0)
-                           ? CPYSGN(cfg->k_slide, lo->est_i_ab_err.a)
-                           : (cfg->k_slide * lo->est_i_ab_err.a / cfg->es0);
+                           ? CPYSGN(cfg->ks, lo->est_i_ab_err.a)
+                           : (cfg->ks * lo->est_i_ab_err.a / cfg->es0);
 
   lo->est_emf_v_ab.b = (ABS(lo->est_i_ab_err.b) > cfg->es0)
-                           ? CPYSGN(cfg->k_slide, lo->est_i_ab_err.b)
-                           : (cfg->k_slide * lo->est_i_ab_err.b / cfg->es0);
+                           ? CPYSGN(cfg->ks, lo->est_i_ab_err.b)
+                           : (cfg->ks * lo->est_i_ab_err.b / cfg->es0);
 
   pll_exec_ab_in(&lo->pll, lo->est_emf_v_ab);
   out->omega = pll_p->out.omega;
