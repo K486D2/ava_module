@@ -18,16 +18,16 @@ int main() {
       .bw       = 10.0f,
   };
 
-  bpf_filter_t filter;
-  bpf_init(&filter, cfg);
+  bpf_filter_t bpf;
+  bpf_init(&bpf, cfg);
 
   printf("Sample,Input,Output,1000Hz\n");
 
   for (int i = 0; i < NUM_SAMPLES; i++) {
     f32 input = generate_test_signal(i);
-    bpf_exec_in(&filter, input);
+    bpf_exec_in(&bpf, input);
 
-    printf("%d,%.6f,%.6f,%.6f\n", i, input, filter.out.y0, SIN(2 * PI * 1000.0f * i / SAMPLE_RATE));
+    printf("%d,%.6f,%.6f,%.6f\n", i, input, bpf.out.y0, SIN(2 * PI * 1000.0f * i / SAMPLE_RATE));
   }
 
   return 0;

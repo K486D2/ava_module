@@ -5,6 +5,7 @@
 extern "C" {
 #endif
 
+#include "../util/errdef.h"
 #include "../util/util.h"
 
 typedef struct {
@@ -67,7 +68,8 @@ typedef struct {
   ARG_UNUSED(prefix##_out);                                                                        \
   ARG_UNUSED(prefix##_lo);
 
-static void bpf_init(bpf_filter_t *bpf, bpf_cfg_t bpf_cfg) {
+static int bpf_init(bpf_filter_t *bpf, bpf_cfg_t bpf_cfg) {
+  ARG_CHECK(bpf);
   DECL_BPF_PTRS(bpf);
 
   *cfg = bpf_cfg;
@@ -84,6 +86,8 @@ static void bpf_init(bpf_filter_t *bpf, bpf_cfg_t bpf_cfg) {
   lo->b2 = -lo->alpha / lo->a0;
   lo->a1 = -2.0f * lo->cosw / lo->a0;
   lo->a2 = 1.0f - lo->alpha / lo->a0;
+
+  return 0;
 }
 
 /**
@@ -93,7 +97,8 @@ static void bpf_init(bpf_filter_t *bpf, bpf_cfg_t bpf_cfg) {
  *
  * @param bpf
  */
-static void bpf_exec(bpf_filter_t *bpf) {
+static int bpf_exec(bpf_filter_t *bpf) {
+  ARG_CHECK(bpf);
   DECL_BPF_PTRS(bpf);
 
   out->y0 = lo->b0 * in->x0 + lo->b1 * lo->x1 + lo->b2 * lo->x2 - lo->a1 * lo->y1 - lo->a2 * lo->y2;
@@ -102,13 +107,16 @@ static void bpf_exec(bpf_filter_t *bpf) {
   lo->x1 = in->x0;
   lo->y2 = lo->y1;
   lo->y1 = out->y0;
+
+  return 0;
 }
 
-static void bpf_exec_in(bpf_filter_t *bpf, f32 x0) {
+static int bpf_exec_in(bpf_filter_t *bpf, f32 x0) {
+  ARG_CHECK(bpf);
   DECL_BPF_PTRS(bpf);
 
   in->x0 = x0;
-  bpf_exec(bpf);
+  return bpf_exec(bpf);
 }
 
 #ifdef __cpluscplus

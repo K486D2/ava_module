@@ -24,7 +24,13 @@ extern "C" {
     __set_PRIMASK(_primask);                                                                       \
   } while (0)
 
-#define ARG_UNUSED(x)        (void)(x)
+#define ARG_UNUSED(x) (void)(x)
+
+#define ARG_CHECK(x)                                                                               \
+  do {                                                                                             \
+    if ((x) == NULL)                                                                               \
+      return -MEINVAL;                                                                             \
+  } while (0)
 
 #define BUILD_BUG_ON_ZERO(e) (sizeof(struct { int : -!!(e); }))
 #define __same_type(a, b)    __builtin_types_compatible_p(typeof(a), typeof(b))
