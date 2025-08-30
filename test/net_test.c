@@ -6,7 +6,7 @@ net_t net;
 
 static int init(void) {
   net_cfg_t net_cfg = {.type = NET_TYPE_UDP};
-  net_init(&net, net_cfg);
+  return net_init(&net, net_cfg);
 }
 
 static int exec(void) {
@@ -14,10 +14,10 @@ static int exec(void) {
       .remote_ip = "192.168.137.101",
       // .remote_ip   = "127.0.0.1",
       .remote_port = 2333,
-      .local_ip = "192.168.137.1",
+      .local_ip    = "192.168.137.1",
       // .local_ip   = "127.0.0.1",
       .local_port = 2334,
-      .recv_mode = NET_RECV_SPIN,
+      .recv_mode  = NET_RECV_SPIN,
   };
 
   int ret;
@@ -25,12 +25,12 @@ static int exec(void) {
   if (ret < 0)
     return -1;
 
-  u64 cnt = 0;
+  u64  cnt         = 0;
   char txbuf[1024] = {0};
   char rxbuf[1024] = {0};
 
   while (true) {
-    sprintf(txbuf, "Hello World, cnt: %llu!", cnt);
+    sprintf(txbuf, "cnt: %llu", cnt++);
     ret = net_send(&ch, txbuf, strlen(txbuf));
     if (ret < 0)
       printf("recv: %d\n", ret);
