@@ -1,10 +1,12 @@
 #include "../shared_mem/shared_mem.h"
 
+#include <stdlib.h>
+
 int main() {
   shm_t     shm     = {0};
   shm_cfg_t shm_cfg = {
       .name   = "shm",
-      .access = PAGE_READWRITE,
+      // .access = PAGE_READWRITE,
   };
 
   if (shm_init(&shm, shm_cfg) < 0) {

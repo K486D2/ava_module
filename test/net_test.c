@@ -30,13 +30,12 @@ static int exec(void) {
   char rxbuf[1024] = {0};
 
   while (true) {
-    sprintf(txbuf, "cnt: %llu", cnt++);
-    ret = net_send(&ch, txbuf, strlen(txbuf));
-    if (ret < 0)
-      printf("recv: %d\n", ret);
-    ret = net_recv(&ch, rxbuf, sizeof(rxbuf), 1);
+    sprintf(txbuf, "%llu", cnt++);
+    u64 start = get_mono_ts_us();
+    ret       = net_send_recv(&ch, txbuf, strlen(txbuf), rxbuf, sizeof(rxbuf), 1);
+    u64 end   = get_mono_ts_us();
     if (ret > 0)
-      printf("%s\n", rxbuf);
+      printf("recv cnt: %s, elapsed: %llu us\n", rxbuf, end - start);
   }
   return 0;
 }

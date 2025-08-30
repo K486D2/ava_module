@@ -9,7 +9,7 @@ CC       := gcc
 FLAGS_C  += -Wall -Wextra
 FLAGS_C  += -g
 FLAGS_C  += -D_GNU_SOURCE
-FLAGS_LD += -lpthread
+FLAGS_LD += -lpthread -lm
 
 ifeq ($(OS), Windows_NT)
 	SHELL    := cmd.exe

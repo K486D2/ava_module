@@ -63,9 +63,11 @@ static inline u64 get_mono_ts_ns(void) {
 static inline u64 get_mono_ts_us(void) {
   return get_mono_ts_ns() / 1000u;
 }
+
 static inline u64 get_mono_ts_ms(void) {
   return get_mono_ts_ns() / 1000000u;
 }
+
 static inline u64 get_mono_ts_s(void) {
   return get_mono_ts_ns() / 1000000000u;
 }
@@ -91,9 +93,11 @@ static inline u64 get_real_ts_ns(void) {
 static inline u64 get_real_ts_us(void) {
   return get_real_ts_ns() / 1000u;
 }
+
 static inline u64 get_real_ts_ms(void) {
   return get_real_ts_ns() / 1000000u;
 }
+
 static inline u64 get_real_ts_s(void) {
   return get_real_ts_ns() / 1000000000u;
 }
