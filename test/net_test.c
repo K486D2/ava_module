@@ -1,4 +1,5 @@
 #include <string.h>
+#include <unistd.h>
 
 #include "../communicate/net.h"
 
@@ -36,6 +37,7 @@ static int exec(void) {
     u64 end   = get_mono_ts_us();
     if (ret > 0)
       printf("recv cnt: %s, elapsed: %llu us\n", rxbuf, end - start);
+    sleep(1);
   }
   return 0;
 }
