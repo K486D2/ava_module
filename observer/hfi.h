@@ -1,6 +1,7 @@
 #ifndef HFI_H
 #define HFI_H
 
+#include "filter/pll.h"
 #ifdef __cpluscplus
 extern "C" {
 #endif
@@ -95,13 +96,13 @@ static void hfi_exec(hfi_obs_t *hfi) {
   LOWPASS(lo->hfi_theta_err, iq_bpf_out->y0 * SIN(lo->theta_h), 300.0f, cfg->fs);
 
   // PLL
-  lo->hfi_theta_err_integ += cfg->ki / cfg->fs * lo->hfi_theta_err;
-  out->omega = lo->hfi_theta_err_integ + cfg->kp * lo->hfi_theta_err;
-  lo->hfi_theta += out->omega / cfg->fs;
-  WARP_PI(lo->hfi_theta);
+  INTEGRATOR(lo->hfi_theta_err_integ, lo->hfi_theta_err, cfg->ki, cfg->fs);
+  out->omega = cfg->kp * lo->hfi_theta_err + lo->hfi_theta_err_integ;
+  INTEGRATOR(lo->hfi_theta, out->omega, 1.0f, cfg->fs);
+  WARP_TAU(lo->hfi_theta);
 
   // Inject
-  lo->theta_h += TAU * cfg->fh / cfg->fs;
+  INTEGRATOR(lo->theta_h, TAU * cfg->fh, 1.0f, cfg->fs);
   WARP_TAU(lo->theta_h);
   out->vd_h = cfg->vh * COS(lo->theta_h);
 
@@ -118,7 +119,7 @@ static void hfi_exec(hfi_obs_t *hfi) {
     lo->id_neg += ABS(lo->lpf_id);
     if (lo->polar_cnt == (u32)(cfg->fs * 0.3f)) {
       cfg->vh          = (ABS(lo->id_pos) > ABS(lo->id_neg)) ? cfg->vh : -cfg->vh;
-      lo->polar_offset = (ABS(lo->id_pos) > ABS(lo->id_neg)) ? 0.0f : PI;
+      lo->polar_offset = (ABS(lo->id_pos) > ABS(lo->id_neg)) ? PI : 0.0f;
     }
   }
 

@@ -157,18 +157,19 @@ static inline void foc_obs(foc_t *foc) {
   DECL_FOC_PTRS(foc);
 
   switch (lo->obs) {
-  case FOC_OBS_SMO:
+  case FOC_OBS_SMO: {
     DECL_SMO_PTRS_PREFIX(&lo->smo, smo);
     smo_exec_in(smo_p, in->i_ab, out->v_ab);
     in->theta.obs_theta = smo_out->theta;
     in->theta.obs_omega = smo_out->omega;
-    break;
-  case FOC_OBS_HFI:
+  } break;
+  case FOC_OBS_HFI: {
     DECL_HFI_PTRS_PREFIX(&lo->hfi, hfi)
     hfi_exec_in(hfi_p, in->i_ab);
     in->theta.obs_theta = hfi_out->obs_theta;
     in->theta.obs_omega = hfi_out->obs_omega;
     in->i_dq.d += hfi_out->id_in;
+  } break;
   default:
     break;
   }
@@ -209,9 +210,9 @@ static inline void foc_cali(foc_t *foc) {
   in->adc_raw = ops->f_get_adc();
   UVW_ADD_VEC_IP(cfg->adc_offset.i32_i_uvw, in->adc_raw.i32_i_uvw);
   if (++lo->adc_cail_cnt >= LF(cfg->periph_cfg.adc_cail_cnt_max)) {
-    cfg->adc_offset.i32_i_uvw.u <<= cfg->periph_cfg.adc_cail_cnt_max;
-    cfg->adc_offset.i32_i_uvw.v <<= cfg->periph_cfg.adc_cail_cnt_max;
-    cfg->adc_offset.i32_i_uvw.w <<= cfg->periph_cfg.adc_cail_cnt_max;
+    cfg->adc_offset.i32_i_uvw.u >>= cfg->periph_cfg.adc_cail_cnt_max;
+    cfg->adc_offset.i32_i_uvw.v >>= cfg->periph_cfg.adc_cail_cnt_max;
+    cfg->adc_offset.i32_i_uvw.w >>= cfg->periph_cfg.adc_cail_cnt_max;
     cfg->is_adc_cail = true;
     lo->state        = FOC_STATE_READY;
   }
@@ -257,24 +258,6 @@ static void foc_exec(foc_t *foc) {
 
   lo->exec_cnt++;
 
-  // FOC状态切换
-  switch (lo->state) {
-  case FOC_STATE_CALI:
-    foc_cali(p);
-    return;
-  case FOC_STATE_READY:
-    foc_ready(p);
-    return;
-  case FOC_STATE_DISABLE:
-    foc_disable(p);
-    return;
-  case FOC_STATE_ENABLE:
-    foc_enable(p);
-    break;
-  default:
-    return;
-  }
-
   /* --------------- only FOC_STATE_ENABLE can run below code!!! -------------- */
 
   // ADC采样
@@ -305,12 +288,30 @@ static void foc_exec(foc_t *foc) {
   WARP_TAU(in->theta.sensor_theta);
 
   // 电角速度计算
-  DECL_PLL_PTRS_PREFIX(&lo->theta_pll, theta_pll)
-  pll_exec_theta_in(theta_pll_p, in->theta.sensor_theta);
-  in->theta.sensor_omega = theta_pll_out->lpf_omega;
+  DECL_PLL_PTRS_PREFIX(&lo->pll, pll)
+  pll_exec_theta_in(pll_p, in->theta.sensor_theta);
+  in->theta.sensor_omega = pll_out->lpf_omega;
 
   // 无感观测器
   foc_obs(p);
+
+  // FOC状态切换
+  switch (lo->state) {
+  case FOC_STATE_CALI:
+    foc_cali(p);
+    return;
+  case FOC_STATE_READY:
+    foc_ready(p);
+    break;
+  case FOC_STATE_DISABLE:
+    foc_disable(p);
+    break;
+  case FOC_STATE_ENABLE:
+    foc_enable(p);
+    break;
+  default:
+    return;
+  }
 
   // 电角度源选择
   switch (lo->theta) {
@@ -344,7 +345,10 @@ static void foc_exec(foc_t *foc) {
   out->v_dq.d = id_pid_out->val;
 
   // 高频注入
-  out->v_dq.d += hfi_out->vd_h;
+  if (lo->obs == FOC_OBS_HFI) {
+    DECL_HFI_PTRS_PREFIX(&lo->hfi, hfi);
+    out->v_dq.d += hfi_out->vd_h;
+  }
 
   // Q轴电流环
   DECL_PID_PTRS_PREFIX(&lo->iq_pid, iq_pid);

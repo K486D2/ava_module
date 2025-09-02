@@ -2,12 +2,11 @@
 #define PLL_H
 
 #include "../util/util.h"
+#include "util/mathdef.h"
 
 typedef struct {
   f32 fs;
   f32 damp;
-  f32 kp;
-  f32 ki;
   f32 lpf_fc, lpf_ffd_fc;
 } pll_cfg_t;
 
@@ -22,9 +21,11 @@ typedef struct {
 } pll_out_t;
 
 typedef struct {
+  f32 kp;
+  f32 ki;
+  f32 ki_out;
   f32 prev_theta;
   f32 theta_err;
-  f32 ki_out;
   f32 ffd_omega, lpf_ffd_omega;
 } pll_lo_t;
 
@@ -63,14 +64,17 @@ static void pll_init(pll_filter_t *pll, pll_cfg_t pll_cfg) {
   DECL_PLL_PTRS(pll);
 
   *cfg = pll_cfg;
+
+  lo->kp = 2.0f * cfg->lpf_fc * cfg->damp;
+  lo->ki = SQ(cfg->lpf_fc);
 }
 
 static void pll_exec(pll_filter_t *pll) {
   DECL_PLL_PTRS(pll);
 
   // LF环路滤波器
-  INTEGRATOR(lo->ki_out, lo->theta_err, cfg->ki, cfg->fs);
-  out->omega = cfg->kp * lo->theta_err + lo->ki_out;
+  INTEGRATOR(lo->ki_out, lo->theta_err, lo->ki, cfg->fs);
+  out->omega = lo->kp * lo->theta_err + lo->ki_out;
   LOWPASS(out->lpf_omega, out->omega, cfg->lpf_fc, cfg->fs);
 
   // VCO压控振荡器
