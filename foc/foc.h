@@ -239,6 +239,41 @@ static inline void foc_enable(foc_t *foc) {
   DECL_FOC_PTRS(foc);
 
   ops->f_set_drv(true);
+
+  // 帕克变换
+  in->i_dq = park(in->i_ab, in->theta.theta);
+
+  // D轴电流环
+  DECL_PID_PTRS_PREFIX(&lo->id_pid, id_pid);
+  lo->ffd_v_dq.d = -in->theta.omega * cfg->motor_cfg.lq * in->i_dq.q * 0.7f;
+  pid_exec_in(id_pid_p, out->i_dq.d, in->i_dq.d, lo->ffd_v_dq.d);
+  out->v_dq.d = id_pid_out->val;
+
+  // 高频注入
+  if (lo->obs == FOC_OBS_HFI) {
+    DECL_HFI_PTRS_PREFIX(&lo->hfi, hfi);
+    out->v_dq.d += hfi_out->vd_h;
+  }
+
+  // Q轴电流环
+  DECL_PID_PTRS_PREFIX(&lo->iq_pid, iq_pid);
+  lo->ffd_v_dq.q = in->theta.omega * cfg->motor_cfg.psi * 0.7f;
+  pid_exec_in(iq_pid_p, out->i_dq.q, in->i_dq.q, lo->ffd_v_dq.q);
+  out->v_dq.q = iq_pid_out->val;
+
+  // 电角度补偿
+  in->theta.comp_theta = cfg->theta_comp_gain * in->theta.omega / cfg->exec_freq;
+
+  // 反帕克变换
+  out->v_ab = inv_park(out->v_dq, in->theta.theta + in->theta.comp_theta);
+
+  // 标幺
+  out->v_ab_sv.a = out->v_ab.a / in->v_bus;
+  out->v_ab_sv.b = out->v_ab.b / in->v_bus;
+
+  // 调制发波
+  foc_svpwm(p);
+  ops->f_set_pwm(cfg->periph_cfg.pwm_cnt_max, out->svpwm.u32_pwm_duty);
 }
 
 static void foc_init(foc_t *foc, foc_cfg_t foc_cfg) {
@@ -328,41 +363,6 @@ static void foc_exec(foc_t *foc) {
     break;
   case FOC_STATE_ENABLE:
     foc_enable(p);
-
-    // 帕克变换
-    in->i_dq = park(in->i_ab, in->theta.theta);
-
-    // D轴电流环
-    DECL_PID_PTRS_PREFIX(&lo->id_pid, id_pid);
-    lo->ffd_v_dq.d = -in->theta.omega * cfg->motor_cfg.lq * in->i_dq.q * 0.7f;
-    pid_exec_in(id_pid_p, out->i_dq.d, in->i_dq.d, lo->ffd_v_dq.d);
-    out->v_dq.d = id_pid_out->val;
-
-    // 高频注入
-    if (lo->obs == FOC_OBS_HFI) {
-      DECL_HFI_PTRS_PREFIX(&lo->hfi, hfi);
-      out->v_dq.d += hfi_out->vd_h;
-    }
-
-    // Q轴电流环
-    DECL_PID_PTRS_PREFIX(&lo->iq_pid, iq_pid);
-    lo->ffd_v_dq.q = in->theta.omega * cfg->motor_cfg.psi * 0.7f;
-    pid_exec_in(iq_pid_p, out->i_dq.q, in->i_dq.q, lo->ffd_v_dq.q);
-    out->v_dq.q = iq_pid_out->val;
-
-    // 电角度补偿
-    in->theta.comp_theta = cfg->theta_comp_gain * in->theta.omega / cfg->exec_freq;
-
-    // 反帕克变换
-    out->v_ab = inv_park(out->v_dq, in->theta.theta + in->theta.comp_theta);
-
-    // 标幺
-    out->v_ab_sv.a = out->v_ab.a / in->v_bus;
-    out->v_ab_sv.b = out->v_ab.b / in->v_bus;
-
-    // 调制发波
-    foc_svpwm(p);
-    ops->f_set_pwm(cfg->periph_cfg.pwm_cnt_max, out->svpwm.u32_pwm_duty);
     break;
   default:
     break;
