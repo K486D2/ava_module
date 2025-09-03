@@ -119,7 +119,7 @@ static void hfi_exec(hfi_obs_t *hfi) {
     lo->id_neg += ABS(lo->lpf_id);
     if (lo->polar_cnt == (u32)(cfg->fs * 0.3f)) {
       cfg->vh          = (ABS(lo->id_pos) > ABS(lo->id_neg)) ? cfg->vh : -cfg->vh;
-      lo->polar_offset = (ABS(lo->id_pos) > ABS(lo->id_neg)) ? PI : 0.0f;
+      lo->polar_offset = (ABS(lo->id_pos) > ABS(lo->id_neg)) ? 0.0f : PI;
     }
   }
 
