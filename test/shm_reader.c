@@ -6,11 +6,12 @@ int main() {
   shm_t     shm     = {0};
   shm_cfg_t shm_cfg = {
       .name   = "shm",
-      // .access = PAGE_READWRITE,
+      .access = PAGE_READWRITE,
   };
 
-  if (shm_init(&shm, shm_cfg) < 0) {
-    printf("reader: shm init failed!\n");
+  int ret = shm_init(&shm, shm_cfg);
+  if (ret < 0) {
+    printf("writer: shm init failed, errcode: %d\n", ret);
     exit(-1);
   }
 

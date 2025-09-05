@@ -7,8 +7,9 @@ extern "C" {
 
 #include "version.h"
 
-#if defined(__linux__) || defined(_WIN32) || defined(__ZEPHYR__)
+#if defined(__linux__) || defined(_WIN32)
 #include "communicate/communicate.h"
+#include "shared_mem/shared_mem.h"
 #endif
 
 #include "container/container.h"

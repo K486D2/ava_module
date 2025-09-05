@@ -204,7 +204,7 @@ static i32 sched_exec(sched_t *sched) {
   if (!task->cfg.f_cb) {
     sched_remove_ready(lo, task);
     task->status.state = SCHED_TASK_STATE_SUSPENDED;
-    return -MEFAULT;
+    return -MEINVAL;
   }
 
   if (lo->curr_ts < task->status.next_exec_ts)

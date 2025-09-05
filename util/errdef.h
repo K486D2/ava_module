@@ -5,11 +5,13 @@
 extern "C" {
 #endif
 
-#define MEINVAL   1
-#define MEBUSY    2
-#define MEACCES   3
-#define MEFAULT   4
-#define METIMEOUT 5
+enum errdef_e {
+  MEINVAL,
+  MEBUSY,
+  MEACCES,
+  METIMEOUT,
+  MECREATE,
+};
 
 #ifdef __cpluscplus
 }

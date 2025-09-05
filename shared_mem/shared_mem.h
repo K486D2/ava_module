@@ -1,6 +1,7 @@
 #ifndef SHARED_MEM_H
 #define SHARED_MEM_H
 
+#include <errhandlingapi.h>
 #ifdef __cpluscplus
 extern "C" {
 #endif
@@ -87,15 +88,15 @@ static int shm_init(shm_t *shm, shm_cfg_t shm_cfg) {
   lo->fd = OpenFileMapping(FILE_MAP_ALL_ACCESS, // 读写权限
                            FALSE,               // 不继承句柄
                            cfg->name);          // 共享内存名称
-  if (lo->fd) {
+  if (lo->fd == NULL) {
     lo->fd = CreateFileMapping(INVALID_HANDLE_VALUE, // 使用物理内存
                                NULL,                 // 默认安全属性
                                cfg->access,          // 可读可写
                                0,                    // 内存大小高32位
                                SHM_SIZE,             // 内存大小低32位
                                cfg->name);           // 命名对象
-    if (!lo->fd)
-      return -MEACCES;
+    if (lo->fd == NULL)
+      return -MECREATE;
     lo->is_creator = true;
   } else
     lo->is_creator = false;
@@ -106,7 +107,7 @@ static int shm_init(shm_t *shm, shm_cfg_t shm_cfg) {
                            0,
                            0,         // 偏移量
                            SHM_SIZE); // 映射大小
-  if (!lo->base) {
+  if (lo->base == NULL) {
     UnmapViewOfFile(lo->base);
     CloseHandle(lo->fd);
     return -MEACCES;
