@@ -1,14 +1,14 @@
 #ifndef OBSERVER_H
 #define OBSERVER_H
 
-#ifdef __cpluscplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
 #include "hfi.h"
 #include "smo.h"
 
-#ifdef __cpluscplus
+#ifdef __cplusplus
 }
 #endif
 

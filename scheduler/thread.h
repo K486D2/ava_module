@@ -1,7 +1,7 @@
 #ifndef THREAD_H
 #define THREAD_H
 
-#ifdef __cpluscplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -80,7 +80,7 @@ static inline void thread_init(void *arg, i32 cpu_id) {
 #endif
 }
 
-#ifdef __cpluscplus
+#ifdef __cplusplus
 }
 #endif
 

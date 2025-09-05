@@ -1,7 +1,7 @@
 #ifndef RLS_H
 #define RLS_H
 
-#ifdef __cpluscplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -114,7 +114,7 @@ static void rls_exec(rls_filter_t *rls) {
   }
 }
 
-#ifdef __cpluscplus
+#ifdef __cplusplus
 }
 #endif
 

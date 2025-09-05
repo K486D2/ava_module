@@ -16,7 +16,7 @@ typedef struct {
 } pll_in_t;
 
 typedef struct {
-  f32 lpf_theta;
+  f32 theta;
   f32 omega, lpf_omega;
 } pll_out_t;
 
@@ -78,8 +78,8 @@ static void pll_exec(pll_filter_t *pll) {
   LOWPASS(out->lpf_omega, out->omega, cfg->lpf_fc, cfg->fs);
 
   // VCO压控振荡器
-  INTEGRATOR(out->lpf_theta, out->omega, 1.0f, cfg->fs);
-  WARP_TAU(out->lpf_theta);
+  INTEGRATOR(out->theta, out->omega, 1.0f, cfg->fs);
+  WARP_TAU(out->theta);
 }
 
 static void pll_exec_ab_in(pll_filter_t *pll, f32_ab_t ab) {
@@ -88,7 +88,7 @@ static void pll_exec_ab_in(pll_filter_t *pll, f32_ab_t ab) {
   in->ab = ab;
 
   // PD鉴相器
-  lo->theta_err = in->ab.b * COS(out->lpf_theta) - in->ab.a * SIN(out->lpf_theta);
+  lo->theta_err = in->ab.b * COS(out->theta) - in->ab.a * SIN(out->theta);
 
   pll_exec(p);
 }
@@ -103,7 +103,7 @@ static void pll_exec_theta_in(pll_filter_t *pll, f32 theta) {
   LOWPASS(lo->lpf_ffd_omega, lo->ffd_omega, cfg->lpf_fc, cfg->fs);
 
   // PD鉴相器
-  lo->theta_err = in->theta - out->lpf_theta;
+  lo->theta_err = in->theta - out->theta;
   WARP_PI(lo->theta_err);
 
   pll_exec(p);

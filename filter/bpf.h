@@ -1,7 +1,7 @@
 #ifndef BPF_H
 #define BPF_H
 
-#ifdef __cpluscplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -85,7 +85,7 @@ static int bpf_init(bpf_filter_t *bpf, bpf_cfg_t bpf_cfg) {
   lo->b1 = 0.0f / lo->a0;
   lo->b2 = -lo->alpha / lo->a0;
   lo->a1 = -2.0f * lo->cosw / lo->a0;
-  lo->a2 = 1.0f - lo->alpha / lo->a0;
+  lo->a2 = (1.0f - lo->alpha) / lo->a0;
 
   return 0;
 }
@@ -119,7 +119,7 @@ static int bpf_exec_in(bpf_filter_t *bpf, f32 x0) {
   return bpf_exec(bpf);
 }
 
-#ifdef __cpluscplus
+#ifdef __cplusplus
 }
 #endif
 

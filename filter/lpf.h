@@ -1,7 +1,7 @@
 #ifndef LPF_H
 #define LPF_H
 
-#ifdef __cpluscplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -68,7 +68,7 @@ static void lpf_exec(lpf_filter_t *lpf) {
   LOWPASS(out->y, in->x, cfg->fc, cfg->fs);
 }
 
-#ifdef __cpluscplus
+#ifdef __cplusplus
 }
 #endif
 

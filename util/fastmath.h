@@ -1,7 +1,7 @@
 #ifndef FASTMATH_H
 #define FASTMATH_H
 
-#ifdef __cpluscplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -95,7 +95,7 @@ static inline f32 fast_modf(f32 x, f32 y) {
   return fmodf(x, y);
 }
 
-#ifdef __cpluscplus
+#ifdef __cplusplus
 }
 #endif
 

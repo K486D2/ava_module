@@ -1,13 +1,13 @@
 #ifndef CONTROLLER_H
 #define CONTROLLER_H
 
-#ifdef __cpluscplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
 #include "pid.h"
 
-#ifdef __cpluscplus
+#ifdef __cplusplus
 }
 #endif
 

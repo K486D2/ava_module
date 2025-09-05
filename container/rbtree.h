@@ -1,7 +1,7 @@
 #ifndef RBTREE_H
 #define RBTREE_H
 
-#ifdef __cpluscplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -360,7 +360,7 @@ static rb_node_t *rb_prev(const rb_node_t *node) {
   return parent;
 }
 
-#ifdef __cpluscplus
+#ifdef __cplusplus
 }
 #endif
 

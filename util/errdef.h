@@ -1,7 +1,7 @@
 #ifndef ERRDEF_H
 #define ERRDEF_H
 
-#ifdef __cpluscplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -13,7 +13,7 @@ enum errdef_e {
   MECREATE,
 };
 
-#ifdef __cpluscplus
+#ifdef __cplusplus
 }
 #endif
 

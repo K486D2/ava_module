@@ -1,7 +1,7 @@
 #ifndef CONTAINER_H
 #define CONTAINER_H
 
-#ifdef __cpluscplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -9,7 +9,7 @@ extern "C" {
 #include "list.h"
 #include "rbtree.h"
 
-#ifdef __cpluscplus
+#ifdef __cplusplus
 }
 #endif
 

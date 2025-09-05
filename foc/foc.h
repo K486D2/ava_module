@@ -165,9 +165,9 @@ static inline void foc_obs(foc_t *foc) {
   } break;
   case FOC_OBS_HFI: {
     DECL_HFI_PTRS_PREFIX(&lo->hfi, hfi)
-    hfi_exec_in(hfi_p, in->i_ab);
-    in->theta.obs_theta = hfi_out->obs_theta;
-    in->theta.obs_omega = hfi_out->obs_omega;
+    hfi_exec_in(hfi_p, in->i_dq);
+    in->theta.obs_theta = hfi_out->theta;
+    in->theta.obs_omega = hfi_out->omega;
     out->i_dq.d         = hfi_out->id_in;
   } break;
   default:

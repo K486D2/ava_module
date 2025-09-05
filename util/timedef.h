@@ -1,7 +1,7 @@
 #ifndef TIMEDEF_H
 #define TIMEDEF_H
 
-#ifdef __cpluscplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -13,7 +13,7 @@ extern "C" {
 
 #define WIN_TO_UNIX_EPOCH 116444736000000000ULL
 
-#ifdef __cpluscplus
+#ifdef __cplusplus
 }
 #endif
 

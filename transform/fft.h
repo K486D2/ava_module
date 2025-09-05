@@ -1,7 +1,7 @@
 #ifndef FFT_H
 #define FFT_H
 
-#ifdef __cpluscplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -137,7 +137,7 @@ static void fft_exec(fft_t *fft) {
   out->freq_max = out->res_idx * cfg->fs / FFT_POINT_SIZE;
 }
 
-#ifdef __cpluscplus
+#ifdef __cplusplus
 }
 #endif
 

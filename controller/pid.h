@@ -1,7 +1,7 @@
 #ifndef PID_H
 #define PID_H
 
-#ifdef __cpluscplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -89,7 +89,7 @@ static void pid_exec_in(pid_ctl_t *pid, f32 ref, f32 fdb, f32 ffd) {
   pid_exec(p);
 }
 
-#ifdef __cpluscplus
+#ifdef __cplusplus
 }
 #endif
 

@@ -1,13 +1,13 @@
 #ifndef COMMUNICATE_H
 #define COMMUNICATE_H
 
-#ifdef __cpluscplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
 #include "net.h"
 
-#ifdef __cpluscplus
+#ifdef __cplusplus
 }
 #endif
 

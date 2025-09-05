@@ -1,7 +1,7 @@
 #ifndef FILTER_H
 #define FILTER_H
 
-#ifdef __cpluscplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -11,7 +11,7 @@ extern "C" {
 #include "pll.h"
 #include "rls.h"
 
-#ifdef __cpluscplus
+#ifdef __cplusplus
 }
 #endif
 

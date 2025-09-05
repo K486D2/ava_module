@@ -1,14 +1,14 @@
 #ifndef TRANSFORM_H
 #define TRANSFORM_H
 
-#ifdef __cpluscplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
 #include "clarkepark.h"
 #include "fft.h"
 
-#ifdef __cpluscplus
+#ifdef __cplusplus
 }
 #endif
 

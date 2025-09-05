@@ -1,7 +1,7 @@
 #ifndef DEF_H
 #define DEF_H
 
-#ifdef __cpluscplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -10,7 +10,7 @@ extern "C" {
 #include "timedef.h"
 #include "typedef.h"
 
-#ifdef __cpluscplus
+#ifdef __cplusplus
 }
 #endif
 

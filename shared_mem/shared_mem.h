@@ -2,7 +2,7 @@
 #define SHARED_MEM_H
 
 #include <errhandlingapi.h>
-#ifdef __cpluscplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -117,7 +117,7 @@ static int shm_init(shm_t *shm, shm_cfg_t shm_cfg) {
   return 0;
 }
 
-#ifdef __cpluscplus
+#ifdef __cplusplus
 }
 #endif
 

@@ -1,7 +1,7 @@
 #ifndef LIST_H
 #define LIST_H
 
-#ifdef __cpluscplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -101,7 +101,7 @@ static inline void list_move_tail(list_head_t *node, list_head_t *head) {
 
 #define list_for_each_prev(pos, head) for (pos = (head)->prev; pos != (head); pos = pos->prev)
 
-#ifdef __cpluscplus
+#ifdef __cplusplus
 }
 #endif
 

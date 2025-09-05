@@ -1,7 +1,7 @@
 #ifndef MAF_H
 #define MAF_H
 
-#ifdef __cpluscplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -84,7 +84,7 @@ static void maf_exec_in(maf_filter_t *maf, f32 x) {
   maf_exec(maf);
 }
 
-#ifdef __cpluscplus
+#ifdef __cplusplus
 }
 #endif
 

@@ -1,7 +1,7 @@
 #ifndef MODULE_H
 #define MODULE_H
 
-#ifdef __cpluscplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -23,7 +23,7 @@ extern "C" {
 #include "util/util.h"
 #include "wavegen/wavegen.h"
 
-#ifdef __cpluscplus
+#ifdef __cplusplus
 }
 #endif
 

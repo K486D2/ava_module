@@ -15,7 +15,7 @@ int main() {
   bpf_cfg_t cfg = {
       .fs       = SAMPLE_RATE,
       .f_center = 1000.0f,
-      .bw       = 10.0f,
+      .bw       = 50.0f,
   };
 
   bpf_filter_t bpf;
