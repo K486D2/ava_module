@@ -1,7 +1,6 @@
 #ifndef SHARED_MEM_H
 #define SHARED_MEM_H
 
-#include <errhandlingapi.h>
 #ifdef __cplusplus
 extern "C" {
 #endif
