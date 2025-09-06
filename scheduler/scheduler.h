@@ -58,7 +58,6 @@ typedef struct {
 } sched_task_t;
 
 typedef struct {
-  u32          elapsed;
   f32          elapsed_us;
   sched_task_t tasks[SCHED_TASK_MAX];
   u32          tasks_num;

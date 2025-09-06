@@ -46,18 +46,18 @@ typedef struct {
 
 typedef struct {
   adc_raw_t adc_raw;
-  rotor_t   rotor;
-  f32_uvw_t f32_i_uvw, f32_v_uvw;
-  f32_ab_t  i_ab, v_ab;
-  f32_dq_t  i_dq, v_dq;
   f32       v_bus;
+  rotor_t   rotor;
+  f32_uvw_t f32_i_uvw;
+  f32_ab_t  i_ab;
+  f32_dq_t  i_dq;
 } foc_in_t;
 
 typedef struct {
-  f32_uvw_t f32_i_uvw, f32_v_uvw;
-  f32_ab_t  i_ab, v_ab;
+  f32_dq_t  v_dq;
+  f32_ab_t  v_ab;
   f32_ab_t  v_ab_sv;
-  f32_dq_t  i_dq, v_dq;
+  f32_uvw_t f32_v_uvw;
   svpwm_t   svpwm;
 } foc_out_t;
 
@@ -87,10 +87,11 @@ typedef struct {
 } foc_fault_t;
 
 typedef struct {
-  u32      exec_cnt;
-  u32      elapsed;
-  f32      elapsed_us;
-  u32      adc_cail_cnt;
+  f32 elapsed_us;
+  u32 exec_cnt;
+  u32 adc_cail_cnt;
+
+  f32_dq_t ref_i_dq;
   f32_dq_t ffd_v_dq;
 
   foc_fault_t fault;
@@ -126,34 +127,22 @@ typedef struct {
 } foc_t;
 
 #define DECL_FOC_PTRS(foc)                                                                         \
-  foc_t     *p   = (foc);                                                                          \
-  foc_cfg_t *cfg = &p->cfg;                                                                        \
-  foc_in_t  *in  = &p->in;                                                                         \
-  foc_out_t *out = &p->out;                                                                        \
-  foc_lo_t  *lo  = &p->lo;                                                                         \
-  foc_ops_t *ops = &p->ops;                                                                        \
-  ARG_UNUSED(p);                                                                                   \
+  foc_cfg_t *cfg = &(foc)->cfg;                                                                    \
+  foc_in_t  *in  = &(foc)->in;                                                                     \
+  foc_out_t *out = &(foc)->out;                                                                    \
+  foc_lo_t  *lo  = &(foc)->lo;                                                                     \
+  foc_ops_t *ops = &(foc)->ops;                                                                    \
   ARG_UNUSED(cfg);                                                                                 \
   ARG_UNUSED(in);                                                                                  \
   ARG_UNUSED(out);                                                                                 \
   ARG_UNUSED(lo);                                                                                  \
   ARG_UNUSED(ops);
 
-#define DECL_FOC_PTRS_PREFIX(foc, prefix)                                                          \
-  foc_t     *prefix##_p   = (foc);                                                                 \
-  foc_cfg_t *prefix##_cfg = &prefix##_p->cfg;                                                      \
-  foc_in_t  *prefix##_in  = &prefix##_p->in;                                                       \
-  foc_out_t *prefix##_out = &prefix##_p->out;                                                      \
-  foc_lo_t  *prefix##_lo  = &prefix##_p->lo;                                                       \
-  foc_ops_t *prefix##_ops = &prefix##_p->ops;                                                      \
-  ARG_UNUSED(prefix##_p);                                                                          \
-  ARG_UNUSED(prefix##_cfg);                                                                        \
-  ARG_UNUSED(prefix##_in);                                                                         \
-  ARG_UNUSED(prefix##_out);                                                                        \
-  ARG_UNUSED(prefix##_lo);                                                                         \
-  ARG_UNUSED(prefix##_ops);
+#define DECL_FOC_PTRS_RENAME(foc, name)                                                            \
+  foc_t *name = (foc);                                                                             \
+  ARG_UNUSED(name);
 
-static inline void foc_obs_ab(foc_t *foc) {
+static inline void foc_obs_i_ab(foc_t *foc) {
   DECL_FOC_PTRS(foc);
 
   switch (lo->e_obs) {
@@ -168,7 +157,7 @@ static inline void foc_obs_ab(foc_t *foc) {
   }
 }
 
-static inline void foc_obs_dq(foc_t *foc) {
+static inline void foc_obs_i_dq(foc_t *foc) {
   DECL_FOC_PTRS(foc);
 
   switch (lo->e_obs) {
@@ -177,7 +166,20 @@ static inline void foc_obs_dq(foc_t *foc) {
     hfi_exec_in(hfi_p, in->i_dq);
     in->rotor.obs_theta = hfi_out->theta;
     in->rotor.obs_omega = hfi_out->omega;
-    out->i_dq.d         = hfi_out->id_in;
+    lo->ref_i_dq.d      = hfi_out->id_in;
+  } break;
+  default:
+    break;
+  }
+}
+
+static inline void foc_obs_v_dq(foc_t *foc) {
+  DECL_FOC_PTRS(foc);
+
+  switch (lo->e_obs) {
+  case FOC_OBS_HFI: {
+    DECL_HFI_PTRS_PREFIX(&lo->hfi, hfi)
+    out->v_dq.d += hfi_out->vd_h;
   } break;
   default:
     break;
@@ -262,12 +264,12 @@ static inline void foc_disable(foc_t *foc) {
 
   ops->f_set_drv(false);
 
-  RESET_OUT(p);
-  RESET_OUT(&p->lo.pll);
-  RESET_OUT(&p->lo.id_pid);
-  RESET_OUT(&p->lo.iq_pid);
-  RESET_OUT(&p->lo.smo);
-  RESET_OUT(&p->lo.hfi);
+  RESET_OUT(foc);
+  RESET_OUT(&foc->lo.pll);
+  RESET_OUT(&foc->lo.id_pid);
+  RESET_OUT(&foc->lo.iq_pid);
+  RESET_OUT(&foc->lo.smo);
+  RESET_OUT(&foc->lo.hfi);
 }
 
 static inline void foc_enable(foc_t *foc) {
@@ -285,16 +287,16 @@ static inline void foc_enable(foc_t *foc) {
   in->i_ab = clarke(in->f32_i_uvw, cfg->periph_cfg.mi);
 
   // 无感观测器(alpha-beta)
-  foc_obs_ab(p);
+  foc_obs_i_ab(foc);
 
   // 电角度源选择
-  foc_select_theta(p);
+  foc_select_theta(foc);
 
   // 帕克变换
   in->i_dq = park(in->i_ab, in->rotor.theta);
 
   // 无感观测器(d-q)
-  foc_obs_dq(p);
+  foc_obs_i_dq(foc);
 
   // 观测器电角度和传感器电角度误差计算
   in->rotor.fusion_theta_err = in->rotor.sensor_theta - in->rotor.obs_theta;
@@ -304,21 +306,18 @@ static inline void foc_enable(foc_t *foc) {
   DECL_PID_PTRS_PREFIX(&lo->iq_pid, iq_pid);
   iq_pid_cfg->ki_out_max = iq_pid_cfg->out_max = in->v_bus / SQRT_3 * cfg->periph_cfg.f32_pwm_max;
   lo->ffd_v_dq.q                               = in->rotor.omega * cfg->motor_cfg.psi * 0.7f;
-  pid_exec_in(iq_pid_p, out->i_dq.q, in->i_dq.q, lo->ffd_v_dq.q);
+  pid_exec_in(iq_pid_p, lo->ref_i_dq.q, in->i_dq.q, lo->ffd_v_dq.q);
   out->v_dq.q = iq_pid_out->val;
 
   // D轴电流环
   DECL_PID_PTRS_PREFIX(&lo->id_pid, id_pid);
   id_pid_cfg->ki_out_max = id_pid_cfg->out_max = in->v_bus / SQRT_3 * cfg->periph_cfg.f32_pwm_max;
   lo->ffd_v_dq.d = -in->rotor.omega * cfg->motor_cfg.lq * in->i_dq.q * 0.7f;
-  pid_exec_in(id_pid_p, out->i_dq.d, in->i_dq.d, lo->ffd_v_dq.d);
+  pid_exec_in(id_pid_p, lo->ref_i_dq.d, in->i_dq.d, lo->ffd_v_dq.d);
   out->v_dq.d = id_pid_out->val;
 
   // 高频注入
-  if (lo->e_obs == FOC_OBS_HFI) {
-    DECL_HFI_PTRS_PREFIX(&lo->hfi, hfi);
-    out->v_dq.d += hfi_out->vd_h;
-  }
+  foc_obs_v_dq(foc);
 
   // 电角度补偿
   in->rotor.comp_theta = cfg->theta_comp_gain * in->rotor.omega / cfg->exec_freq;
@@ -331,7 +330,7 @@ static inline void foc_enable(foc_t *foc) {
   out->v_ab_sv.b = out->v_ab.b / in->v_bus;
 
   // 调制发波
-  foc_svpwm(p);
+  foc_svpwm(foc);
   ops->f_set_pwm(cfg->periph_cfg.pwm_cnt_max, out->svpwm.u32_pwm_duty);
 }
 
@@ -401,16 +400,16 @@ static void foc_exec(foc_t *foc) {
   // FOC状态切换
   switch (lo->e_state) {
   case FOC_STATE_CALI:
-    foc_cali(p);
+    foc_cali(foc);
     break;
   case FOC_STATE_READY:
-    foc_ready(p);
+    foc_ready(foc);
     break;
   case FOC_STATE_DISABLE:
-    foc_disable(p);
+    foc_disable(foc);
     break;
   case FOC_STATE_ENABLE:
-    foc_enable(p);
+    foc_enable(foc);
     break;
   default:
     break;
