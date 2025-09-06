@@ -62,6 +62,7 @@ typedef struct {
   f32 ls;
   f32 rs;
   f32 psi;
+  f32 wc;
 } motor_cfg_t;
 
 typedef struct {
@@ -70,6 +71,8 @@ typedef struct {
   u32 adc_cail_cnt_max;
   f32 cur_range, vbus_range;
   f32 adc2cur, adc2vbus;
+  u32 cur_gain;
+  f32 cur_offset;
 
   /* PWM */
   u32 timer_freq;

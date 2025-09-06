@@ -165,7 +165,7 @@ static inline void foc_obs(foc_t *foc) {
   } break;
   case FOC_OBS_HFI: {
     DECL_HFI_PTRS_PREFIX(&lo->hfi, hfi)
-    hfi_exec_in(hfi_p, in->i_dq);
+    hfi_exec_in(hfi_p, in->i_ab);
     in->theta.obs_theta = hfi_out->theta;
     in->theta.obs_omega = hfi_out->omega;
     out->i_dq.d         = hfi_out->id_in;
@@ -207,6 +207,7 @@ static inline void foc_cali(foc_t *foc) {
   if (cfg->is_adc_cail)
     return;
 
+  ops->f_set_drv(true);
   in->adc_raw = ops->f_get_adc();
   UVW_ADD_VEC_IP(cfg->adc_offset.i32_i_uvw, in->adc_raw.i32_i_uvw);
   if (++lo->adc_cail_cnt >= LF(cfg->periph_cfg.adc_cail_cnt_max)) {
@@ -214,7 +215,8 @@ static inline void foc_cali(foc_t *foc) {
     cfg->adc_offset.i32_i_uvw.v >>= cfg->periph_cfg.adc_cail_cnt_max;
     cfg->adc_offset.i32_i_uvw.w >>= cfg->periph_cfg.adc_cail_cnt_max;
     cfg->is_adc_cail = true;
-    lo->state        = FOC_STATE_READY;
+    ops->f_set_drv(false);
+    lo->state = FOC_STATE_READY;
   }
 }
 
@@ -243,8 +245,16 @@ static inline void foc_enable(foc_t *foc) {
   // 帕克变换
   in->i_dq = park(in->i_ab, in->theta.theta);
 
+  // Q轴电流环
+  DECL_PID_PTRS_PREFIX(&lo->iq_pid, iq_pid);
+  iq_pid_cfg->ki_out_max = iq_pid_cfg->out_max = in->v_bus / SQRT_3 * cfg->periph_cfg.fp32_pwm_max;
+  lo->ffd_v_dq.q                               = in->theta.omega * cfg->motor_cfg.psi * 0.7f;
+  pid_exec_in(iq_pid_p, out->i_dq.q, in->i_dq.q, lo->ffd_v_dq.q);
+  out->v_dq.q = iq_pid_out->val;
+
   // D轴电流环
   DECL_PID_PTRS_PREFIX(&lo->id_pid, id_pid);
+  id_pid_cfg->ki_out_max = id_pid_cfg->out_max = in->v_bus / SQRT_3 * cfg->periph_cfg.fp32_pwm_max;
   lo->ffd_v_dq.d = -in->theta.omega * cfg->motor_cfg.lq * in->i_dq.q * 0.7f;
   pid_exec_in(id_pid_p, out->i_dq.d, in->i_dq.d, lo->ffd_v_dq.d);
   out->v_dq.d = id_pid_out->val;
@@ -254,12 +264,6 @@ static inline void foc_enable(foc_t *foc) {
     DECL_HFI_PTRS_PREFIX(&lo->hfi, hfi);
     out->v_dq.d += hfi_out->vd_h;
   }
-
-  // Q轴电流环
-  DECL_PID_PTRS_PREFIX(&lo->iq_pid, iq_pid);
-  lo->ffd_v_dq.q = in->theta.omega * cfg->motor_cfg.psi * 0.7f;
-  pid_exec_in(iq_pid_p, out->i_dq.q, in->i_dq.q, lo->ffd_v_dq.q);
-  out->v_dq.q = iq_pid_out->val;
 
   // 电角度补偿
   in->theta.comp_theta = cfg->theta_comp_gain * in->theta.omega / cfg->exec_freq;
@@ -281,8 +285,27 @@ static void foc_init(foc_t *foc, foc_cfg_t foc_cfg) {
 
   *cfg = foc_cfg;
 
-  pid_init(&lo->id_pid, lo->id_pid.cfg);
-  pid_init(&lo->iq_pid, lo->iq_pid.cfg);
+  cfg->motor_cfg.ls           = 0.5f * (cfg->motor_cfg.ld + cfg->motor_cfg.lq);
+  cfg->periph_cfg.adc2cur     = cfg->periph_cfg.cur_range / cfg->periph_cfg.adc_cnt_max;
+  cfg->periph_cfg.adc2vbus    = cfg->periph_cfg.vbus_range / cfg->periph_cfg.adc_cnt_max;
+  cfg->periph_cfg.pwm_cnt_max = cfg->periph_cfg.timer_freq / cfg->periph_cfg.pwm_freq;
+
+  lo->pll.cfg.fs = cfg->exec_freq;
+
+  lo->smo.cfg.fs = lo->smo.lo.pll.cfg.fs = cfg->exec_freq;
+  lo->smo.cfg.motor_cfg                  = cfg->motor_cfg;
+
+  lo->hfi.cfg.fs = lo->hfi.lo.pll.cfg.fs = cfg->exec_freq;
+  lo->hfi.cfg.motor                      = cfg->motor_cfg;
+
+  pid_cfg_t cur_pid_cfg = {
+      .fs = cfg->exec_freq,
+      .kp = cfg->motor_cfg.wc * cfg->motor_cfg.ld,
+      .ki = cfg->motor_cfg.wc * cfg->motor_cfg.rs,
+  };
+
+  pid_init(&lo->id_pid, cur_pid_cfg);
+  pid_init(&lo->iq_pid, cur_pid_cfg);
   pll_init(&lo->pll, lo->pll.cfg);
   smo_init(&lo->smo, lo->smo.cfg);
   hfi_init(&lo->hfi, lo->hfi.cfg);
