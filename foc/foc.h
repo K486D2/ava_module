@@ -165,7 +165,7 @@ static inline void foc_obs(foc_t *foc) {
   } break;
   case FOC_OBS_HFI: {
     DECL_HFI_PTRS_PREFIX(&lo->hfi, hfi)
-    hfi_exec_in(hfi_p, in->i_ab);
+    hfi_exec_in(hfi_p, in->i_dq);
     in->theta.obs_theta = hfi_out->theta;
     in->theta.obs_omega = hfi_out->omega;
     out->i_dq.d         = hfi_out->id_in;
@@ -296,7 +296,8 @@ static void foc_init(foc_t *foc, foc_cfg_t foc_cfg) {
   lo->smo.cfg.motor_cfg                  = cfg->motor_cfg;
 
   lo->hfi.cfg.fs = lo->hfi.lo.pll.cfg.fs = cfg->exec_freq;
-  lo->hfi.cfg.motor                      = cfg->motor_cfg;
+  lo->hfi.lo.id_bpf.cfg.fs = lo->hfi.lo.iq_bpf.cfg.fs = cfg->exec_freq;
+  //  lo->hfi.cfg.motor                      = cfg->motor_cfg;
 
   pid_cfg_t cur_pid_cfg = {
       .fs = cfg->exec_freq,
