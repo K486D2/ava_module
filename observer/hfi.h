@@ -13,9 +13,9 @@ extern "C" {
 
 typedef struct {
   f32 fs;
-  f32 fh;   // 注入信号频率，单位：Hz
-  f32 vh;   // 注入信号幅值，单位：V
-  f32 id_h; // 注入信号幅值，单位：A
+  f32 fh;
+  f32 vh;
+  f32 id_h;
   f32 id_lpf_fc, iq_lpf_fc;
 } hfi_cfg_t;
 

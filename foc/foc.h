@@ -18,7 +18,7 @@ typedef struct {
 
 typedef struct {
   f32       v_max, v_min, v_avg;
-  f32_uvw_t fp32_pwm_duty;
+  f32_uvw_t f32_pwm_duty;
   u32_uvw_t u32_pwm_duty;
 } svpwm_t;
 
@@ -32,7 +32,7 @@ typedef struct {
   // 机械角度
   i32 mech_cycle_cnt;
   f32 mech_theta, mech_prev_theta, mech_total_theta;
-} theta_t;
+} rotor_t;
 
 typedef struct {
   f32          exec_freq;
@@ -46,15 +46,15 @@ typedef struct {
 
 typedef struct {
   adc_raw_t adc_raw;
-  theta_t   theta;
-  f32_uvw_t fp32_i_uvw, fp32_v_uvw;
+  rotor_t   rotor;
+  f32_uvw_t f32_i_uvw, f32_v_uvw;
   f32_ab_t  i_ab, v_ab;
   f32_dq_t  i_dq, v_dq;
   f32       v_bus;
 } foc_in_t;
 
 typedef struct {
-  f32_uvw_t fp32_i_uvw, fp32_v_uvw;
+  f32_uvw_t f32_i_uvw, f32_v_uvw;
   f32_ab_t  i_ab, v_ab;
   f32_ab_t  v_ab_sv;
   f32_dq_t  i_dq, v_dq;
@@ -95,9 +95,9 @@ typedef struct {
 
   foc_fault_t fault;
 
-  foc_state_e state;
-  foc_theta_e theta;
-  foc_obs_e   obs;
+  foc_state_e e_state;
+  foc_theta_e e_theta;
+  foc_obs_e   e_obs;
 
   pid_ctl_t    id_pid, iq_pid;
   pll_filter_t pll;
@@ -153,52 +153,85 @@ typedef struct {
   ARG_UNUSED(prefix##_lo);                                                                         \
   ARG_UNUSED(prefix##_ops);
 
-static inline void foc_obs(foc_t *foc) {
+static inline void foc_obs_ab(foc_t *foc) {
   DECL_FOC_PTRS(foc);
 
-  switch (lo->obs) {
+  switch (lo->e_obs) {
   case FOC_OBS_SMO: {
     DECL_SMO_PTRS_PREFIX(&lo->smo, smo);
     smo_exec_in(smo_p, in->i_ab, out->v_ab);
-    in->theta.obs_theta = smo_out->theta;
-    in->theta.obs_omega = smo_out->omega;
+    in->rotor.obs_theta = smo_out->theta;
+    in->rotor.obs_omega = smo_out->omega;
   } break;
+  default:
+    break;
+  }
+}
+
+static inline void foc_obs_dq(foc_t *foc) {
+  DECL_FOC_PTRS(foc);
+
+  switch (lo->e_obs) {
   case FOC_OBS_HFI: {
     DECL_HFI_PTRS_PREFIX(&lo->hfi, hfi)
     hfi_exec_in(hfi_p, in->i_dq);
-    in->theta.obs_theta = hfi_out->theta;
-    in->theta.obs_omega = hfi_out->omega;
+    in->rotor.obs_theta = hfi_out->theta;
+    in->rotor.obs_omega = hfi_out->omega;
     out->i_dq.d         = hfi_out->id_in;
   } break;
   default:
     break;
   }
-
-  // 观测器电角度和传感器电角度误差计算
-  in->theta.fusion_theta_err = in->theta.sensor_theta - in->theta.obs_theta;
-  WARP_PI(in->theta.fusion_theta_err);
 }
 
 static inline void foc_svpwm(foc_t *foc) {
   DECL_FOC_PTRS(foc);
 
-  out->fp32_v_uvw = inv_clarke(out->v_ab_sv);
+  out->f32_v_uvw = inv_clarke(out->v_ab_sv);
 
-  if (out->fp32_v_uvw.u > out->fp32_v_uvw.v) {
-    out->svpwm.v_max = out->fp32_v_uvw.u;
-    out->svpwm.v_min = out->fp32_v_uvw.v;
+  if (out->f32_v_uvw.u > out->f32_v_uvw.v) {
+    out->svpwm.v_max = out->f32_v_uvw.u;
+    out->svpwm.v_min = out->f32_v_uvw.v;
   } else {
-    out->svpwm.v_max = out->fp32_v_uvw.v;
-    out->svpwm.v_min = out->fp32_v_uvw.u;
+    out->svpwm.v_max = out->f32_v_uvw.v;
+    out->svpwm.v_min = out->f32_v_uvw.u;
   }
+  if (out->f32_v_uvw.w < out->svpwm.v_min)
+    out->svpwm.v_min = out->f32_v_uvw.w;
+  else if (out->f32_v_uvw.w > out->svpwm.v_max)
+    out->svpwm.v_max = out->f32_v_uvw.w;
 
-  UPDATE_MIN_MAX(out->svpwm.v_min, out->svpwm.v_max, out->fp32_v_uvw.w);
-  out->svpwm.v_avg = (out->svpwm.v_max + out->svpwm.v_min) * 0.5f;
-  UVW_ADD(out->svpwm.fp32_pwm_duty, out->fp32_v_uvw, -out->svpwm.v_avg);
+  out->svpwm.v_avg = 0.5f * (out->svpwm.v_max + out->svpwm.v_min);
+  UVW_ADD(out->svpwm.f32_pwm_duty, out->f32_v_uvw, -out->svpwm.v_avg);
 
-  UVW_ADD_IP(out->svpwm.fp32_pwm_duty, 0.5f);
-  UVW_CLAMP(out->svpwm.fp32_pwm_duty, cfg->periph_cfg.fp32_pwm_min, cfg->periph_cfg.fp32_pwm_max);
-  UVW_MUL(out->svpwm.u32_pwm_duty, out->svpwm.fp32_pwm_duty, cfg->periph_cfg.pwm_cnt_max);
+  UVW_ADD_IP(out->svpwm.f32_pwm_duty, 0.5f);
+  UVW_CLAMP(out->svpwm.f32_pwm_duty, cfg->periph_cfg.f32_pwm_min, cfg->periph_cfg.f32_pwm_max);
+  UVW_MUL(out->svpwm.u32_pwm_duty, out->svpwm.f32_pwm_duty, cfg->periph_cfg.pwm_cnt_max);
+}
+
+static inline void foc_select_theta(foc_t *foc) {
+  DECL_FOC_PTRS(foc);
+
+  switch (lo->e_theta) {
+  case FOC_THETA_NULL:
+    break;
+  case FOC_THETA_FORCE:
+    in->rotor.theta = in->rotor.force_theta;
+    in->rotor.omega = in->rotor.force_omega;
+    break;
+  case FOC_THETA_SENSOR:
+    in->rotor.theta = in->rotor.sensor_theta;
+    in->rotor.omega = in->rotor.sensor_omega;
+    break;
+  case FOC_THETA_SENSORLESS:
+    in->rotor.theta = in->rotor.obs_theta;
+    in->rotor.omega = in->rotor.obs_omega;
+    break;
+  case FOC_THETA_SENSORFUSION:
+    break;
+  default:
+    break;
+  }
 }
 
 static inline void foc_cali(foc_t *foc) {
@@ -216,7 +249,7 @@ static inline void foc_cali(foc_t *foc) {
     cfg->adc_offset.i32_i_uvw.w >>= cfg->periph_cfg.adc_cail_cnt_max;
     cfg->is_adc_cail = true;
     ops->f_set_drv(false);
-    lo->state = FOC_STATE_READY;
+    lo->e_state = FOC_STATE_READY;
   }
 }
 
@@ -242,34 +275,56 @@ static inline void foc_enable(foc_t *foc) {
 
   ops->f_set_drv(true);
 
+  // ADC采样
+  in->adc_raw = ops->f_get_adc();
+  UVW_SUB_VEC_IP(in->adc_raw.i32_i_uvw, cfg->adc_offset.i32_i_uvw);
+  UVW_MUL(in->f32_i_uvw, in->adc_raw.i32_i_uvw, cfg->periph_cfg.adc2cur);
+  in->v_bus = in->adc_raw.i32_v_bus * cfg->periph_cfg.adc2vbus;
+
+  // 克拉克变换
+  in->i_ab = clarke(in->f32_i_uvw, cfg->periph_cfg.mi);
+
+  // 无感观测器(alpha-beta)
+  foc_obs_ab(p);
+
+  // 电角度源选择
+  foc_select_theta(p);
+
   // 帕克变换
-  in->i_dq = park(in->i_ab, in->theta.theta);
+  in->i_dq = park(in->i_ab, in->rotor.theta);
+
+  // 无感观测器(d-q)
+  foc_obs_dq(p);
+
+  // 观测器电角度和传感器电角度误差计算
+  in->rotor.fusion_theta_err = in->rotor.sensor_theta - in->rotor.obs_theta;
+  WARP_PI(in->rotor.fusion_theta_err);
 
   // Q轴电流环
   DECL_PID_PTRS_PREFIX(&lo->iq_pid, iq_pid);
-  iq_pid_cfg->ki_out_max = iq_pid_cfg->out_max = in->v_bus / SQRT_3 * cfg->periph_cfg.fp32_pwm_max;
-  lo->ffd_v_dq.q                               = in->theta.omega * cfg->motor_cfg.psi * 0.7f;
+  iq_pid_cfg->ki_out_max = iq_pid_cfg->out_max = in->v_bus / SQRT_3 * cfg->periph_cfg.f32_pwm_max;
+  lo->ffd_v_dq.q                               = in->rotor.omega * cfg->motor_cfg.psi * 0.7f;
   pid_exec_in(iq_pid_p, out->i_dq.q, in->i_dq.q, lo->ffd_v_dq.q);
   out->v_dq.q = iq_pid_out->val;
 
   // D轴电流环
   DECL_PID_PTRS_PREFIX(&lo->id_pid, id_pid);
-  id_pid_cfg->ki_out_max = id_pid_cfg->out_max = in->v_bus / SQRT_3 * cfg->periph_cfg.fp32_pwm_max;
-  lo->ffd_v_dq.d = -in->theta.omega * cfg->motor_cfg.lq * in->i_dq.q * 0.7f;
+  id_pid_cfg->ki_out_max = id_pid_cfg->out_max = in->v_bus / SQRT_3 * cfg->periph_cfg.f32_pwm_max;
+  lo->ffd_v_dq.d = -in->rotor.omega * cfg->motor_cfg.lq * in->i_dq.q * 0.7f;
   pid_exec_in(id_pid_p, out->i_dq.d, in->i_dq.d, lo->ffd_v_dq.d);
   out->v_dq.d = id_pid_out->val;
 
   // 高频注入
-  if (lo->obs == FOC_OBS_HFI) {
+  if (lo->e_obs == FOC_OBS_HFI) {
     DECL_HFI_PTRS_PREFIX(&lo->hfi, hfi);
     out->v_dq.d += hfi_out->vd_h;
   }
 
   // 电角度补偿
-  in->theta.comp_theta = cfg->theta_comp_gain * in->theta.omega / cfg->exec_freq;
+  in->rotor.comp_theta = cfg->theta_comp_gain * in->rotor.omega / cfg->exec_freq;
 
   // 反帕克变换
-  out->v_ab = inv_park(out->v_dq, in->theta.theta + in->theta.comp_theta);
+  out->v_ab = inv_park(out->v_dq, in->rotor.theta + in->rotor.comp_theta);
 
   // 标幺
   out->v_ab_sv.a = out->v_ab.a / in->v_bus;
@@ -297,7 +352,6 @@ static void foc_init(foc_t *foc, foc_cfg_t foc_cfg) {
 
   lo->hfi.cfg.fs = lo->hfi.lo.pll.cfg.fs = cfg->exec_freq;
   lo->hfi.lo.id_bpf.cfg.fs = lo->hfi.lo.iq_bpf.cfg.fs = cfg->exec_freq;
-  //  lo->hfi.cfg.motor                      = cfg->motor_cfg;
 
   pid_cfg_t cur_pid_cfg = {
       .fs = cfg->exec_freq,
@@ -317,64 +371,35 @@ static void foc_exec(foc_t *foc) {
 
   lo->exec_cnt++;
 
-  // ADC采样
-  in->adc_raw = ops->f_get_adc();
-  UVW_SUB_VEC_IP(in->adc_raw.i32_i_uvw, cfg->adc_offset.i32_i_uvw);
-  UVW_MUL(in->fp32_i_uvw, in->adc_raw.i32_i_uvw, cfg->periph_cfg.adc2cur);
-  in->v_bus = in->adc_raw.i32_v_bus * cfg->periph_cfg.adc2vbus;
-
-  // 克拉克变换
-  in->i_ab = clarke(in->fp32_i_uvw, cfg->periph_cfg.mi);
-
   // 机械角度获取与圈数计算
-  in->theta.mech_theta = ops->f_get_theta();
-  if (in->theta.mech_theta - in->theta.mech_prev_theta < -TAU * 0.5f)
-    in->theta.mech_cycle_cnt++;
-  else if (in->theta.mech_theta - in->theta.mech_prev_theta > TAU * 0.5f)
-    in->theta.mech_cycle_cnt--;
-  in->theta.mech_total_theta = (f32)in->theta.mech_cycle_cnt * TAU + in->theta.mech_theta;
-  in->theta.mech_prev_theta  = in->theta.mech_theta;
+  in->rotor.mech_theta = ops->f_get_theta();
+  if (in->rotor.mech_theta - in->rotor.mech_prev_theta < -TAU * 0.5f)
+    in->rotor.mech_cycle_cnt++;
+  else if (in->rotor.mech_theta - in->rotor.mech_prev_theta > TAU * 0.5f)
+    in->rotor.mech_cycle_cnt--;
+  in->rotor.mech_total_theta = (f32)in->rotor.mech_cycle_cnt * TAU + in->rotor.mech_theta;
+  in->rotor.mech_prev_theta  = in->rotor.mech_theta;
 
   // 电角度计算
-  in->theta.sensor_theta =
-      MECH_TO_ELEC(in->theta.mech_theta, cfg->motor_cfg.npp) - cfg->theta_offset;
-  in->theta.sensor_comp_theta =
-      cfg->sensor_theta_comp_gain * in->theta.sensor_omega / cfg->exec_freq;
-  in->theta.sensor_theta += in->theta.sensor_comp_theta;
-  WARP_TAU(in->theta.sensor_theta);
+  in->rotor.sensor_theta =
+      MECH_TO_ELEC(in->rotor.mech_theta, cfg->motor_cfg.npp) - cfg->theta_offset;
+  in->rotor.sensor_comp_theta =
+      cfg->sensor_theta_comp_gain * in->rotor.sensor_omega / cfg->exec_freq;
+  in->rotor.sensor_theta += in->rotor.sensor_comp_theta;
+  WARP_TAU(in->rotor.sensor_theta);
 
   // 电角速度计算
   DECL_PLL_PTRS_PREFIX(&lo->pll, pll)
-  pll_exec_theta_in(pll_p, in->theta.sensor_theta);
-  in->theta.sensor_omega = pll_out->lpf_omega;
+  pll_exec_theta_in(pll_p, in->rotor.sensor_theta);
+  in->rotor.sensor_omega = pll_out->lpf_omega;
 
-  // 无感观测器
-  foc_obs(p);
-
-  // 电角度源选择
-  switch (lo->theta) {
-  case FOC_THETA_NULL:
-    break;
-  case FOC_THETA_FORCE:
-    in->theta.theta = in->theta.force_theta;
-    in->theta.omega = in->theta.force_omega;
-    break;
-  case FOC_THETA_SENSOR:
-    in->theta.theta = in->theta.sensor_theta;
-    in->theta.omega = in->theta.sensor_omega;
-    break;
-  case FOC_THETA_SENSORLESS:
-    in->theta.theta = in->theta.obs_theta;
-    in->theta.omega = in->theta.obs_omega;
-    break;
-  case FOC_THETA_SENSORFUSION:
-    break;
-  default:
-    break;
+  if (lo->e_theta == FOC_THETA_SENSOR) {
+    in->rotor.theta = in->rotor.sensor_theta;
+    in->rotor.omega = in->rotor.sensor_omega;
   }
 
   // FOC状态切换
-  switch (lo->state) {
+  switch (lo->e_state) {
   case FOC_STATE_CALI:
     foc_cali(p);
     break;

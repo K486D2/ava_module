@@ -79,7 +79,7 @@ typedef struct {
   u32 pwm_freq;
   u32 pwm_cnt_max;
   f32 mi;
-  f32 fp32_pwm_min, fp32_pwm_max;
+  f32 f32_pwm_min, f32_pwm_max;
 } periph_cfg_t;
 
 #ifdef __cplusplus

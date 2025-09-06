@@ -9,7 +9,7 @@ extern "C" {
 
 #include "typedef.h"
 
-#define FP32_HOLLYST 0.017453292519943295769236907684886F
+#define f32_HOLLYST 0.017453292519943295769236907684886F
 
 static const f32 SIN_TABLE[] = {
     0.0f,                                // sin(0)
@@ -59,7 +59,7 @@ static inline f32 fast_sinf(f32 x) {
   i32 a = x * 0.1f;
   f32 b = x - 10.0f * a;
 
-  f32 y = SIN_TABLE[a] * COS_TABLE[(i32)b] + b * FP32_HOLLYST * SIN_TABLE[9u - a];
+  f32 y = SIN_TABLE[a] * COS_TABLE[(i32)b] + b * f32_HOLLYST * SIN_TABLE[9u - a];
   return (sig > 0) ? -y : y;
 }
 
