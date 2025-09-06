@@ -317,7 +317,6 @@ static void foc_exec(foc_t *foc) {
   in->theta.sensor_comp_theta =
       cfg->sensor_theta_comp_gain * in->theta.sensor_omega / cfg->exec_freq;
   in->theta.sensor_theta += in->theta.sensor_comp_theta;
-
   WARP_TAU(in->theta.sensor_theta);
 
   // 电角速度计算
