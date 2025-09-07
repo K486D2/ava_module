@@ -18,12 +18,16 @@ int main() {
   fifo_t *fifo = (fifo_t *)shm.lo.base;
   u8     *buf  = shm.lo.base + sizeof(*fifo);
 
-  printf("shm_addr: %p, buf_addr: %p\n", shm.lo.base, buf);
+  printf("shm_addr: 0x%p, buf_addr: 0x%p\n", shm.lo.base, buf);
 
   u32 cnt = 0;
   while (true) {
-    __fifo_buf_out(fifo, buf, &cnt, sizeof(u32));
-    printf("read cnt: %u\n", cnt);
+    fifo_spsc_buf_out(fifo, buf, &cnt, sizeof(u32));
+    printf("read cnt: %u, fifo in: %llu, fifo out: %llu, fifo len: %llu\n",
+           cnt,
+           atomic_load(&fifo->in),
+           atomic_load(&fifo->out),
+           fifo_len(fifo));
   }
 
   return 0;
