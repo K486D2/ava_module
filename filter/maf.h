@@ -1,10 +1,6 @@
 #ifndef MAF_H
 #define MAF_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include "../container/fifo.h"
 #include "../util/util.h"
 
@@ -68,10 +64,10 @@ static void maf_exec(maf_filter_t *maf) {
   DECL_MAF_PTRS(maf);
 
   f32 prev_x;
-  fifo_out(&lo->fifo, &prev_x, sizeof(prev_x));
+  fifo_spsc_out(&lo->fifo, &prev_x, sizeof(prev_x));
   lo->x_sum -= prev_x;
 
-  fifo_in(&lo->fifo, &in->x, sizeof(in->x));
+  fifo_spsc_in(&lo->fifo, &in->x, sizeof(in->x));
 
   lo->x_sum += in->x;
   lo->x_sum /= (f32)cfg->buf_size;
@@ -83,9 +79,5 @@ static void maf_exec_in(maf_filter_t *maf, f32 x) {
   in->x = x;
   maf_exec(maf);
 }
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif // !MAF_H

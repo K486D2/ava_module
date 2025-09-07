@@ -1,10 +1,6 @@
 #ifndef NET_H
 #define NET_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #ifdef __linux__
 #include <arpa/inet.h>
 #include <fcntl.h>
@@ -266,9 +262,5 @@ static int net_broadcast(const char      *remote_ip,
                          u32              timeout_ms) {
   return 0;
 }
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif // !NET_H

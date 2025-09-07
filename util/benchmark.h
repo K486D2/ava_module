@@ -1,10 +1,6 @@
 #ifndef BENCHMARK_H
 #define BENCHMARK_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #ifdef ARM_MATH
 #include "arm_math.h"
 #endif
@@ -284,9 +280,5 @@ typedef struct {
     TEST_EXPF(results[cnt], iterations);                                                           \
     TEST_FAST_EXPF(results[cnt], iterations);                                                      \
   } while (0)
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif //! BENCHMARK_H

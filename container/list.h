@@ -1,10 +1,6 @@
 #ifndef LIST_H
 #define LIST_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include "../util/typedef.h"
 
 #define LIST_POISON1 NULL
@@ -100,9 +96,5 @@ static inline void list_move_tail(list_head_t *node, list_head_t *head) {
        pos = list_entry(pos->member.next, typeof(*pos), member))
 
 #define list_for_each_prev(pos, head) for (pos = (head)->prev; pos != (head); pos = pos->prev)
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif // !LIST_H

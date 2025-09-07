@@ -1,10 +1,6 @@
 #ifndef SMO_H
 #define SMO_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include "../filter/pll.h"
 #include "../util/util.h"
 
@@ -119,9 +115,5 @@ static void smo_exec_in(smo_obs_t *smo, f32_ab_t i_ab, f32_ab_t v_ab) {
   in->v_ab = v_ab;
   smo_exec(p);
 }
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif // !SMO_H

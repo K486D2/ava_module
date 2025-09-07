@@ -1,10 +1,6 @@
 #ifndef SQUARE_H
 #define SQUARE_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include "../util/def.h"
 
 typedef struct {
@@ -69,9 +65,5 @@ static inline void square_exec(square_t *square) {
   cfg->phase += lo->phase_incr;
   WARP_TAU(cfg->phase);
 }
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif // !SQUARE_H

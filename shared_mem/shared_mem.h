@@ -1,10 +1,6 @@
 #ifndef SHARED_MEM_H
 #define SHARED_MEM_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #ifdef __linux__
 #include <fcntl.h>
 #include <sys/mman.h>
@@ -115,9 +111,5 @@ static int shm_init(shm_t *shm, shm_cfg_t shm_cfg) {
 
   return 0;
 }
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif // !SHARED_MEM_H

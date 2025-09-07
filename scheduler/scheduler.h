@@ -1,10 +1,6 @@
 #ifndef SCHEDULER_H
 #define SCHEDULER_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include "thread.h"
 
 #include "../container/rbtree.h"
@@ -230,9 +226,5 @@ static i32 sched_exec(sched_t *sched) {
   sched_insert_ready(lo, task);
   return 0;
 }
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif // !SCHEDULER_H

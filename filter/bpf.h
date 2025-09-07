@@ -1,10 +1,6 @@
 #ifndef BPF_H
 #define BPF_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include "../util/errdef.h"
 #include "../util/util.h"
 
@@ -118,9 +114,5 @@ static int bpf_exec_in(bpf_filter_t *bpf, f32 x0) {
   in->x0 = x0;
   return bpf_exec(bpf);
 }
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif // !BPF_H

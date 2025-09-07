@@ -1,10 +1,6 @@
 #ifndef PID_H
 #define PID_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include "../util/util.h"
 
 typedef struct {
@@ -88,9 +84,5 @@ static void pid_exec_in(pid_ctl_t *pid, f32 ref, f32 fdb, f32 ffd) {
   in->ffd = ffd;
   pid_exec(p);
 }
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif // !PID_H

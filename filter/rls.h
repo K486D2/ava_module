@@ -1,10 +1,6 @@
 #ifndef RLS_H
 #define RLS_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include "../util/util.h"
 
 #define MAX_ORDER 8
@@ -113,9 +109,5 @@ static void rls_exec(rls_filter_t *rls) {
       lo->p[i][j] = (lo->p[i][j] - lo->temp[i][j]) / cfg->lambda;
   }
 }
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif // !RLS_H

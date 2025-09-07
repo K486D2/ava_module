@@ -1,10 +1,6 @@
 #ifndef SINE_H
 #define SINE_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include "../util/def.h"
 
 typedef struct {
@@ -63,9 +59,5 @@ static inline void sine_exec(sine_t *sine) {
   cfg->phase += lo->phase_incr;
   WARP_TAU(cfg->phase);
 }
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif // !SINE_H

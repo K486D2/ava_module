@@ -1,10 +1,6 @@
 #ifndef UTIL_H
 #define UTIL_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #ifdef _WIN32
 #include <windows.h>
 #endif
@@ -129,9 +125,5 @@ static inline i32 format_ts_ms(u64 ts_ms, char *buf, u32 len) {
                   tm_time.tm_sec,
                   ms);
 }
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif // !UTIL_H

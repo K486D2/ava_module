@@ -1,10 +1,6 @@
 #ifndef THREAD_H
 #define THREAD_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include <stdio.h>
 
 #include "../util/typedef.h"
@@ -37,9 +33,9 @@ static void bind_thread_to_cpu(pthread_t thread_tid, i32 cpu_id) {
 
 static DWORD WINAPI sched_thread_exec(LPVOID arg);
 static void         bind_thread_to_cpu(HANDLE thread_handle, i32 cpu_id) {
-          DWORD_PTR mask = 1u << cpu_id;
-          DWORD_PTR ret  = SetThreadAffinityMask(thread_handle, mask);
-          if (!ret)
+  DWORD_PTR mask = 1u << cpu_id;
+  DWORD_PTR ret  = SetThreadAffinityMask(thread_handle, mask);
+  if (!ret)
     printf("[SCHED] Set thread affinity failed, errcode: %lu\n", GetLastError());
   printf("[SCHED] Bind thread to CPU %d success\n", cpu_id);
 }
@@ -79,9 +75,5 @@ static inline void thread_init(void *arg, i32 cpu_id) {
   bind_thread_to_cpu(sched_tid, cpu_id);
 #endif
 }
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif // !THREAD_H

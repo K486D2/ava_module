@@ -1,10 +1,6 @@
 #ifndef MATHDEF_H
 #define MATHDEF_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #ifdef ARM_MATH
 #include "arm_math.h"
 #endif
@@ -225,9 +221,5 @@ extern "C" {
     (ret).a = (x).a / (y).a;                                                                       \
     (ret).b = (x).b / (y).b;                                                                       \
   } while (0)
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif // !MATHDEF_H

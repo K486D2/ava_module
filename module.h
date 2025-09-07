@@ -1,10 +1,6 @@
 #ifndef MODULE_H
 #define MODULE_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include "version.h"
 
 #if defined(__linux__) || defined(_WIN32)
@@ -22,9 +18,5 @@ extern "C" {
 #include "transform/transform.h"
 #include "util/util.h"
 #include "wavegen/wavegen.h"
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif // !MODULE_H

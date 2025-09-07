@@ -1,10 +1,6 @@
 #ifndef RBTREE_H
 #define RBTREE_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include <stddef.h>
 
 #include "../util/typedef.h"
@@ -75,7 +71,7 @@ static inline void rb_link_node(rb_node_t *node, rb_node_t *parent, rb_node_t **
 }
 
 // 容器宏(用于从节点获取包含结构)
-#define rb_entry(ptr, type, member) ((type *)((char *)(ptr)-offsetof(type, member)))
+#define rb_entry(ptr, type, member) ((type *)((char *)(ptr) - offsetof(type, member)))
 
 static void __rb_rotate_left(rb_node_t *node, rb_root_t *root) {
   rb_node_t *right  = node->rb_right;
@@ -359,9 +355,5 @@ static rb_node_t *rb_prev(const rb_node_t *node) {
   }
   return parent;
 }
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif // !RBTREE_H

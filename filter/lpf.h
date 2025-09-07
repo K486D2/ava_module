@@ -1,10 +1,6 @@
 #ifndef LPF_H
 #define LPF_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include "../util/util.h"
 
 typedef struct {
@@ -67,9 +63,5 @@ static void lpf_exec(lpf_filter_t *lpf) {
 
   LOWPASS(out->y, in->x, cfg->fc, cfg->fs);
 }
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif // !LPF_H

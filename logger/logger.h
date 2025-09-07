@@ -1,10 +1,6 @@
 #ifndef LOGGER_H
 #define LOGGER_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
@@ -163,9 +159,5 @@ static void logger_error(logger_t *logger, const char *format, ...) {
   logger_write(logger, format, args);
   va_end(args);
 }
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif // !LOGGER_H

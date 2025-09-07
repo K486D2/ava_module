@@ -1,23 +1,51 @@
 #ifndef FIFO_H
 #define FIFO_H
 
-#ifdef __cplusplus
-extern "C" {
+#ifndef __cplusplus
+#include <stdatomic.h>
+#define atomic_t(x) _Atomic x
+#else
+#include <atomic>
+#define atomic_t(x)                    std::atomic<x>
+#define atomic_store(a, v)             std::atomic_store(a, v)
+#define atomic_load(a)                 std::atomic_load(a)
+#define atomic_load_explicit(a, m)     std::atomic_load_explicit(a, m)
+#define atomic_store_explicit(a, v, m) std::atomic_store_explicit(a, v, m)
+#define atomic_compare_exchange_weak_explicit(a, o, n, s, f)                                       \
+  std::atomic_compare_exchange_weak_explicit(a, o, n, s, f)
+
+#define memory_order_relaxed std::memory_order_relaxed
+#define memory_order_acquire std::memory_order_acquire
+#define memory_order_release std::memory_order_release
+#define memory_order_acq_rel std::memory_order_acq_rel
 #endif
+
+#include <string.h>
 
 #include "../util/def.h"
 
-#include <stdatomic.h>
-#include <string.h>
+#ifdef _MSC_VER
+#include <intrin.h>
+static inline unsigned int clzll(unsigned long long x) {
+  unsigned long index;
+  if (_BitScanReverse64(&index, x))
+    return 63 - index;
+  return 64; // x == 0
+}
+#else
+static inline unsigned int clzll(unsigned long long x) {
+  return __builtin_clzll(x);
+}
+#endif
 
 #define IS_POWER_OF_2(n)    ((n) != 0 && (((n) & ((n) - 1)) == 0))
-#define ROUNDUP_POW_OF_2(n) ((n) == 0 ? 1 : (1ULL << (sizeof(n) * 8 - __builtin_clzll((n) - 1))))
+#define ROUNDUP_POW_OF_2(n) ((n) == 0 ? 1 : (1ULL << (sizeof(n) * 8 - clzll((n) - 1))))
 
 typedef struct {
-  void          *buf;  // 缓冲区指针
-  size_t         size; // 缓冲区大小(必须是2的幂)
-  _Atomic size_t in;   // 写入位置
-  _Atomic size_t out;  // 读取位置
+  void  *buf;           // 缓冲区指针
+  size_t size;          // 缓冲区大小(必须是2的幂)
+  atomic_t(size_t) in;  // 写入位置
+  atomic_t(size_t) out; // 读取位置
 } fifo_t;
 
 static void fifo_reset(fifo_t *fifo) {
@@ -239,9 +267,5 @@ static inline size_t fifo_spsc_buf_out(fifo_t *fifo, void *buf, void *data, size
 
   return size;
 }
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif // !FIFO_H

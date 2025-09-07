@@ -1,10 +1,6 @@
 #ifndef FOC_H
 #define FOC_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include "../controller/controller.h"
 #include "../filter/filter.h"
 #include "../observer/observer.h"
@@ -415,9 +411,5 @@ static void foc_exec(foc_t *foc) {
     break;
   }
 }
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif // !FOC_H

@@ -1,10 +1,6 @@
 #ifndef TYPEDEF_H
 #define TYPEDEF_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 typedef unsigned char u8;
 typedef signed char   i8;
 
@@ -81,9 +77,5 @@ typedef struct {
   f32 mi;
   f32 f32_pwm_min, f32_pwm_max;
 } periph_cfg_t;
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif // !TYPEDEF_H

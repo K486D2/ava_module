@@ -1,10 +1,6 @@
 #ifndef FASTMATH_H
 #define FASTMATH_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include <math.h>
 
 #include "typedef.h"
@@ -94,9 +90,5 @@ static inline f32 fast_sqrtf(f32 x) {
 static inline f32 fast_modf(f32 x, f32 y) {
   return fmodf(x, y);
 }
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif // !FASTMATH_H

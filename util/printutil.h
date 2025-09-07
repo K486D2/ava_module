@@ -1,10 +1,6 @@
 #ifndef PRINT_UTIL_H
 #define PRINT_UTIL_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include <stdarg.h>
 #include <stdio.h>
 
@@ -216,9 +212,5 @@ static inline void print_table_row(const char *fmt, ...) {
   printf("\n");
   va_end(args);
 }
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif // !PRINT_UTIL_H

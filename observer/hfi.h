@@ -2,9 +2,6 @@
 #define HFI_H
 
 #include "filter/pll.h"
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 #include "../filter/bpf.h"
 #include "../transform/clarkepark.h"
@@ -138,9 +135,5 @@ static void hfi_exec_in(hfi_obs_t *hfi, f32_dq_t i_dq) {
   in->i_dq = i_dq;
   hfi_exec(hfi);
 }
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif // !HFI_H

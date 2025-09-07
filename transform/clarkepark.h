@@ -1,10 +1,6 @@
 #ifndef CLARKEPARK_H
 #define CLARKEPARK_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include "../util/def.h"
 
 // clang-format off
@@ -48,9 +44,5 @@ static inline f32_ab_t inv_park(f32_dq_t f32_dq, f32 theta) {
   f32_ab.b = SIN(theta) * f32_dq.d + COS(theta) * f32_dq.q;
   return f32_ab;
 }
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif // !CLARKEPARK_H
