@@ -143,10 +143,10 @@ static inline void foc_obs_i_ab(foc_t *foc) {
 
   switch (lo->e_obs) {
   case FOC_OBS_SMO: {
-    DECL_SMO_PTRS_PREFIX(&lo->smo, smo);
-    smo_exec_in(smo_p, in->i_ab, out->v_ab);
-    in->rotor.obs_theta = smo_out->theta;
-    in->rotor.obs_omega = smo_out->omega;
+    DECL_SMO_PTRS_RENAME(&lo->smo, smo);
+    smo_exec_in(smo, in->i_ab, out->v_ab);
+    in->rotor.obs_theta = smo->out.theta;
+    in->rotor.obs_omega = smo->out.omega;
   } break;
   default:
     break;
@@ -158,11 +158,11 @@ static inline void foc_obs_i_dq(foc_t *foc) {
 
   switch (lo->e_obs) {
   case FOC_OBS_HFI: {
-    DECL_HFI_PTRS_PREFIX(&lo->hfi, hfi)
-    hfi_exec_in(hfi_p, in->i_dq);
-    in->rotor.obs_theta = hfi_out->theta;
-    in->rotor.obs_omega = hfi_out->omega;
-    lo->ref_i_dq.d      = hfi_out->id_in;
+    DECL_HFI_PTRS_RENAME(&lo->hfi, hfi);
+    hfi_exec_in(hfi, in->i_dq);
+    in->rotor.obs_theta = hfi->out.theta;
+    in->rotor.obs_omega = hfi->out.omega;
+    lo->ref_i_dq.d      = hfi->out.id_in;
   } break;
   default:
     break;
@@ -174,8 +174,8 @@ static inline void foc_obs_v_dq(foc_t *foc) {
 
   switch (lo->e_obs) {
   case FOC_OBS_HFI: {
-    DECL_HFI_PTRS_PREFIX(&lo->hfi, hfi)
-    out->v_dq.d += hfi_out->vd_h;
+    DECL_HFI_PTRS_RENAME(&lo->hfi, hfi)
+    out->v_dq.d += hfi->out.vd_h;
   } break;
   default:
     break;
@@ -384,9 +384,9 @@ static void foc_exec(foc_t *foc) {
   WARP_TAU(in->rotor.sensor_theta);
 
   // 电角速度计算
-  DECL_PLL_PTRS_PREFIX(&lo->pll, pll)
-  pll_exec_theta_in(pll_p, in->rotor.sensor_theta);
-  in->rotor.sensor_omega = pll_out->lpf_omega;
+  DECL_PLL_PTRS_RENAME(&lo->pll, pll)
+  pll_exec_theta_in(pll, in->rotor.sensor_theta);
+  in->rotor.sensor_omega = pll->out.lpf_omega;
 
   if (lo->e_theta == FOC_THETA_SENSOR) {
     in->rotor.theta = in->rotor.sensor_theta;

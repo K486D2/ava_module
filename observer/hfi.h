@@ -49,28 +49,18 @@ typedef struct {
 } hfi_obs_t;
 
 #define DECL_HFI_PTRS(hfi)                                                                         \
-  hfi_obs_t *p   = (hfi);                                                                          \
-  hfi_cfg_t *cfg = &p->cfg;                                                                        \
-  hfi_in_t  *in  = &p->in;                                                                         \
-  hfi_out_t *out = &p->out;                                                                        \
-  hfi_lo_t  *lo  = &p->lo;                                                                         \
-  ARG_UNUSED(p);                                                                                   \
+  hfi_cfg_t *cfg = &(hfi)->cfg;                                                                    \
+  hfi_in_t  *in  = &(hfi)->in;                                                                     \
+  hfi_out_t *out = &(hfi)->out;                                                                    \
+  hfi_lo_t  *lo  = &(hfi)->lo;                                                                     \
   ARG_UNUSED(cfg);                                                                                 \
   ARG_UNUSED(in);                                                                                  \
   ARG_UNUSED(out);                                                                                 \
   ARG_UNUSED(lo);
 
-#define DECL_HFI_PTRS_PREFIX(hfi, prefix)                                                          \
-  hfi_obs_t *prefix##_p   = (hfi);                                                                 \
-  hfi_cfg_t *prefix##_cfg = &prefix##_p->cfg;                                                      \
-  hfi_in_t  *prefix##_in  = &prefix##_p->in;                                                       \
-  hfi_out_t *prefix##_out = &prefix##_p->out;                                                      \
-  hfi_lo_t  *prefix##_lo  = &prefix##_p->lo;                                                       \
-  ARG_UNUSED(prefix##_p);                                                                          \
-  ARG_UNUSED(prefix##_cfg);                                                                        \
-  ARG_UNUSED(prefix##_in);                                                                         \
-  ARG_UNUSED(prefix##_out);                                                                        \
-  ARG_UNUSED(prefix##_lo);
+#define DECL_HFI_PTRS_RENAME(hfi, name)                                                            \
+  hfi_obs_t *name = (hfi);                                                                         \
+  ARG_UNUSED(name);
 
 static void hfi_init(hfi_obs_t *hfi, hfi_cfg_t hfi_cfg) {
   DECL_HFI_PTRS(hfi);
@@ -96,11 +86,11 @@ static void hfi_exec(hfi_obs_t *hfi) {
   LOWPASS(lo->hfi_theta_err, lo->hfi_iq, cfg->iq_lpf_fc, cfg->fs);
 
   // PLL
-  DECL_PLL_PTRS_PREFIX(&lo->pll, pll);
-  pll_lo->theta_err = lo->hfi_theta_err;
-  pll_exec(pll_p);
-  lo->hfi_theta = pll_out->theta;
-  out->omega    = pll_out->omega;
+  DECL_PLL_PTRS_RENAME(&lo->pll, pll);
+  pll->lo.theta_err = lo->hfi_theta_err;
+  pll_exec(pll);
+  lo->hfi_theta = pll->out.theta;
+  out->omega    = pll->out.omega;
 
   // Inject
   INTEGRATOR(lo->theta_h, TAU * cfg->fh, 1.0f, cfg->fs);

@@ -41,28 +41,18 @@ typedef struct {
 } bpf_filter_t;
 
 #define DECL_BPF_PTRS(bpf)                                                                         \
-  bpf_filter_t *p   = (bpf);                                                                       \
-  bpf_cfg_t    *cfg = &p->cfg;                                                                     \
-  bpf_in_t     *in  = &p->in;                                                                      \
-  bpf_out_t    *out = &p->out;                                                                     \
-  bpf_lo_t     *lo  = &p->lo;                                                                      \
-  ARG_UNUSED(p);                                                                                   \
+  bpf_cfg_t *cfg = &(bpf)->cfg;                                                                    \
+  bpf_in_t  *in  = &(bpf)->in;                                                                     \
+  bpf_out_t *out = &(bpf)->out;                                                                    \
+  bpf_lo_t  *lo  = &(bpf)->lo;                                                                     \
   ARG_UNUSED(cfg);                                                                                 \
   ARG_UNUSED(in);                                                                                  \
   ARG_UNUSED(out);                                                                                 \
   ARG_UNUSED(lo);
 
-#define DECL_BPF_PTRS_PREFIX(bpf, prefix)                                                          \
-  bpf_filter_t *prefix##_p   = (bpf);                                                              \
-  bpf_cfg_t    *prefix##_cfg = &prefix##_p->cfg;                                                   \
-  bpf_in_t     *prefix##_in  = &prefix##_p->in;                                                    \
-  bpf_out_t    *prefix##_out = &prefix##_p->out;                                                   \
-  bpf_lo_t     *prefix##_lo  = &prefix##_p->lo;                                                    \
-  ARG_UNUSED(prefix##_p);                                                                          \
-  ARG_UNUSED(prefix##_cfg);                                                                        \
-  ARG_UNUSED(prefix##_in);                                                                         \
-  ARG_UNUSED(prefix##_out);                                                                        \
-  ARG_UNUSED(prefix##_lo);
+#define DECL_BPF_PTRS_RENAME(bpf, name)                                                            \
+  bpf_filter_t *name = (bpf);                                                                      \
+  ARG_UNUSED(name);
 
 static int bpf_init(bpf_filter_t *bpf, bpf_cfg_t bpf_cfg) {
   ARG_CHECK(bpf);

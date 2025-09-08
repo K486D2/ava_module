@@ -35,35 +35,25 @@ typedef struct {
 } smo_obs_t;
 
 #define DECL_SMO_PTRS(smo)                                                                         \
-  smo_obs_t *p   = (smo);                                                                          \
-  smo_cfg_t *cfg = &p->cfg;                                                                        \
-  smo_in_t  *in  = &p->in;                                                                         \
-  smo_out_t *out = &p->out;                                                                        \
-  smo_lo_t  *lo  = &p->lo;                                                                         \
-  ARG_UNUSED(p);                                                                                   \
+  smo_cfg_t *cfg = &(smo)->cfg;                                                                    \
+  smo_in_t  *in  = &(smo)->in;                                                                     \
+  smo_out_t *out = &(smo)->out;                                                                    \
+  smo_lo_t  *lo  = &(smo)->lo;                                                                     \
   ARG_UNUSED(cfg);                                                                                 \
   ARG_UNUSED(in);                                                                                  \
   ARG_UNUSED(out);                                                                                 \
   ARG_UNUSED(lo);
 
-#define DECL_SMO_PTRS_PREFIX(smo, prefix)                                                          \
-  smo_obs_t *prefix##_p   = (smo);                                                                 \
-  smo_cfg_t *prefix##_cfg = &prefix##_p->cfg;                                                      \
-  smo_in_t  *prefix##_in  = &prefix##_p->in;                                                       \
-  smo_out_t *prefix##_out = &prefix##_p->out;                                                      \
-  smo_lo_t  *prefix##_lo  = &prefix##_p->lo;                                                       \
-  ARG_UNUSED(prefix##_p);                                                                          \
-  ARG_UNUSED(prefix##_cfg);                                                                        \
-  ARG_UNUSED(prefix##_in);                                                                         \
-  ARG_UNUSED(prefix##_out);                                                                        \
-  ARG_UNUSED(prefix##_lo);
+#define DECL_SMO_PTRS_RENAME(smo, name)                                                            \
+  smo_obs_t *name = (smo);                                                                         \
+  ARG_UNUSED(name);
 
 static void smo_init(smo_obs_t *smo, smo_cfg_t smo_cfg) {
   DECL_SMO_PTRS(smo);
 
   *cfg = smo_cfg;
 
-  pll_init(&p->lo.pll, p->lo.pll.cfg);
+  pll_init(&lo->pll, lo->pll.cfg);
 }
 
 /**
@@ -77,7 +67,7 @@ static void smo_init(smo_obs_t *smo, smo_cfg_t smo_cfg) {
  */
 static void smo_exec(smo_obs_t *smo) {
   DECL_SMO_PTRS(smo);
-  DECL_PLL_PTRS_PREFIX(&p->lo.pll, pll);
+  DECL_PLL_PTRS_RENAME(&smo->lo.pll, pll);
 
   // 电流误差方程
   INTEGRATOR(lo->est_i_ab.a,
@@ -102,7 +92,7 @@ static void smo_exec(smo_obs_t *smo) {
                            : (cfg->ks * lo->est_i_ab_err.b / cfg->es0);
 
   pll_exec_ab_in(&lo->pll, lo->est_emf_v_ab);
-  out->omega = pll_p->out.omega;
+  out->omega = pll->out.omega;
 
   out->theta = ATAN2(-lo->est_emf_v_ab.a * out->omega, lo->est_emf_v_ab.b * out->omega);
   WARP_TAU(out->theta);
@@ -113,7 +103,7 @@ static void smo_exec_in(smo_obs_t *smo, f32_ab_t i_ab, f32_ab_t v_ab) {
 
   in->i_ab = i_ab;
   in->v_ab = v_ab;
-  smo_exec(p);
+  smo_exec(smo);
 }
 
 #endif // !SMO_H

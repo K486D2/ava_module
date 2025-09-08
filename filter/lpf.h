@@ -23,24 +23,16 @@ typedef struct {
 } lpf_filter_t;
 
 #define DECL_LPF_PTRS(lpf)                                                                         \
-  lpf_filter_t *p   = (lpf);                                                                       \
-  lpf_cfg_t    *cfg = &p->cfg;                                                                     \
-  lpf_in_t     *in  = &p->in;                                                                      \
-  lpf_out_t    *out = &p->out;                                                                     \
-  ARG_UNUSED(p);                                                                                   \
+  lpf_cfg_t *cfg = &(lpf)->cfg;                                                                    \
+  lpf_in_t  *in  = &(lpf)->in;                                                                     \
+  lpf_out_t *out = &(lpf)->out;                                                                    \
   ARG_UNUSED(cfg);                                                                                 \
   ARG_UNUSED(in);                                                                                  \
   ARG_UNUSED(out);
 
-#define DECL_LPF_PTRS_PREFIX(lpf, prefix)                                                          \
-  lpf_filter_t *prefix##_p   = (lpf);                                                              \
-  lpf_cfg_t    *prefix##_cfg = &prefix##_p->cfg;                                                   \
-  lpf_in_t     *prefix##_in  = &prefix##_p->in;                                                    \
-  lpf_out_t    *prefix##_out = &prefix##_p->out;                                                   \
-  ARG_UNUSED(prefix##_p);                                                                          \
-  ARG_UNUSED(prefix##_cfg);                                                                        \
-  ARG_UNUSED(prefix##_in);                                                                         \
-  ARG_UNUSED(prefix##_out);
+#define DECL_LPF_PTRS_RENAME(lpf, name)                                                            \
+  lpf_filter_t *name = (lpf);                                                                      \
+  ARG_UNUSED(name);
 
 static void lpf_init(lpf_filter_t *lpf, lpf_cfg_t lpf_cfg) {
   DECL_LPF_PTRS(lpf);
