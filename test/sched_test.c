@@ -22,7 +22,7 @@ static void task1_callback(void *arg) {
   task_data_t *data = (task_data_t *)arg;
   data->cnt++;
   u64 ts = get_mono_ts_ms();
-  cprintf(COLOR_GREEN, "[Task1] %s: EXEC_CNT=%u, TIMESTAMP=%llu ms\n", data->name, data->cnt, ts);
+  cprintf(COLOR_GREEN, "[Task1] %s: EXEC_CNT=%u, TIMESTAMP=%u ms\n", data->name, data->cnt, ts);
 }
 
 // 任务2：中频任务，每500ms执行一次
@@ -30,7 +30,7 @@ static void task2_callback(void *arg) {
   task_data_t *data = (task_data_t *)arg;
   data->cnt++;
   u64 ts = get_mono_ts_ms();
-  cprintf(COLOR_BLUE, "[Task2] %s: EXEC_CNT=%u, TIMESTAMP=%llu ms\n", data->name, data->cnt, ts);
+  cprintf(COLOR_BLUE, "[Task2] %s: EXEC_CNT=%u, TIMESTAMP=%u ms\n", data->name, data->cnt, ts);
 }
 
 // 任务3：低频任务，每1000ms执行一次
@@ -38,7 +38,7 @@ static void task3_callback(void *arg) {
   task_data_t *data = (task_data_t *)arg;
   data->cnt++;
   u64 ts = get_mono_ts_ms();
-  cprintf(COLOR_YELLOW, "[Task3] %s: EXEC_CNT=%u, TIMESTAMP=%llu ms\n", data->name, data->cnt, ts);
+  cprintf(COLOR_YELLOW, "[Task3] %s: EXEC_CNT=%u, TIMESTAMP=%u ms\n", data->name, data->cnt, ts);
 }
 
 // 任务4：有限次数任务，每200ms执行一次，最多执行10次
@@ -46,7 +46,7 @@ static void task4_callback(void *arg) {
   task_data_t *data = (task_data_t *)arg;
   data->cnt++;
   u64 ts = get_mono_ts_ms();
-  cprintf(COLOR_RED, "[Task4] %s: EXEC_CNT=%u, TIMESTAMP=%llu ms\n", data->name, data->cnt, ts);
+  cprintf(COLOR_RED, "[Task4] %s: EXEC_CNT=%u, TIMESTAMP=%u ms\n", data->name, data->cnt, ts);
 }
 
 int main() {
@@ -117,22 +117,22 @@ int main() {
   printf("REGISTER TASK FINISH, TOTAL %u TASK\n\n", sched.lo.tasks_num);
 
   printf("TASK INFO:\n");
-  printf("Task1: ID=%u, FREQ=%llu Hz, PRIORITY=%u, DELAY=%llu ms\n",
+  printf("Task1: ID=%u, FREQ=%u Hz, PRIORITY=%u, DELAY=%u ms\n",
          task1.id,
          task1.exec_freq,
          task1.priority,
          task1.delay);
-  printf("Task2: ID=%u, FREQ=%llu Hz, PRIORITY=%u, DELAY=%llu ms\n",
+  printf("Task2: ID=%u, FREQ=%u Hz, PRIORITY=%u, DELAY=%u ms\n",
          task2.id,
          task2.exec_freq,
          task2.priority,
          task2.delay);
-  printf("Task3: ID=%u, FREQ=%llu Hz, PRIORITY=%u, DELAY=%llu ms\n",
+  printf("Task3: ID=%u, FREQ=%u Hz, PRIORITY=%u, DELAY=%u ms\n",
          task3.id,
          task3.exec_freq,
          task3.priority,
          task3.delay);
-  printf("Task4: ID=%u, FREQ=%llu Hz, PRIORITY=%u, DELAY=%llu ms, MAX_EXEC_CNT=%llu\n",
+  printf("Task4: ID=%u, FREQ=%u Hz, PRIORITY=%u, DELAY=%u ms, MAX_EXEC_CNT=%u\n",
          task4.id,
          task4.exec_freq,
          task4.priority,
@@ -148,7 +148,7 @@ int main() {
     // 每1秒打印一次统计信息
     u64 curr_ts = get_mono_ts_ms();
     if (curr_ts - last_print_ts >= 1000) {
-      printf("\n=== STATISTICS (RUN TIME: %llu ms) ===\n", curr_ts - start_ts);
+      printf("\n=== STATISTICS (RUN TIME: %u ms) ===\n", curr_ts - start_ts);
       printf("Task1 EXEC_CNT: %u\n", task1_data.cnt);
       printf("Task2 EXEC_CNT: %u\n", task2_data.cnt);
       printf("Task3 EXEC_CNT: %u\n", task3_data.cnt);

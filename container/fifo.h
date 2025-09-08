@@ -38,8 +38,8 @@ static inline unsigned int clzll(unsigned long long x) {
 }
 #endif
 
-#define IS_POWER_OF_2(n)    ((n) != 0 && (((n) & ((n) - 1)) == 0))
-#define ROUNDUP_POW_OF_2(n) ((n) == 0 ? 1 : (1ULL << (sizeof(n) * 8 - clzll((n) - 1))))
+#define IS_POWER_OF_2(n)    ((n) != 0 && (((n) & ((n)-1)) == 0))
+#define ROUNDUP_POW_OF_2(n) ((n) == 0 ? 1 : (1ULL << (sizeof(n) * 8 - clzll((n)-1))))
 
 typedef struct {
   void  *buf;           // 缓冲区指针

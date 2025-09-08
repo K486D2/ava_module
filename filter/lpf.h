@@ -32,8 +32,8 @@ typedef struct {
   ARG_UNUSED(in);                                                                                  \
   ARG_UNUSED(out);
 
-#define DECL_LPF_PTRS_RENAME(lpf, name)                                                            \
-  lpf_filter_t *name = (lpf);                                                                      \
+#define DECL_LPF_PTR_RENAME(lpf, name)                                                             \
+  lpf_filter_t *(name) = (lpf);                                                                    \
   ARG_UNUSED(name);
 
 static void lpf_init(lpf_filter_t *lpf, lpf_cfg_t lpf_cfg) {

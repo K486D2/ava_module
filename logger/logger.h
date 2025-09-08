@@ -53,24 +53,16 @@ typedef struct {
 } logger_t;
 
 #define DECL_LOGGER_PTRS(logger)                                                                   \
-  logger_t     *p   = (logger);                                                                    \
-  logger_cfg_t *cfg = &p->cfg;                                                                     \
-  logger_lo_t  *lo  = &p->lo;                                                                      \
-  logger_ops_t *ops = &p->ops;                                                                     \
-  ARG_UNUSED(p);                                                                                   \
+  logger_cfg_t *cfg = &(logger)->cfg;                                                              \
+  logger_lo_t  *lo  = &(logger)->lo;                                                               \
+  logger_ops_t *ops = &(logger)->ops;                                                              \
   ARG_UNUSED(cfg);                                                                                 \
   ARG_UNUSED(lo);                                                                                  \
   ARG_UNUSED(ops);
 
-#define DECL_LOGGER_PTRS_PREFIX(logger, prefix)                                                    \
-  logger_t     *prefix##_p   = (logger);                                                           \
-  logger_cfg_t *prefix##_cfg = &prefix##_p->cfg;                                                   \
-  logger_lo_t  *prefix##_lo  = &prefix##_p->lo;                                                    \
-  logger_ops_t *prefix##_ops = &prefix##_p->ops;                                                   \
-  ARG_UNUSED(prefix##_p);                                                                          \
-  ARG_UNUSED(prefix##_cfg);                                                                        \
-  ARG_UNUSED(prefix##_lo);                                                                         \
-  ARG_UNUSED(prefix##_ops);
+#define DECL_LOGGER_PTRS_PREFIX(logger, name)                                                      \
+  logger_t *(name) = (logger);                                                                     \
+  ARG_UNUSED(name);
 
 static void logger_init(logger_t *logger, logger_cfg_t logger_cfg) {
   DECL_LOGGER_PTRS(logger);

@@ -44,8 +44,8 @@ typedef struct {
   ARG_UNUSED(out);                                                                                 \
   ARG_UNUSED(lo);
 
-#define DECL_SMO_PTRS_RENAME(smo, name)                                                            \
-  smo_obs_t *name = (smo);                                                                         \
+#define DECL_SMO_PTR_RENAME(smo, name)                                                             \
+  smo_obs_t *(name) = (smo);                                                                       \
   ARG_UNUSED(name);
 
 static void smo_init(smo_obs_t *smo, smo_cfg_t smo_cfg) {
@@ -67,7 +67,7 @@ static void smo_init(smo_obs_t *smo, smo_cfg_t smo_cfg) {
  */
 static void smo_exec(smo_obs_t *smo) {
   DECL_SMO_PTRS(smo);
-  DECL_PLL_PTRS_RENAME(&smo->lo.pll, pll);
+  DECL_PLL_PTR_RENAME(&smo->lo.pll, pll);
 
   // 电流误差方程
   INTEGRATOR(lo->est_i_ab.a,

@@ -134,8 +134,8 @@ typedef struct {
   ARG_UNUSED(lo);                                                                                  \
   ARG_UNUSED(ops);
 
-#define DECL_FOC_PTRS_RENAME(foc, name)                                                            \
-  foc_t *name = (foc);                                                                             \
+#define DECL_FOC_PTR_RENAME(foc, name)                                                             \
+  foc_t *(name) = (foc);                                                                           \
   ARG_UNUSED(name);
 
 static inline void foc_obs_i_ab(foc_t *foc) {
@@ -143,7 +143,7 @@ static inline void foc_obs_i_ab(foc_t *foc) {
 
   switch (lo->e_obs) {
   case FOC_OBS_SMO: {
-    DECL_SMO_PTRS_RENAME(&lo->smo, smo);
+    DECL_SMO_PTR_RENAME(&lo->smo, smo);
     smo_exec_in(smo, in->i_ab, out->v_ab);
     in->rotor.obs_theta = smo->out.theta;
     in->rotor.obs_omega = smo->out.omega;
@@ -158,7 +158,7 @@ static inline void foc_obs_i_dq(foc_t *foc) {
 
   switch (lo->e_obs) {
   case FOC_OBS_HFI: {
-    DECL_HFI_PTRS_RENAME(&lo->hfi, hfi);
+    DECL_HFI_PTR_RENAME(&lo->hfi, hfi);
     hfi_exec_in(hfi, in->i_dq);
     in->rotor.obs_theta = hfi->out.theta;
     in->rotor.obs_omega = hfi->out.omega;
@@ -174,7 +174,7 @@ static inline void foc_obs_v_dq(foc_t *foc) {
 
   switch (lo->e_obs) {
   case FOC_OBS_HFI: {
-    DECL_HFI_PTRS_RENAME(&lo->hfi, hfi)
+    DECL_HFI_PTR_RENAME(&lo->hfi, hfi)
     out->v_dq.d += hfi->out.vd_h;
   } break;
   default:
@@ -299,18 +299,18 @@ static inline void foc_enable(foc_t *foc) {
   WARP_PI(in->rotor.fusion_theta_err);
 
   // Q轴电流环
-  DECL_PID_PTRS_PREFIX(&lo->iq_pid, iq_pid);
-  iq_pid_cfg->ki_out_max = iq_pid_cfg->out_max = in->v_bus / SQRT_3 * cfg->periph_cfg.f32_pwm_max;
+  DECL_PID_PTR_RENAME(&lo->iq_pid, iq_pid);
+  iq_pid->cfg.ki_out_max = iq_pid->cfg.out_max = in->v_bus / SQRT_3 * cfg->periph_cfg.f32_pwm_max;
   lo->ffd_v_dq.q                               = in->rotor.omega * cfg->motor_cfg.psi * 0.7f;
-  pid_exec_in(iq_pid_p, lo->ref_i_dq.q, in->i_dq.q, lo->ffd_v_dq.q);
-  out->v_dq.q = iq_pid_out->val;
+  pid_exec_in(iq_pid, lo->ref_i_dq.q, in->i_dq.q, lo->ffd_v_dq.q);
+  out->v_dq.q = iq_pid->out.val;
 
   // D轴电流环
-  DECL_PID_PTRS_PREFIX(&lo->id_pid, id_pid);
-  id_pid_cfg->ki_out_max = id_pid_cfg->out_max = in->v_bus / SQRT_3 * cfg->periph_cfg.f32_pwm_max;
+  DECL_PID_PTR_RENAME(&lo->id_pid, id_pid);
+  id_pid->cfg.ki_out_max = id_pid->cfg.out_max = in->v_bus / SQRT_3 * cfg->periph_cfg.f32_pwm_max;
   lo->ffd_v_dq.d = -in->rotor.omega * cfg->motor_cfg.lq * in->i_dq.q * 0.7f;
-  pid_exec_in(id_pid_p, lo->ref_i_dq.d, in->i_dq.d, lo->ffd_v_dq.d);
-  out->v_dq.d = id_pid_out->val;
+  pid_exec_in(id_pid, lo->ref_i_dq.d, in->i_dq.d, lo->ffd_v_dq.d);
+  out->v_dq.d = id_pid->out.val;
 
   // 高频注入
   foc_obs_v_dq(foc);
@@ -384,7 +384,7 @@ static void foc_exec(foc_t *foc) {
   WARP_TAU(in->rotor.sensor_theta);
 
   // 电角速度计算
-  DECL_PLL_PTRS_RENAME(&lo->pll, pll)
+  DECL_PLL_PTR_RENAME(&lo->pll, pll)
   pll_exec_theta_in(pll, in->rotor.sensor_theta);
   in->rotor.sensor_omega = pll->out.lpf_omega;
 

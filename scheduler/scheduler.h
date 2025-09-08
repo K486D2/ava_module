@@ -78,24 +78,16 @@ typedef struct sched {
 } sched_t;
 
 #define DECL_SCHED_PTRS(sched)                                                                     \
-  sched_t     *p   = (sched);                                                                      \
-  sched_cfg_t *cfg = &p->cfg;                                                                      \
-  sched_lo_t  *lo  = &p->lo;                                                                       \
-  sched_ops_t *ops = &p->ops;                                                                      \
-  ARG_UNUSED(p);                                                                                   \
+  sched_cfg_t *cfg = &(sched)->cfg;                                                                \
+  sched_lo_t  *lo  = &(sched)->lo;                                                                 \
+  sched_ops_t *ops = &(sched)->ops;                                                                \
   ARG_UNUSED(cfg);                                                                                 \
   ARG_UNUSED(lo);                                                                                  \
   ARG_UNUSED(ops);
 
-#define DECL_SCHED_PTRS_PREFIX(sched, prefix)                                                      \
-  sched_t     *prefix##_p   = (sched);                                                             \
-  sched_cfg_t *prefix##_cfg = &prefix##_p->cfg;                                                    \
-  sched_lo_t  *prefix##_lo  = &prefix##_p->lo;                                                     \
-  sched_ops_t *prefix##_ops = &prefix##_p->ops;                                                    \
-  ARG_UNUSED(prefix##_p);                                                                          \
-  ARG_UNUSED(prefix##_cfg);                                                                        \
-  ARG_UNUSED(prefix##_lo);                                                                         \
-  ARG_UNUSED(prefix##_ops);
+#define DECL_SCHED_PTR_RENAME(sched, name)                                                         \
+  sched_t *(name) = (sched);                                                                       \
+  ARG_UNUSED(name);
 
 static inline i32 sched_task_cmp(const sched_task_t *a, const sched_task_t *b) {
   if (a->cfg.priority < b->cfg.priority)

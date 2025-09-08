@@ -37,20 +37,14 @@ typedef struct {
 } shm_t;
 
 #define DECL_SHM_PTRS(shm)                                                                         \
-  shm_t     *p   = (shm);                                                                          \
-  shm_cfg_t *cfg = &p->cfg;                                                                        \
-  shm_lo_t  *lo  = &p->lo;                                                                         \
-  ARG_UNUSED(p);                                                                                   \
+  shm_cfg_t *cfg = &(shm)->cfg;                                                                    \
+  shm_lo_t  *lo  = &(shm)->lo;                                                                     \
   ARG_UNUSED(cfg);                                                                                 \
   ARG_UNUSED(lo);
 
-#define DECL_SHM_PTRS_PREFIX(shm, prefix)                                                          \
-  shm_t     *prefix##_p   = (shm);                                                                 \
-  shm_cfg_t *prefix##_cfg = &prefix##_p->cfg;                                                      \
-  shm_lo_t  *prefix##_lo  = &prefix##_p->lo;                                                       \
-  ARG_UNUSED(prefix##_p);                                                                          \
-  ARG_UNUSED(prefix##_cfg);                                                                        \
-  ARG_UNUSED(prefix##_lo);
+#define DECL_SHM_PTR_RENAME(shm, name)                                                             \
+  shm_cfg_t *(name) = (shm);                                                                       \
+  ARG_UNUSED(name);
 
 static int shm_init(shm_t *shm, shm_cfg_t shm_cfg) {
   DECL_SHM_PTRS(shm);

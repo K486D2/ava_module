@@ -2,6 +2,7 @@
 #define SQUARE_H
 
 #include "../util/def.h"
+#include "../util/util.h"
 
 typedef struct {
   f32 fs;
@@ -27,24 +28,16 @@ typedef struct {
 } square_t;
 
 #define DECL_SQUARE_PTRS(square)                                                                   \
-  square_t     *p   = (square);                                                                    \
-  square_cfg_t *cfg = &p->cfg;                                                                     \
-  square_out_t *out = &p->out;                                                                     \
-  square_lo_t  *lo  = &p->lo;                                                                      \
-  ARG_UNUSED(p);                                                                                   \
+  square_cfg_t *cfg = &(square)->cfg;                                                              \
+  square_out_t *out = &(square)->out;                                                              \
+  square_lo_t  *lo  = &(square)->lo;                                                               \
   ARG_UNUSED(cfg);                                                                                 \
   ARG_UNUSED(out);                                                                                 \
   ARG_UNUSED(lo);
 
-#define DECL_SQUARE_PTRS_PREFIX(square, prefix)                                                    \
-  square_t     *prefix##_p   = (square);                                                           \
-  square_cfg_t *prefix##_cfg = &prefix##_p->cfg;                                                   \
-  square_out_t *prefix##_out = &prefix##_p->out;                                                   \
-  square_lo_t  *prefix##_lo  = &prefix##_p->lo;                                                    \
-  ARG_UNUSED(prefix##_p);                                                                          \
-  ARG_UNUSED(prefix##_cfg);                                                                        \
-  ARG_UNUSED(prefix##_out);                                                                        \
-  ARG_UNUSED(prefix##_lo);
+#define DECL_SQUARE_PTR_RENAME(square, name)                                                       \
+  square_t *(name) = (square);                                                                     \
+  ARG_UNUSED(name)
 
 static inline void square_init(square_t *square, square_cfg_t square_cfg) {
   DECL_SQUARE_PTRS(square);

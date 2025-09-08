@@ -2,6 +2,7 @@
 #define SINE_H
 
 #include "../util/def.h"
+#include "../util/util.h"
 
 typedef struct {
   f32 fs;
@@ -26,24 +27,16 @@ typedef struct {
 } sine_t;
 
 #define DECL_SINE_PTRS(sine)                                                                       \
-  sine_t     *p   = (sine);                                                                        \
-  sine_cfg_t *cfg = &p->cfg;                                                                       \
-  sine_out_t *out = &p->out;                                                                       \
-  sine_lo_t  *lo  = &p->lo;                                                                        \
-  ARG_UNUSED(p);                                                                                   \
+  sine_cfg_t *cfg = &(sine)->cfg;                                                                  \
+  sine_out_t *out = &(sine)->out;                                                                  \
+  sine_lo_t  *lo  = &(sine)->lo;                                                                   \
   ARG_UNUSED(cfg);                                                                                 \
   ARG_UNUSED(out);                                                                                 \
   ARG_UNUSED(lo);
 
-#define DECL_SINE_PTRS_PREFIX(sine, prefix)                                                        \
-  sine_t     *prefix##_p   = (sine);                                                               \
-  sine_cfg_t *prefix##_cfg = &prefix##_p->cfg;                                                     \
-  sine_out_t *prefix##_out = &prefix##_p->out;                                                     \
-  sine_lo_t  *prefix##_lo  = &prefix##_p->lo;                                                      \
-  ARG_UNUSED(prefix##_p);                                                                          \
-  ARG_UNUSED(prefix##_cfg);                                                                        \
-  ARG_UNUSED(prefix##_out);                                                                        \
-  ARG_UNUSED(prefix##_lo);
+#define DECL_SINE_PTR_RENAME(sine, name)                                                           \
+  sine_t *(name) = (sine);                                                                         \
+  ARG_UNUSED(name);
 
 static inline void sine_init(sine_t *sine, sine_cfg_t sine_cfg) {
   DECL_SINE_PTRS(sine);

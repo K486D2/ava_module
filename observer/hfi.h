@@ -58,8 +58,8 @@ typedef struct {
   ARG_UNUSED(out);                                                                                 \
   ARG_UNUSED(lo);
 
-#define DECL_HFI_PTRS_RENAME(hfi, name)                                                            \
-  hfi_obs_t *name = (hfi);                                                                         \
+#define DECL_HFI_PTR_RENAME(hfi, name)                                                             \
+  hfi_obs_t *(name) = (hfi);                                                                       \
   ARG_UNUSED(name);
 
 static void hfi_init(hfi_obs_t *hfi, hfi_cfg_t hfi_cfg) {
@@ -74,19 +74,19 @@ static void hfi_init(hfi_obs_t *hfi, hfi_cfg_t hfi_cfg) {
 
 static void hfi_exec(hfi_obs_t *hfi) {
   DECL_HFI_PTRS(hfi);
-  DECL_BPF_PTRS_RENAME(&lo->id_bpf, id_bpf);
-  DECL_BPF_PTRS_RENAME(&lo->iq_bpf, iq_bpf);
+  DECL_BPF_PTR_RENAME(&lo->id_bpf, id_bpf);
+  DECL_BPF_PTR_RENAME(&lo->iq_bpf, iq_bpf);
 
   bpf_exec_in(id_bpf, in->i_dq.d);
   bpf_exec_in(iq_bpf, in->i_dq.q);
 
-  lo->hfi_id = id_bpf->out.y0 * SIN(lo->theta_h);
-  lo->hfi_iq = iq_bpf->out.y0 * SIN(lo->theta_h);
+  lo->hfi_id = id_bpf->out.y * SIN(lo->theta_h);
+  lo->hfi_iq = iq_bpf->out.y * SIN(lo->theta_h);
   LOWPASS(lo->lpf_id, lo->hfi_id, cfg->id_lpf_fc, cfg->fs);
   LOWPASS(lo->hfi_theta_err, lo->hfi_iq, cfg->iq_lpf_fc, cfg->fs);
 
   // PLL
-  DECL_PLL_PTRS_RENAME(&lo->pll, pll);
+  DECL_PLL_PTR_RENAME(&lo->pll, pll);
   pll->lo.theta_err = lo->hfi_theta_err;
   pll_exec(pll);
   lo->hfi_theta = pll->out.theta;

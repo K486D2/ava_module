@@ -47,28 +47,18 @@ typedef struct {
 } fft_t;
 
 #define DECL_FFT_PTRS(fft)                                                                         \
-  fft_t     *p   = (fft);                                                                          \
-  fft_cfg_t *cfg = &p->cfg;                                                                        \
-  fft_in_t  *in  = &p->in;                                                                         \
-  fft_out_t *out = &p->out;                                                                        \
-  fft_lo_t  *lo  = &p->lo;                                                                         \
-  ARG_UNUSED(p);                                                                                   \
+  fft_cfg_t *cfg = &(fft)->cfg;                                                                    \
+  fft_in_t  *in  = &(fft)->in;                                                                     \
+  fft_out_t *out = &(fft)->out;                                                                    \
+  fft_lo_t  *lo  = &(fft)->lo;                                                                     \
   ARG_UNUSED(cfg);                                                                                 \
   ARG_UNUSED(in);                                                                                  \
   ARG_UNUSED(out);                                                                                 \
   ARG_UNUSED(lo);
 
-#define DECL_FFT_PTRS_PREFIX(fft, prefix)                                                          \
-  fft_t     *prefix##_p   = (fft);                                                                 \
-  fft_cfg_t *prefix##_cfg = &prefix##_p->cfg;                                                      \
-  fft_in_t  *prefix##_in  = &prefix##_p->in;                                                       \
-  fft_out_t *prefix##_out = &prefix##_p->out;                                                      \
-  fft_lo_t  *prefix##_lo  = &prefix##_p->lo;                                                       \
-  ARG_UNUSED(prefix##_p);                                                                          \
-  ARG_UNUSED(prefix##_cfg);                                                                        \
-  ARG_UNUSED(prefix##_in);                                                                         \
-  ARG_UNUSED(prefix##_out);                                                                        \
-  ARG_UNUSED(prefix##_lo);
+#define DECL_FFT_PTR_RENAME(fft, name)                                                             \
+  fft_t *(name) = (fft);                                                                           \
+  ARG_UNUSED(name);
 
 static void fft_add_value(fft_t *fft, f32 value) {
   DECL_FFT_PTRS(fft);

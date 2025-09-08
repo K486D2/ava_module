@@ -48,8 +48,8 @@ typedef struct {
   ARG_UNUSED(out);                                                                                 \
   ARG_UNUSED(lo);
 
-#define DECL_BPF_PTRS_RENAME(bpf, name)                                                            \
-  bpf_filter_t *name = (bpf);                                                                      \
+#define DECL_BPF_PTR_RENAME(bpf, name)                                                             \
+  bpf_filter_t *(name) = (bpf);                                                                    \
   ARG_UNUSED(name);
 
 static int bpf_init(bpf_filter_t *bpf, bpf_cfg_t bpf_cfg) {
