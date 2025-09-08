@@ -8,7 +8,9 @@ typedef struct {
   f32 fs;
   f32 wc;
   f32 damp;
-  f32 lpf_fc;
+  f32 lpf_fc, ffd_lpf_fc;
+  f32 kp;
+  f32 ki;
 } pll_cfg_t;
 
 typedef struct {
@@ -22,10 +24,6 @@ typedef struct {
 } pll_out_t;
 
 typedef struct {
-  f32 kp;
-  f32 ki;
-  f32 ffd_lpf_fc;
-
   f32 ki_out;
   f32 prev_theta;
   f32 theta_err;
@@ -58,17 +56,17 @@ static void pll_init(pll_filter_t *pll, pll_cfg_t pll_cfg) {
 
   *cfg = pll_cfg;
 
-  lo->kp         = 2.0f * cfg->wc * cfg->damp;
-  lo->ki         = SQ(cfg->wc);
-  lo->ffd_lpf_fc = 0.5f * cfg->lpf_fc;
+  cfg->kp         = 2.0f * cfg->wc * cfg->damp;
+  cfg->ki         = SQ(cfg->wc);
+  cfg->ffd_lpf_fc = 0.5f * cfg->lpf_fc;
 }
 
 static void pll_exec(pll_filter_t *pll) {
   DECL_PLL_PTRS(pll);
 
   // LF环路滤波器
-  INTEGRATOR(lo->ki_out, lo->theta_err, lo->ki, cfg->fs);
-  out->omega = lo->kp * lo->theta_err + lo->ki_out;
+  INTEGRATOR(lo->ki_out, lo->theta_err, cfg->ki, cfg->fs);
+  out->omega = cfg->kp * lo->theta_err + lo->ki_out;
   LOWPASS(out->lpf_omega, out->omega, cfg->lpf_fc, cfg->fs);
 
   // VCO压控振荡器
@@ -94,7 +92,7 @@ static void pll_exec_theta_in(pll_filter_t *pll, f32 theta) {
 
   // 前馈速度计算
   THETA_DERIVATIVE(lo->ffd_omega, in->theta, lo->prev_theta, 1.0f, cfg->fs);
-  LOWPASS(lo->lpf_ffd_omega, lo->ffd_omega, lo->ffd_lpf_fc, cfg->fs);
+  LOWPASS(lo->lpf_ffd_omega, lo->ffd_omega, cfg->ffd_lpf_fc, cfg->fs);
 
   // PD鉴相器
   lo->theta_err = in->theta - out->theta;

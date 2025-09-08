@@ -27,7 +27,7 @@ int main() {
     f32 input = generate_test_signal(i);
     bpf_exec_in(&bpf, input);
 
-    printf("%d,%.6f,%.6f,%.6f\n", i, input, bpf.out.y0, SIN(2 * PI * 1000.0f * i / SAMPLE_RATE));
+    printf("%d,%.6f,%.6f,%.6f\n", i, input, bpf.out.y, SIN(2 * PI * 1000.0f * i / SAMPLE_RATE));
   }
 
   return 0;

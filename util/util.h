@@ -35,10 +35,11 @@
 
 #define RESET_OUT(ptr)       memset(&(ptr)->out, 0, sizeof((ptr)->out))
 
-static inline void swap_byte_order(void *data, const u32 len) {
-  // u32 *p = (u32 *)data;
-  for (u32 i = 0; i < len / 4; ++i) {
-    // p[i] = ntohl(p[i]);
+static inline void swap_byte_order(void *data, const u32 size) {
+  u32 *p = (u32 *)data;
+  for (u32 i = 0; i < size / 4; ++i) {
+    u32 val = p[i];
+    p[i]    = (val >> 24) | ((val >> 8) & 0x0000FF00) | ((val << 8) & 0x00FF0000) | (val << 24);
   }
 }
 

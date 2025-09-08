@@ -6,6 +6,8 @@
 typedef struct {
   f32 fs;
   f32 fc;
+  f32 rc;
+  f32 alpha;
 } lpf_cfg_t;
 
 typedef struct {
@@ -38,6 +40,9 @@ static void lpf_init(lpf_filter_t *lpf, lpf_cfg_t lpf_cfg) {
   DECL_LPF_PTRS(lpf);
 
   *cfg = lpf_cfg;
+
+  cfg->rc    = 1.0f / (TAU * cfg->fc);
+  cfg->alpha = 1.0f / (1.0f + cfg->rc * cfg->fs);
 }
 
 /**
@@ -53,7 +58,7 @@ static void lpf_init(lpf_filter_t *lpf, lpf_cfg_t lpf_cfg) {
 static void lpf_exec(lpf_filter_t *lpf) {
   DECL_LPF_PTRS(lpf);
 
-  LOWPASS(out->y, in->x, cfg->fc, cfg->fs);
+  out->y = cfg->alpha * in->x + (1.0f - cfg->alpha) * out->y;
 }
 
 #endif // !LPF_H

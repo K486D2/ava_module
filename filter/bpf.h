@@ -8,29 +8,27 @@ typedef struct {
   f32 fs;       // 采样频率
   f32 f_center; // 中心频率
   f32 bw;       // 带宽
-} bpf_cfg_t;
-
-typedef struct {
-  f32 x0;
-} bpf_in_t;
-
-typedef struct {
-  f32 y0;
-} bpf_out_t;
-
-typedef struct {
   f32 q;
   f32 w0;
   f32 alpha;
   f32 cosw;
 
-  // 滤波器状态变量
-  f32 x1, x2; // 前两个输入
-  f32 y1, y2; // 前两个输出
-
   // 滤波器系数
   f32 b0, b1, b2;
   f32 a0, a1, a2;
+} bpf_cfg_t;
+
+typedef struct {
+  f32 x;
+} bpf_in_t;
+
+typedef struct {
+  f32 y;
+} bpf_out_t;
+
+typedef struct {
+  f32 x1, x2; // 前两个输入
+  f32 y1, y2; // 前两个输出
 } bpf_lo_t;
 
 typedef struct {
@@ -60,18 +58,18 @@ static int bpf_init(bpf_filter_t *bpf, bpf_cfg_t bpf_cfg) {
 
   *cfg = bpf_cfg;
 
-  lo->q     = cfg->f_center / cfg->bw;
-  lo->w0    = TAU * cfg->f_center / cfg->fs;
-  lo->alpha = SIN(lo->w0) / (2.0f * lo->q);
-  lo->cosw  = COS(lo->w0);
+  cfg->q     = cfg->f_center / cfg->bw;
+  cfg->w0    = TAU * cfg->f_center / cfg->fs;
+  cfg->alpha = SIN(cfg->w0) / (2.0f * cfg->q);
+  cfg->cosw  = COS(cfg->w0);
 
-  lo->a0 = 1.0f + lo->alpha;
+  cfg->a0 = 1.0f + cfg->alpha;
 
-  lo->b0 = lo->alpha / lo->a0;
-  lo->b1 = 0.0f / lo->a0;
-  lo->b2 = -lo->alpha / lo->a0;
-  lo->a1 = -2.0f * lo->cosw / lo->a0;
-  lo->a2 = (1.0f - lo->alpha) / lo->a0;
+  cfg->b0 = cfg->alpha / cfg->a0;
+  cfg->b1 = 0.0f / cfg->a0;
+  cfg->b2 = -cfg->alpha / cfg->a0;
+  cfg->a1 = -2.0f * cfg->cosw / cfg->a0;
+  cfg->a2 = (1.0f - cfg->alpha) / cfg->a0;
 
   return 0;
 }
@@ -87,21 +85,22 @@ static int bpf_exec(bpf_filter_t *bpf) {
   ARG_CHECK(bpf);
   DECL_BPF_PTRS(bpf);
 
-  out->y0 = lo->b0 * in->x0 + lo->b1 * lo->x1 + lo->b2 * lo->x2 - lo->a1 * lo->y1 - lo->a2 * lo->y2;
+  out->y =
+      cfg->b0 * in->x + cfg->b1 * lo->x1 + cfg->b2 * lo->x2 - cfg->a1 * lo->y1 - cfg->a2 * lo->y2;
 
   lo->x2 = lo->x1;
-  lo->x1 = in->x0;
+  lo->x1 = in->x;
   lo->y2 = lo->y1;
-  lo->y1 = out->y0;
+  lo->y1 = out->y;
 
   return 0;
 }
 
-static int bpf_exec_in(bpf_filter_t *bpf, f32 x0) {
+static int bpf_exec_in(bpf_filter_t *bpf, f32 x) {
   ARG_CHECK(bpf);
   DECL_BPF_PTRS(bpf);
 
-  in->x0 = x0;
+  in->x = x;
   return bpf_exec(bpf);
 }
 

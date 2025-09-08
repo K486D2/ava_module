@@ -23,7 +23,7 @@ int main() {
   u32 cnt = 0;
   while (true) {
     fifo_spsc_buf_out(fifo, buf, &cnt, sizeof(u32));
-    printf("read cnt: %u, fifo in: %llu, fifo out: %llu, fifo len: %llu\n",
+    printf("read cnt: %u, fifo in: %lu, fifo out: %lu, fifo len: %lu\n",
            cnt,
            atomic_load(&fifo->in),
            atomic_load(&fifo->out),
