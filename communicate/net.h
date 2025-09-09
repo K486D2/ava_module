@@ -89,20 +89,15 @@ typedef struct net {
 } net_t;
 
 #define DECL_NET_PTRS(net)                                                                         \
-  net_t     *p   = (net);                                                                          \
-  net_cfg_t *cfg = &p->cfg;                                                                        \
-  net_lo_t  *lo  = &p->lo;                                                                         \
-  ARG_UNUSED(p);                                                                                   \
+  net_cfg_t *cfg = &net->cfg;                                                                      \
+  net_lo_t  *lo  = &net->lo;                                                                       \
+  ARG_UNUSED(net);                                                                                 \
   ARG_UNUSED(cfg);                                                                                 \
   ARG_UNUSED(lo);
 
-#define DECL_NET_PTRS_PREFIX(net, prefix)                                                          \
-  net_ctl_t *prefix##_p   = (net);                                                                 \
-  net_cfg_t *prefix##_cfg = &prefix##_p->cfg;                                                      \
-  net_lo_t  *prefix##_lo  = &prefix##_p->lo;                                                       \
-  ARG_UNUSED(prefix##_p);                                                                          \
-  ARG_UNUSED(prefix##_cfg);                                                                        \
-  ARG_UNUSED(prefix##_lo);
+#define DECL_NET_PTR_RENAME(net, name)                                                            \
+  net_t *(name) = (net);                                                                           \
+  ARG_UNUSED(name);
 
 static int net_init(net_t *net, net_cfg_t net_cfg) {
   DECL_NET_PTRS(net);

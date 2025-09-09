@@ -5,6 +5,7 @@
 #include "arm_math.h"
 #endif
 
+#include <immintrin.h>
 #include <math.h>
 
 #include "fastmath.h"
@@ -221,5 +222,86 @@
     (ret).a = (x).a / (y).a;                                                                       \
     (ret).b = (x).b / (y).b;                                                                       \
   } while (0)
+
+static void find_max(const float *arr, size_t n, float *max_val, size_t *max_idx) {
+  if (n == 0) {
+    *max_val = 0.0f;
+    *max_idx = 0;
+    return;
+  }
+
+#if defined(__AVX__)
+  size_t i       = 0;
+  __m256 max_vec = _mm256_set1_ps(arr[0]);
+  float  tmp_max = arr[0];
+  size_t idx_max = 0;
+
+  for (; i + 7 < n; i += 8) {
+    __m256 v = _mm256_loadu_ps(arr + i);
+    max_vec  = _mm256_max_ps(max_vec, v);
+
+    float tmp[8];
+    _mm256_storeu_ps(tmp, max_vec);
+    for (int j = 0; j < 8; j++) {
+      if (tmp[j] > tmp_max) {
+        tmp_max = tmp[j];
+        idx_max = i + j;
+      }
+    }
+  }
+
+  for (; i < n; i++) {
+    if (arr[i] > tmp_max) {
+      tmp_max = arr[i];
+      idx_max = i;
+    }
+  }
+
+  *max_val = tmp_max;
+  *max_idx = idx_max;
+
+#elif defined(__SSE__)
+  size_t i       = 0;
+  __m128 max_vec = _mm_set1_ps(arr[0]);
+  float  tmp_max = arr[0];
+  size_t idx_max = 0;
+
+  for (; i + 3 < n; i += 4) {
+    __m128 v = _mm_loadu_ps(arr + i);
+    max_vec  = _mm_max_ps(max_vec, v);
+
+    float tmp[4];
+    _mm_storeu_ps(tmp, max_vec);
+    for (int j = 0; j < 4; j++) {
+      if (tmp[j] > tmp_max) {
+        tmp_max = tmp[j];
+        idx_max = i + j;
+      }
+    }
+  }
+
+  for (; i < n; i++) {
+    if (arr[i] > tmp_max) {
+      tmp_max = arr[i];
+      idx_max = i;
+    }
+  }
+
+  *max_val = tmp_max;
+  *max_idx = idx_max;
+
+#else
+  float  tmp_max = arr[0];
+  size_t idx_max = 0;
+  for (size_t i = 1; i < n; i++) {
+    if (arr[i] > tmp_max) {
+      tmp_max = arr[i];
+      idx_max = i;
+    }
+  }
+  *max_val = tmp_max;
+  *max_idx = idx_max;
+#endif
+}
 
 #endif // !MATHDEF_H
