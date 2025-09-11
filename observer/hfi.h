@@ -1,9 +1,8 @@
 #ifndef HFI_H
 #define HFI_H
 
-#include "filter/pll.h"
-
-#include "../filter/bpf.h"
+#include "../filter/iir.h"
+#include "../filter/pll.h"
 #include "../transform/clarkepark.h"
 #include "../util/def.h"
 #include "../util/util.h"
@@ -29,7 +28,7 @@ typedef struct {
 
 typedef struct {
   f32          hfi_theta;
-  bpf_filter_t id_bpf, iq_bpf;
+  iir_filter_t id_bpf, iq_bpf;
   f32          theta_h;
   f32          hfi_id, hfi_iq;
   f32          lpf_id, hfi_theta_err;
@@ -67,18 +66,20 @@ static void hfi_init(hfi_obs_t *hfi, hfi_cfg_t hfi_cfg) {
 
   *cfg = hfi_cfg;
 
+  lo->id_bpf.cfg.fs = lo->iq_bpf.cfg.fs = cfg->fs;
+
   pll_init(&lo->pll, lo->pll.cfg);
-  bpf_init(&lo->id_bpf, lo->id_bpf.cfg);
-  bpf_init(&lo->iq_bpf, lo->iq_bpf.cfg);
+  iir_init(&lo->id_bpf, lo->id_bpf.cfg);
+  iir_init(&lo->iq_bpf, lo->iq_bpf.cfg);
 }
 
 static void hfi_exec(hfi_obs_t *hfi) {
   DECL_HFI_PTRS(hfi);
-  DECL_BPF_PTR_RENAME(&lo->id_bpf, id_bpf);
-  DECL_BPF_PTR_RENAME(&lo->iq_bpf, iq_bpf);
+  DECL_IIR_PTR_RENAME(&lo->id_bpf, id_bpf);
+  DECL_IIR_PTR_RENAME(&lo->iq_bpf, iq_bpf);
 
-  bpf_exec_in(id_bpf, in->i_dq.d);
-  bpf_exec_in(iq_bpf, in->i_dq.q);
+  iir_exec_in(id_bpf, in->i_dq.d);
+  iir_exec_in(iq_bpf, in->i_dq.q);
 
   lo->hfi_id = id_bpf->out.y * SIN(lo->theta_h);
   lo->hfi_iq = iq_bpf->out.y * SIN(lo->theta_h);
@@ -98,24 +99,23 @@ static void hfi_exec(hfi_obs_t *hfi) {
   out->vd_h = cfg->vh * COS(lo->theta_h);
 
   // Polarity
-  //  out->id_in = 0.0f;
-  //  if (++lo->polar_cnt > (u32)(cfg->fs * 0.3f))
-  //    lo->polar_cnt = (u32)(cfg->fs * 0.3f + 1.0f);
+  out->id_in = 0.0f;
+  if (++lo->polar_cnt > (u32)(cfg->fs * 0.3f))
+    lo->polar_cnt = (u32)(cfg->fs * 0.3f + 1.0f);
 
-  //  if ((lo->polar_cnt > (u32)(cfg->fs * 0.1f)) && (lo->polar_cnt <= (u32)(cfg->fs * 0.2f))) {
-  //    out->id_in = cfg->id_h;
-  //    lo->id_pos += ABS(lo->lpf_id);
-  //  } else if ((lo->polar_cnt > (u32)(cfg->fs * 0.2f)) && (lo->polar_cnt <= (u32)(cfg->fs *
-  //  0.3f))) {
-  //    out->id_in = -cfg->id_h;
-  //    lo->id_neg += ABS(lo->lpf_id);
-  //    if (lo->polar_cnt == (u32)(cfg->fs * 0.3f)) {
-  //      cfg->vh          = (ABS(lo->id_pos) > ABS(lo->id_neg)) ? cfg->vh : -cfg->vh;
-  //      lo->polar_offset = (ABS(lo->id_pos) > ABS(lo->id_neg)) ? 0.0f : PI;
-  //    }
-  //  }
+  if ((lo->polar_cnt > (u32)(cfg->fs * 0.1f)) && (lo->polar_cnt <= (u32)(cfg->fs * 0.2f))) {
+    out->id_in = cfg->id_h;
+    lo->id_pos += ABS(lo->lpf_id);
+  } else if ((lo->polar_cnt > (u32)(cfg->fs * 0.2f)) && (lo->polar_cnt <= (u32)(cfg->fs * 0.3f))) {
+    out->id_in = -cfg->id_h;
+    lo->id_neg += ABS(lo->lpf_id);
+    if (lo->polar_cnt == (u32)(cfg->fs * 0.3f)) {
+      cfg->vh          = (ABS(lo->id_pos) > ABS(lo->id_neg)) ? cfg->vh : -cfg->vh;
+      lo->polar_offset = (ABS(lo->id_pos) > ABS(lo->id_neg)) ? 0.0f : PI;
+    }
+  }
 
-  out->theta = lo->hfi_theta; // + lo->polar_offset;
+  out->theta = lo->hfi_theta + lo->polar_offset;
   WARP_TAU(out->theta);
 }
 

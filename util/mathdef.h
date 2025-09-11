@@ -5,7 +5,10 @@
 #include "arm_math.h"
 #endif
 
+#if defined(__linux__) || defined(_WIN32)
 #include <immintrin.h>
+#endif
+
 #include <math.h>
 
 #include "fastmath.h"

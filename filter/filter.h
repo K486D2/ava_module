@@ -1,8 +1,7 @@
 #ifndef FILTER_H
 #define FILTER_H
 
-#include "bpf.h"
-#include "lpf.h"
+#include "iir.h"
 #include "maf.h"
 #include "pll.h"
 #include "rls.h"

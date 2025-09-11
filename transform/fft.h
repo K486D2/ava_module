@@ -126,7 +126,9 @@ static void fft_exec(fft_t *fft) {
 static void fft_destroy(fft_t *fft) {
   DECL_FFT_PTRS(fft);
 
+#if defined(__linux__) || defined(_WIN32)
   fftwf_destroy_plan(lo->p);
+#endif
 }
 
 static void fft_exec_in(fft_t *fft, f32 val) {
@@ -137,7 +139,7 @@ static void fft_exec_in(fft_t *fft, f32 val) {
     lo->in_idx = 0;
     fft_exec(fft);
 
-    printf("freq: %f, idx: %lu, mag: %f\n", out->max_freq, out->out_idx, out->max_mag);
+    printf("freq: %f, idx: %zu, mag: %f\n", out->max_freq, out->out_idx, out->max_mag);
   }
 }
 

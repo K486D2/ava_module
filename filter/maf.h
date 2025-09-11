@@ -30,28 +30,18 @@ typedef struct {
 } maf_filter_t;
 
 #define DECL_MAF_PTRS(maf)                                                                         \
-  maf_filter_t *p   = (maf);                                                                       \
-  maf_cfg_t    *cfg = &p->cfg;                                                                     \
-  maf_in_t     *in  = &p->in;                                                                      \
-  maf_out_t    *out = &p->out;                                                                     \
-  maf_lo_t     *lo  = &p->lo;                                                                      \
-  ARG_UNUSED(p);                                                                                   \
+  maf_cfg_t *cfg = &(maf)->cfg;                                                                    \
+  maf_in_t  *in  = &(maf)->in;                                                                     \
+  maf_out_t *out = &(maf)->out;                                                                    \
+  maf_lo_t  *lo  = &(maf)->lo;                                                                     \
   ARG_UNUSED(cfg);                                                                                 \
   ARG_UNUSED(in);                                                                                  \
   ARG_UNUSED(out);                                                                                 \
   ARG_UNUSED(lo);
 
-#define DECL_MAF_PTRS_PREFIX(maf, prefix)                                                          \
-  maf_filter_t *prefix##_p   = (maf);                                                              \
-  maf_cfg_t    *prefix##_cfg = &prefix##_p->cfg;                                                   \
-  maf_in_t     *prefix##_in  = &prefix##_p->in;                                                    \
-  maf_out_t    *prefix##_out = &prefix##_p->out;                                                   \
-  maf_lo_t     *prefix##_lo  = &prefix##_p->lo;                                                    \
-  ARG_UNUSED(prefix##_p);                                                                          \
-  ARG_UNUSED(prefix##_cfg);                                                                        \
-  ARG_UNUSED(prefix##_in);                                                                         \
-  ARG_UNUSED(prefix##_out);                                                                        \
-  ARG_UNUSED(prefix##_lo);
+#define DECL_MAF_PTR_RENAME(maf, name)                                                             \
+  maf_filter_t *name = (maf);                                                                      \
+  ARG_UNUSED(name);
 
 static void maf_init(maf_filter_t *maf, maf_cfg_t maf_cfg) {
   DECL_MAF_PTRS(maf);
