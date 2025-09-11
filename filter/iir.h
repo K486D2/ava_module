@@ -32,12 +32,12 @@ typedef struct {
 } iir_out_t;
 
 typedef struct {
-  f32 a0, a1, a2, a3, a4;
+  f32 rc;
+  f32 normal_a0, normal_a1, normal_a2, normal_a3, normal_a4;
   f32 x1, x2, y1, y2;
   f32 w0, sin_w0, cos_w0, alpha;
   f32 b0, b1, b2;
-  f32 den0, den1, den2;
-  f32 rc;
+  f32 a0, a1, a2;
 } iir_lo_t;
 
 typedef struct {
@@ -74,14 +74,14 @@ static int iir_init(iir_filter_t *iir, iir_cfg_t iir_cfg) {
 
     switch (cfg->type) {
     case IIR_LOWPASS: {
-      lo->b0 = lo->alpha;
-      lo->b1 = 0.0f;
-      lo->a1 = -(1.0f - lo->alpha);
+      lo->b0        = lo->alpha;
+      lo->b1        = 0.0f;
+      lo->normal_a1 = -(1.0f - lo->alpha);
     } break;
     case IIR_HIGHPASS: {
-      lo->b0 = 1.0f - lo->alpha;
-      lo->b1 = -(1.0f - lo->alpha);
-      lo->a1 = -(1.0f - lo->alpha);
+      lo->b0        = 1.0f - lo->alpha;
+      lo->b1        = -(1.0f - lo->alpha);
+      lo->normal_a1 = -(1.0f - lo->alpha);
     } break;
     default:
       break;
@@ -96,38 +96,39 @@ static int iir_init(iir_filter_t *iir, iir_cfg_t iir_cfg) {
 
     switch (cfg->type) {
     case IIR_LOWPASS: {
-      lo->b0   = (1.0f - lo->cos_w0) / 2.0f;
-      lo->b1   = lo->b0 * 2.0f;
-      lo->b2   = lo->b0;
-      lo->den0 = 1.0f + lo->alpha;
-      lo->den1 = -2.0f * lo->cos_w0;
-      lo->den2 = 1.0f - lo->alpha;
+      lo->b0 = (1.0f - lo->cos_w0) / 2.0f;
+      lo->b1 = lo->b0 * 2.0f;
+      lo->b2 = lo->b0;
+      lo->a0 = 1.0f + lo->alpha;
+      lo->a1 = -2.0f * lo->cos_w0;
+      lo->a2 = 1.0f - lo->alpha;
     } break;
     case IIR_HIGHPASS: {
-      lo->b0   = (1.0f + lo->cos_w0) / 2.0f;
-      lo->b1   = -lo->b0 * 2.0f;
-      lo->b2   = lo->b0;
-      lo->den0 = 1.0f + lo->alpha;
-      lo->den1 = -2.0f * lo->cos_w0;
-      lo->den2 = 1.0f - lo->alpha;
+      lo->b0 = (1.0f + lo->cos_w0) / 2.0f;
+      lo->b1 = -lo->b0 * 2.0f;
+      lo->b2 = lo->b0;
+      lo->a0 = 1.0f + lo->alpha;
+      lo->a1 = -2.0f * lo->cos_w0;
+      lo->a2 = 1.0f - lo->alpha;
     } break;
     case IIR_BANDPASS: {
-      lo->b0   = lo->alpha;
-      lo->b1   = 0.0f;
-      lo->b2   = -lo->alpha;
-      lo->den0 = 1.0f + lo->alpha;
-      lo->den1 = -2.0f * lo->cos_w0;
-      lo->den2 = 1.0f - lo->alpha;
+      lo->b0 = lo->alpha;
+      lo->b1 = 0.0f;
+      lo->b2 = -lo->alpha;
+      lo->a0 = 1.0f + lo->alpha;
+      lo->a1 = -2.0f * lo->cos_w0;
+      lo->a2 = 1.0f - lo->alpha;
     } break;
     default:
       break;
     }
 
-    lo->a0 = lo->b0 / lo->den0;
-    lo->a1 = lo->b1 / lo->den0;
-    lo->a2 = lo->b2 / lo->den0;
-    lo->a3 = lo->den1 / lo->den0;
-    lo->a4 = lo->den2 / lo->den0;
+    // 归一化
+    lo->normal_a0 = lo->b0 / lo->a0;
+    lo->normal_a1 = lo->b1 / lo->a0;
+    lo->normal_a2 = lo->b2 / lo->a0;
+    lo->normal_a3 = lo->a1 / lo->a0;
+    lo->normal_a4 = lo->a2 / lo->a0;
   } break;
   default:
     break;
@@ -142,12 +143,13 @@ static int iir_exec(iir_filter_t *iir) {
 
   switch (cfg->order) {
   case IIR_1: {
-    out->y = lo->b0 * in->x + lo->b1 * lo->x1 - lo->a1 * lo->y1;
+    out->y = lo->b0 * in->x + lo->b1 * lo->x1 - lo->normal_a1 * lo->y1;
     lo->x1 = in->x;
     lo->y1 = out->y;
   } break;
   case IIR_2: {
-    out->y = lo->a0 * in->x + lo->a1 * lo->x1 + lo->a2 * lo->x2 - lo->a3 * lo->y1 - lo->a4 * lo->y2;
+    out->y = lo->normal_a0 * in->x + lo->normal_a1 * lo->x1 + lo->normal_a2 * lo->x2 -
+             lo->normal_a3 * lo->y1 - lo->normal_a4 * lo->y2;
     lo->x2 = lo->x1;
     lo->x1 = in->x;
     lo->y2 = lo->y1;
