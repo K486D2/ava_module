@@ -162,7 +162,7 @@ static inline void foc_obs_i_dq(foc_t *foc) {
     hfi_exec_in(hfi, in->i_dq);
     in->rotor.obs_theta = hfi->out.theta;
     in->rotor.obs_omega = hfi->out.omega;
-    lo->ref_i_dq.d      = hfi->out.id_in;
+    lo->ref_i_dq.d      = hfi->out.id;
   } break;
   default:
     break;
@@ -175,7 +175,7 @@ static inline void foc_obs_v_dq(foc_t *foc) {
   switch (lo->e_obs) {
   case FOC_OBS_HFI: {
     DECL_HFI_PTR_RENAME(&lo->hfi, hfi)
-    out->v_dq.d += hfi->out.vd_h;
+    out->v_dq.d += hfi->out.vd;
   } break;
   default:
     break;

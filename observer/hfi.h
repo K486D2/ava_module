@@ -10,8 +10,7 @@
 typedef struct {
   f32 fs;
   f32 fh;
-  f32 vh;
-  f32 id_h;
+  f32 hfi_vd, hfi_id;
   f32 id_lpf_fc, iq_lpf_fc;
 } hfi_cfg_t;
 
@@ -22,29 +21,38 @@ typedef struct {
 typedef struct {
   f32 theta;
   f32 omega;
-  f32 id_in;
-  f32 vd_h;
+  f32 id;
+  f32 vd;
 } hfi_out_t;
 
-typedef struct {
-  f32          hfi_theta;
-  iir_filter_t id_bpf, iq_bpf;
-  f32          theta_h;
-  f32          hfi_id, hfi_iq;
-  f32          lpf_id, hfi_theta_err;
-  f32          hfi_theta_err_integ;
-  u32          polar_cnt;
-  f32          id_pos, id_neg;
-  f32          polar_offset;
+typedef enum {
+  POLAR_IDF_NULL,
+  POLAR_IDF_POSITIVE,
+  POLAR_IDF_NEGATIVE,
+  POALR_IDF_FINISH,
+} polar_idf_e;
 
+typedef struct {
+  f32 hfi_id, hfi_iq;
+  f32 hfi_theta;
+  f32 lpf_id, hfi_theta_err;
+  f32 hfi_theta_err_integ;
+
+  // 极性辨识
+  polar_idf_e e_polar_idf;
+  u32         polar_cnt, polar_cnt_max;
+  f32         id_pos, id_neg;
+  f32         polar_offset;
+
+  iir_filter_t id_bpf, iq_bpf;
   pll_filter_t pll;
 } hfi_lo_t;
 
 typedef struct {
   hfi_cfg_t cfg;
   hfi_in_t  in;
-  hfi_lo_t  lo;
   hfi_out_t out;
+  hfi_lo_t  lo;
 } hfi_obs_t;
 
 #define DECL_HFI_PTRS(hfi)                                                                         \
@@ -67,6 +75,7 @@ static void hfi_init(hfi_obs_t *hfi, hfi_cfg_t hfi_cfg) {
   *cfg = hfi_cfg;
 
   lo->id_bpf.cfg.fs = lo->iq_bpf.cfg.fs = cfg->fs;
+  lo->polar_cnt_max                     = (u32)(cfg->fs / 3.0f);
 
   pll_init(&lo->pll, lo->pll.cfg);
   iir_init(&lo->id_bpf, lo->id_bpf.cfg);
@@ -81,8 +90,8 @@ static void hfi_exec(hfi_obs_t *hfi) {
   iir_exec_in(id_bpf, in->i_dq.d);
   iir_exec_in(iq_bpf, in->i_dq.q);
 
-  lo->hfi_id = id_bpf->out.y * SIN(lo->theta_h);
-  lo->hfi_iq = iq_bpf->out.y * SIN(lo->theta_h);
+  lo->hfi_id = id_bpf->out.y * SIN(lo->hfi_theta);
+  lo->hfi_iq = iq_bpf->out.y * SIN(lo->hfi_theta);
   LOWPASS(lo->lpf_id, lo->hfi_id, cfg->id_lpf_fc, cfg->fs);
   LOWPASS(lo->hfi_theta_err, lo->hfi_iq, cfg->iq_lpf_fc, cfg->fs);
 
@@ -90,33 +99,44 @@ static void hfi_exec(hfi_obs_t *hfi) {
   DECL_PLL_PTR_RENAME(&lo->pll, pll);
   pll->lo.theta_err = lo->hfi_theta_err;
   pll_exec(pll);
-  lo->hfi_theta = pll->out.theta;
-  out->omega    = pll->out.omega;
 
-  // Inject
-  INTEGRATOR(lo->theta_h, TAU * cfg->fh, 1.0f, cfg->fs);
-  WARP_TAU(lo->theta_h);
-  out->vd_h = cfg->vh * COS(lo->theta_h);
+  // 注入
+  INTEGRATOR(lo->hfi_theta, TAU * cfg->fh, 1.0f, cfg->fs);
+  WARP_TAU(lo->hfi_theta);
+  out->vd = cfg->hfi_vd * COS(lo->hfi_theta);
 
-  // Polarity
-  out->id_in = 0.0f;
-  if (++lo->polar_cnt > (u32)(cfg->fs * 0.3f))
-    lo->polar_cnt = (u32)(cfg->fs * 0.3f + 1.0f);
-
-  if ((lo->polar_cnt > (u32)(cfg->fs * 0.1f)) && (lo->polar_cnt <= (u32)(cfg->fs * 0.2f))) {
-    out->id_in = cfg->id_h;
+  // 极性辨识
+  out->id = 0.0f;
+  lo->polar_cnt++;
+  switch (lo->e_polar_idf) {
+  case POLAR_IDF_NULL: {
+    if (lo->polar_cnt > lo->polar_cnt_max * 1)
+      lo->e_polar_idf = POLAR_IDF_POSITIVE;
+  } break;
+  case POLAR_IDF_POSITIVE: {
+    out->id = cfg->hfi_id;
     lo->id_pos += ABS(lo->lpf_id);
-  } else if ((lo->polar_cnt > (u32)(cfg->fs * 0.2f)) && (lo->polar_cnt <= (u32)(cfg->fs * 0.3f))) {
-    out->id_in = -cfg->id_h;
+    if (lo->polar_cnt > lo->polar_cnt_max * 2)
+      lo->e_polar_idf = POLAR_IDF_NEGATIVE;
+  } break;
+  case POLAR_IDF_NEGATIVE: {
+    out->id = -cfg->hfi_id;
     lo->id_neg += ABS(lo->lpf_id);
-    if (lo->polar_cnt == (u32)(cfg->fs * 0.3f)) {
-      cfg->vh          = (ABS(lo->id_pos) > ABS(lo->id_neg)) ? cfg->vh : -cfg->vh;
-      lo->polar_offset = (ABS(lo->id_pos) > ABS(lo->id_neg)) ? 0.0f : PI;
-    }
+    if (lo->polar_cnt == lo->polar_cnt_max * 3)
+      lo->e_polar_idf = POALR_IDF_FINISH;
+  } break;
+  case POALR_IDF_FINISH: {
+    cfg->hfi_vd      = (ABS(lo->id_pos) > ABS(lo->id_neg)) ? cfg->hfi_vd : -cfg->hfi_vd;
+    lo->polar_offset = (ABS(lo->id_pos) > ABS(lo->id_neg)) ? 0.0f : PI;
+    lo->polar_cnt    = 0;
+  } break;
+  default:
+    break;
   }
 
-  out->theta = lo->hfi_theta + lo->polar_offset;
+  out->theta = pll->out.theta + lo->polar_offset;
   WARP_TAU(out->theta);
+  out->omega = pll->out.omega;
 }
 
 static void hfi_exec_in(hfi_obs_t *hfi, f32_dq_t i_dq) {

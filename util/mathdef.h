@@ -120,14 +120,6 @@
     CLAMP((ret).w, (min), (max));                                                                  \
   } while (0)
 
-#define UPDATE_MIN_MAX(min, max, val)                                                              \
-  do {                                                                                             \
-    if ((val) < (min))                                                                             \
-      (min) = (val);                                                                               \
-    else if ((val) > (max))                                                                        \
-      (max) = (val);                                                                               \
-  } while (0)
-
 #define WARP_PI(rad)                                                                               \
   do {                                                                                             \
     if (ABS(rad) > TAU)                                                                            \
