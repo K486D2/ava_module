@@ -82,30 +82,7 @@ static void hfi_init(hfi_obs_t *hfi, hfi_cfg_t hfi_cfg) {
   iir_init(&lo->iq_bpf, lo->iq_bpf.cfg);
 }
 
-static void hfi_exec(hfi_obs_t *hfi) {
-  DECL_HFI_PTRS(hfi);
-  DECL_IIR_PTR_RENAME(&lo->id_bpf, id_bpf);
-  DECL_IIR_PTR_RENAME(&lo->iq_bpf, iq_bpf);
-
-  iir_exec_in(id_bpf, in->i_dq.d);
-  iir_exec_in(iq_bpf, in->i_dq.q);
-
-  lo->hfi_id = id_bpf->out.y * SIN(lo->hfi_theta);
-  lo->hfi_iq = iq_bpf->out.y * SIN(lo->hfi_theta);
-  LOWPASS(lo->lpf_id, lo->hfi_id, cfg->id_lpf_fc, cfg->fs);
-  LOWPASS(lo->hfi_theta_err, lo->hfi_iq, cfg->iq_lpf_fc, cfg->fs);
-
-  // PLL
-  DECL_PLL_PTR_RENAME(&lo->pll, pll);
-  pll->lo.theta_err = lo->hfi_theta_err;
-  pll_exec(pll);
-
-  // 注入
-  INTEGRATOR(lo->hfi_theta, TAU * cfg->fh, 1.0f, cfg->fs);
-  WARP_TAU(lo->hfi_theta);
-  out->vd = cfg->hfi_vd * COS(lo->hfi_theta);
-
-  // 极性辨识
+static inline hfi_polar_idf(hfi_obs_t *hfi) {
   out->id = 0.0f;
   lo->polar_cnt++;
   switch (lo->e_polar_idf) {
@@ -133,6 +110,33 @@ static void hfi_exec(hfi_obs_t *hfi) {
   default:
     break;
   }
+}
+
+static void hfi_exec(hfi_obs_t *hfi) {
+  DECL_HFI_PTRS(hfi);
+  DECL_IIR_PTR_RENAME(&lo->id_bpf, id_bpf);
+  DECL_IIR_PTR_RENAME(&lo->iq_bpf, iq_bpf);
+
+  iir_exec_in(id_bpf, in->i_dq.d);
+  iir_exec_in(iq_bpf, in->i_dq.q);
+
+  lo->hfi_id = id_bpf->out.y * SIN(lo->hfi_theta);
+  lo->hfi_iq = iq_bpf->out.y * SIN(lo->hfi_theta);
+  LOWPASS(lo->lpf_id, lo->hfi_id, cfg->id_lpf_fc, cfg->fs);
+  LOWPASS(lo->hfi_theta_err, lo->hfi_iq, cfg->iq_lpf_fc, cfg->fs);
+
+  // PLL
+  DECL_PLL_PTR_RENAME(&lo->pll, pll);
+  pll->lo.theta_err = lo->hfi_theta_err;
+  pll_exec(pll);
+
+  // 注入
+  INTEGRATOR(lo->hfi_theta, TAU * cfg->fh, 1.0f, cfg->fs);
+  WARP_TAU(lo->hfi_theta);
+  out->vd = cfg->hfi_vd * COS(lo->hfi_theta);
+
+  // 极性辨识
+  hfi_polar_idf(hfi);
 
   out->theta = pll->out.theta + lo->polar_offset;
   WARP_TAU(out->theta);
