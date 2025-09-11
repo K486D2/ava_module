@@ -83,6 +83,8 @@ static void hfi_init(hfi_obs_t *hfi, hfi_cfg_t hfi_cfg) {
 }
 
 static inline hfi_polar_idf(hfi_obs_t *hfi) {
+  DECL_HFI_PTRS(hfi);
+
   out->id = 0.0f;
   lo->polar_cnt++;
   switch (lo->e_polar_idf) {
