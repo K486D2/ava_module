@@ -82,7 +82,7 @@ static void hfi_init(hfi_obs_t *hfi, hfi_cfg_t hfi_cfg) {
   iir_init(&lo->iq_bpf, lo->iq_bpf.cfg);
 }
 
-static inline hfi_polar_idf(hfi_obs_t *hfi) {
+static inline void hfi_polar_idf(hfi_obs_t *hfi) {
   DECL_HFI_PTRS(hfi);
 
   out->id = 0.0f;
