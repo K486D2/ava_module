@@ -32,6 +32,7 @@ typedef struct {
 
 typedef struct {
   f32          exec_freq;
+  f32          ref_theta_cali_id, ref_theta_cali_omega;
   adc_raw_t    adc_offset;
   f32          theta_offset;
   f32          sensor_theta_comp_gain, theta_comp_gain;
@@ -57,6 +58,7 @@ typedef struct {
 } foc_out_t;
 
 typedef enum {
+  FOC_STATE_NULL,
   FOC_STATE_CALI,
   FOC_STATE_READY,
   FOC_STATE_DISABLE,
@@ -219,8 +221,6 @@ static inline void foc_select_theta(foc_t *foc) {
   DECL_FOC_PTRS(foc);
 
   switch (lo->e_theta) {
-  case FOC_THETA_NULL:
-    break;
   case FOC_THETA_FORCE:
     in->rotor.theta = in->rotor.force_theta;
     in->rotor.omega = in->rotor.force_omega;
@@ -254,7 +254,6 @@ static inline void foc_disable(foc_t *foc) {
   memset(&in->f32_i_uvw, 0, sizeof(in->f32_i_uvw));
 
   RESET_OUT(foc);
-  RESET_OUT(&foc->lo.pll);
   RESET_OUT(&foc->lo.id_pid);
   RESET_OUT(&foc->lo.iq_pid);
   RESET_OUT(&foc->lo.smo);
@@ -347,8 +346,8 @@ static inline void foc_cali(foc_t *foc) {
   case FOC_CALI_INIT: {
     if (foc_adc_cali(foc) < 0)
       break;
-    lo->ref_i_dq.d        = 3.0f;
-    in->rotor.force_omega = 20.0f;
+    lo->ref_i_dq.d        = cfg->ref_theta_cali_id;
+    in->rotor.force_omega = cfg->ref_theta_cali_omega;
     lo->e_theta           = FOC_THETA_FORCE;
     lo->e_cali            = FOC_CALI_CW;
   } break;
