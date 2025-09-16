@@ -6,9 +6,9 @@
 
 typedef struct {
   f32         fs;
-  motor_cfg_t motor_cfg;
   f32         ks;
   f32         es0;
+  motor_cfg_t motor_cfg;
 } smo_cfg_t;
 
 typedef struct {
@@ -21,9 +21,10 @@ typedef struct {
 } smo_out_t;
 
 typedef struct {
-  f32_ab_t     est_i_ab;
-  f32_ab_t     est_i_ab_err;
-  f32_ab_t     est_emf_v_ab;
+  f32_ab_t est_i_ab;
+  f32_ab_t est_i_ab_err;
+  f32_ab_t est_emf_v_ab;
+
   pll_filter_t pll;
 } smo_lo_t;
 
