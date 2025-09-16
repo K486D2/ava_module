@@ -32,7 +32,6 @@ typedef struct {
 
 typedef struct {
   f32          exec_freq;
-  bool         is_adc_cail, is_theta_cail;
   adc_raw_t    adc_offset;
   f32          theta_offset;
   f32          sensor_theta_comp_gain, theta_comp_gain;
@@ -78,6 +77,13 @@ typedef enum {
   FOC_OBS_HFI,
 } foc_obs_e;
 
+typedef enum {
+  FOC_CALI_INIT,  // 初始化
+  FOC_CALI_CW,    // 顺时针旋转校准
+  FOC_CALI_CCW,   // 逆时针旋转校准
+  FOC_CALI_FINISH // 校准完成
+} foc_cali_e;
+
 typedef struct {
   u32 NULL_FUNC_PTR : 1;
 } foc_fault_t;
@@ -85,13 +91,15 @@ typedef struct {
 typedef struct {
   f32 elapsed_us;
   u32 exec_cnt;
-  u32 adc_cail_cnt;
+  u32 adc_cali_cnt, theta_cali_cnt, theta_cali_hold_cnt;
+  f32 theta_offset_sum;
 
   f32_dq_t ref_i_dq;
   f32_dq_t ffd_v_dq;
 
   foc_fault_t fault;
 
+  foc_cali_e  e_cali;
   foc_state_e e_state;
   foc_theta_e e_theta;
   foc_obs_e   e_obs;
@@ -104,7 +112,7 @@ typedef struct {
 
 typedef adc_raw_t (*foc_get_adc_f)(void);
 typedef f32 (*foc_get_theta_f)(void);
-typedef void (*foc_set_pwm_f)(u32 pwm_cnt_max, u32_uvw_t u32_pwm_duty);
+typedef void (*foc_set_pwm_f)(u32 pwm_full_cnt, u32_uvw_t u32_pwm_duty);
 typedef void (*foc_set_drv_f)(bool enable);
 
 typedef struct {
@@ -204,7 +212,7 @@ static inline void foc_svpwm(foc_t *foc) {
 
   UVW_ADD_IP(out->svpwm.f32_pwm_duty, 0.5f);
   UVW_CLAMP(out->svpwm.f32_pwm_duty, cfg->periph_cfg.f32_pwm_min, cfg->periph_cfg.f32_pwm_max);
-  UVW_MUL(out->svpwm.u32_pwm_duty, out->svpwm.f32_pwm_duty, cfg->periph_cfg.pwm_cnt_max);
+  UVW_MUL(out->svpwm.u32_pwm_duty, out->svpwm.f32_pwm_duty, cfg->periph_cfg.pwm_full_cnt);
 }
 
 static inline void foc_select_theta(foc_t *foc) {
@@ -232,25 +240,6 @@ static inline void foc_select_theta(foc_t *foc) {
   }
 }
 
-static inline void foc_cali(foc_t *foc) {
-  DECL_FOC_PTRS(foc);
-
-  if (cfg->is_adc_cail)
-    return;
-
-  ops->f_set_drv(true);
-  in->adc_raw = ops->f_get_adc();
-  UVW_ADD_VEC_IP(cfg->adc_offset.i32_i_uvw, in->adc_raw.i32_i_uvw);
-  if (++lo->adc_cail_cnt >= LF(cfg->periph_cfg.adc_cail_cnt_max)) {
-    cfg->adc_offset.i32_i_uvw.u >>= cfg->periph_cfg.adc_cail_cnt_max;
-    cfg->adc_offset.i32_i_uvw.v >>= cfg->periph_cfg.adc_cail_cnt_max;
-    cfg->adc_offset.i32_i_uvw.w >>= cfg->periph_cfg.adc_cail_cnt_max;
-    cfg->is_adc_cail = true;
-    ops->f_set_drv(false);
-    lo->e_state = FOC_STATE_READY;
-  }
-}
-
 static inline void foc_ready(foc_t *foc) {
   DECL_FOC_PTRS(foc);
 }
@@ -259,6 +248,10 @@ static inline void foc_disable(foc_t *foc) {
   DECL_FOC_PTRS(foc);
 
   ops->f_set_drv(false);
+
+  memset(&in->i_ab, 0, sizeof(in->i_ab));
+  memset(&in->i_dq, 0, sizeof(in->i_dq));
+  memset(&in->f32_i_uvw, 0, sizeof(in->f32_i_uvw));
 
   RESET_OUT(foc);
   RESET_OUT(&foc->lo.pll);
@@ -327,7 +320,81 @@ static inline void foc_enable(foc_t *foc) {
 
   // 调制发波
   foc_svpwm(foc);
-  ops->f_set_pwm(cfg->periph_cfg.pwm_cnt_max, out->svpwm.u32_pwm_duty);
+  ops->f_set_pwm(cfg->periph_cfg.pwm_full_cnt, out->svpwm.u32_pwm_duty);
+}
+
+static inline int foc_adc_cali(foc_t *foc) {
+  DECL_FOC_PTRS(foc);
+
+  ops->f_set_drv(true);
+  in->adc_raw = ops->f_get_adc();
+
+  UVW_ADD_VEC_IP(cfg->adc_offset.i32_i_uvw, in->adc_raw.i32_i_uvw);
+  if (++lo->adc_cali_cnt >= LF(cfg->periph_cfg.adc_cali_cnt_max)) {
+    cfg->adc_offset.i32_i_uvw.u >>= cfg->periph_cfg.adc_cali_cnt_max;
+    cfg->adc_offset.i32_i_uvw.v >>= cfg->periph_cfg.adc_cali_cnt_max;
+    cfg->adc_offset.i32_i_uvw.w >>= cfg->periph_cfg.adc_cali_cnt_max;
+    ops->f_set_drv(false);
+    return 0;
+  }
+  return -MEBUSY;
+}
+
+static inline void foc_cali(foc_t *foc) {
+  DECL_FOC_PTRS(foc);
+
+  switch (lo->e_cali) {
+  case FOC_CALI_INIT: {
+    if (foc_adc_cali(foc) < 0)
+      break;
+    lo->ref_i_dq.d        = 3.0f;
+    in->rotor.force_omega = 20.0f;
+    lo->e_theta           = FOC_THETA_FORCE;
+    lo->e_cali            = FOC_CALI_CW;
+  } break;
+  case FOC_CALI_CW: {
+    foc_enable(foc);
+    if (in->rotor.force_theta >= TAU) {
+      in->rotor.force_theta = TAU;
+      if (++lo->theta_cali_hold_cnt >= cfg->periph_cfg.theta_cali_cnt_max) {
+        lo->theta_offset_sum += in->rotor.sensor_theta;
+        lo->theta_cali_hold_cnt = 0;
+        if (++lo->theta_cali_cnt >= cfg->motor_cfg.npp)
+          lo->e_cali = FOC_CALI_CCW;
+        else
+          in->rotor.force_theta = 0.0f;
+      }
+    } else if (lo->theta_cali_hold_cnt == 0)
+      in->rotor.force_theta += in->rotor.force_omega / cfg->exec_freq;
+  } break;
+  case FOC_CALI_CCW: {
+    foc_enable(foc);
+    if (in->rotor.force_theta <= 0.0f) {
+      in->rotor.force_theta = 0.0f;
+      if (++lo->theta_cali_hold_cnt >= cfg->periph_cfg.theta_cali_cnt_max) {
+        lo->theta_offset_sum += in->rotor.sensor_theta;
+        lo->theta_cali_hold_cnt = 0;
+        if (++lo->theta_cali_cnt >= cfg->motor_cfg.npp * 2)
+          lo->e_cali = FOC_CALI_FINISH;
+        else
+          in->rotor.force_theta = TAU;
+      }
+    } else if (lo->theta_cali_hold_cnt == 0)
+      in->rotor.force_theta -= in->rotor.force_omega / cfg->exec_freq;
+  } break;
+  case FOC_CALI_FINISH: {
+    foc_disable(foc);
+    cfg->theta_offset = lo->theta_offset_sum / lo->theta_cali_cnt;
+    lo->adc_cali_cnt = lo->theta_cali_cnt = 0;
+    lo->ref_i_dq.d                        = 0.0f;
+    in->rotor.force_theta                 = 0.0f;
+    in->rotor.force_omega                 = 0.0f;
+    lo->e_state                           = FOC_STATE_READY;
+  } break;
+  default: {
+    lo->e_state = FOC_STATE_DISABLE;
+  } break;
+  }
 }
 
 static void foc_init(foc_t *foc, foc_cfg_t foc_cfg) {
@@ -335,10 +402,10 @@ static void foc_init(foc_t *foc, foc_cfg_t foc_cfg) {
 
   *cfg = foc_cfg;
 
-  cfg->motor_cfg.ls           = 0.5f * (cfg->motor_cfg.ld + cfg->motor_cfg.lq);
-  cfg->periph_cfg.adc2cur     = cfg->periph_cfg.cur_range / cfg->periph_cfg.adc_cnt_max;
-  cfg->periph_cfg.adc2vbus    = cfg->periph_cfg.vbus_range / cfg->periph_cfg.adc_cnt_max;
-  cfg->periph_cfg.pwm_cnt_max = cfg->periph_cfg.timer_freq / cfg->periph_cfg.pwm_freq;
+  cfg->motor_cfg.ls            = 0.5f * (cfg->motor_cfg.ld + cfg->motor_cfg.lq);
+  cfg->periph_cfg.adc2cur      = cfg->periph_cfg.cur_range / cfg->periph_cfg.adc_full_cnt;
+  cfg->periph_cfg.adc2vbus     = cfg->periph_cfg.vbus_range / cfg->periph_cfg.adc_full_cnt;
+  cfg->periph_cfg.pwm_full_cnt = cfg->periph_cfg.timer_freq / cfg->periph_cfg.pwm_freq;
 
   lo->pll.cfg.fs = cfg->exec_freq;
 

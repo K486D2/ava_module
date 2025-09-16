@@ -63,8 +63,8 @@ typedef struct {
 
 typedef struct {
   /* ADC */
-  u32 adc_cnt_max;
-  u32 adc_cail_cnt_max;
+  u32 adc_full_cnt;
+  u32 adc_cali_cnt_max, theta_cali_cnt_max;
   f32 cur_range, vbus_range;
   f32 adc2cur, adc2vbus;
   u32 cur_gain;
@@ -73,7 +73,7 @@ typedef struct {
   /* PWM */
   u32 timer_freq;
   u32 pwm_freq;
-  u32 pwm_cnt_max;
+  u32 pwm_full_cnt;
   f32 mi;
   f32 f32_pwm_min, f32_pwm_max;
 } periph_cfg_t;

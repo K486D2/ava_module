@@ -60,8 +60,12 @@
 #define DIV_1_BY_SQRT_3                0.5773502F
 #define DIV_SQRT_3_BY_2                0.8660254F
 
+#define MIN(x, y)                      (((x) < (y)) ? (x) : (y))
+#define MAX(x, y)                      (((x) > (y)) ? (x) : (y))
+
 #define IS_NAN(x)                      (isnan(x))
 #define IS_IN_RANGE(val, min, max)     ((val) >= (min) && (val) <= (max))
+#define IS_EQ(x, y)                    (ABS((x) - (y)) <= (1e-6f * MAX(ABS(x), ABS(y)) + 1e-6f))
 
 #define SGN(x)                         ((x) == 0.0F ? 0.0F : (x) > 0.0F ? 1.0F : -1.0F)
 
@@ -69,9 +73,6 @@
 #define K(x)                           ((x) * 1000U)       // 乘以 1K
 #define M(x)                           ((x) * 1000000U)    // 乘以 1M
 #define G(x)                           ((x) * 1000000000U) // 乘以 1G
-
-#define MIN(x, y)                      (((x) < (y)) ? (x) : (y))
-#define MAX(x, y)                      (((x) > (y)) ? (x) : (y))
 
 #define RAD_TO_DEG(rad)                ((rad) * 57.2957795F)
 #define DEG_TO_RAD(deg)                ((deg) / 57.2957795F)
