@@ -72,12 +72,14 @@ static void smo_exec(smo_obs_t *smo) {
 
   // 电流误差方程
   INTEGRATOR(lo->est_i_ab.a,
-             (in->v_ab.a - in->i_ab.a * cfg->motor_cfg.rs - lo->est_emf_v_ab.a) / cfg->motor_cfg.ls,
+             (in->v_ab.a - in->i_ab.a * cfg->motor_cfg.rs - lo->est_emf_v_ab.a) /
+                 (0.5f * (cfg->motor_cfg.ld + cfg->motor_cfg.lq)),
              1.0f,
              cfg->fs);
 
   INTEGRATOR(lo->est_i_ab.b,
-             (in->v_ab.b - in->i_ab.b * cfg->motor_cfg.rs - lo->est_emf_v_ab.b) / cfg->motor_cfg.ls,
+             (in->v_ab.b - in->i_ab.b * cfg->motor_cfg.rs - lo->est_emf_v_ab.b) /
+                 (0.5f * (cfg->motor_cfg.ld + cfg->motor_cfg.lq)),
              1.0f,
              cfg->fs);
 

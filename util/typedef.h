@@ -55,9 +55,8 @@ typedef struct {
   u32 npp;
   f32 ld;
   f32 lq;
-  f32 ls;
   f32 rs;
-  f32 psi;
+  f32 psi; // Wb
   f32 wc;
 } motor_cfg_t;
 
