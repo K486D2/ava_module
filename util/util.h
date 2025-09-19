@@ -35,7 +35,7 @@
 
 #define RESET_OUT(ptr)       memset(&(ptr)->out, 0, sizeof((ptr)->out))
 
-static inline  void swap_byte_order(void *data, const u32 size) {
+static inline void swap_byte_order(void *data, const u32 size) {
   u32 *p = (u32 *)data;
   for (u32 i = 0; i < size / 4; ++i) {
     u32 val = p[i];
@@ -43,7 +43,7 @@ static inline  void swap_byte_order(void *data, const u32 size) {
   }
 }
 
-static inline  u64 get_mono_ts_ns(void) {
+static inline u64 get_mono_ts_ns(void) {
 #ifdef __linux__
   struct timespec ts;
   clock_gettime(CLOCK_MONOTONIC_RAW, &ts);
@@ -57,19 +57,19 @@ static inline  u64 get_mono_ts_ns(void) {
   return 0ull;
 }
 
-static inline  u64 get_mono_ts_us(void) {
+static inline u64 get_mono_ts_us(void) {
   return get_mono_ts_ns() / 1000u;
 }
 
-static inline  u64 get_mono_ts_ms(void) {
+static inline u64 get_mono_ts_ms(void) {
   return get_mono_ts_ns() / 1000000u;
 }
 
-static inline  u64 get_mono_ts_s(void) {
+static inline u64 get_mono_ts_s(void) {
   return get_mono_ts_ns() / 1000000000u;
 }
 
-static inline  u64 get_real_ts_ns(void) {
+static inline u64 get_real_ts_ns(void) {
 #ifdef __linux__
   struct timespec ts;
   clock_gettime(CLOCK_REALTIME, &ts);
@@ -87,19 +87,19 @@ static inline  u64 get_real_ts_ns(void) {
   return 0ull;
 }
 
-static inline  u64 get_real_ts_us(void) {
+static inline u64 get_real_ts_us(void) {
   return get_real_ts_ns() / 1000u;
 }
 
-static inline  u64 get_real_ts_ms(void) {
+static inline u64 get_real_ts_ms(void) {
   return get_real_ts_ns() / 1000000u;
 }
 
-static inline  u64 get_real_ts_s(void) {
+static inline u64 get_real_ts_s(void) {
   return get_real_ts_ns() / 1000000000u;
 }
 
-static inline  i32 format_ts_ms(u64 ts_ms, char *buf, u32 len) {
+static inline i32 format_ts_ms(u64 ts_ms, char *buf, u32 len) {
   time_t    sec = ts_ms / 1000u;
   int       ms  = ts_ms % 1000u;
   struct tm tm_time;
