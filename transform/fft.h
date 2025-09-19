@@ -56,11 +56,12 @@ typedef struct {
 } fft_out_t;
 
 typedef struct {
+  u32    elapsed_us;
   size_t in_idx;
 #if defined(__linux__) || defined(_WIN32)
   fftwf_plan p;
 #elif defined(ARM_MATH)
-  arm_rfft_fast_instance_f32 S;
+  arm_rfft_fast_instance_f32 s;
 #endif
 } fft_lo_t;
 
@@ -96,7 +97,7 @@ static inline void fft_init(fft_t *fft, fft_cfg_t fft_cfg) {
 #if defined(__linux__) || defined(_WIN32)
   lo->p = fftwf_plan_dft_r2c_1d(FFT_POINT_SIZE, in->buf, out->buf, FFTW_ESTIMATE);
 #elif defined(ARM_MATH)
-  arm_rfft_fast_init_f32(&lo->S, FFT_POINT_SIZE);
+  arm_rfft_fast_init_f32(&lo->s, FFT_POINT_SIZE);
 #endif
 }
 
@@ -109,7 +110,7 @@ static inline void fft_exec(fft_t *fft) {
     out->mag[i] = SQRT(out->buf[i][0] * out->buf[i][0] + out->buf[i][1] * out->buf[i][1]);
   find_max(&out->mag[1], FFT_POINT_SIZE >> 1, &out->max_mag, &out->out_idx);
 #elif defined(ARM_MATH)
-  arm_rfft_fast_f32(&lo->S, in->buf, out->buf, cfg->flag);
+  arm_rfft_fast_f32(&lo->s, in->buf, out->buf, cfg->flag);
   arm_cmplx_mag_f32(out->buf, out->mag, FFT_POINT_SIZE >> 1);
   arm_max_f32(&out->mag[1], FFT_POINT_SIZE >> 1, &out->max_mag, &out->out_idx);
 #endif
@@ -131,9 +132,16 @@ static inline void fft_exec_in(fft_t *fft, f32 val) {
   in->buf[lo->in_idx++] = val;
   if (lo->in_idx >= FFT_POINT_SIZE) {
     lo->in_idx = 0;
-    fft_exec(fft);
 
-    printf("freq: %f, idx: %zu, mag: %f\n", out->max_freq, out->out_idx, out->max_mag);
+    u64 start = get_mono_ts_us();
+    fft_exec(fft);
+    lo->elapsed_us = (u32)(get_mono_ts_us() - start);
+
+    printf("elapsed_us: %u, freq: %f, idx: %zu, mag: %f\n",
+           lo->elapsed_us,
+           out->max_freq,
+           out->out_idx,
+           out->max_mag);
   }
 }
 
