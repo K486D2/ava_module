@@ -46,7 +46,7 @@ typedef struct {
   ARG_UNUSED(lo);
 
 #define DECL_SMO_PTR_RENAME(smo, name)                                                             \
-  smo_obs_t *name = (smo);                                                                       \
+  smo_obs_t *name = (smo);                                                                         \
   ARG_UNUSED(name);
 
 static inline void smo_init(smo_obs_t *smo, smo_cfg_t smo_cfg) {

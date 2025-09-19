@@ -43,7 +43,7 @@ typedef struct {
   ARG_UNUSED(lo);
 
 #define DECL_SHM_PTR_RENAME(shm, name)                                                             \
-  shm_cfg_t *name = (shm);                                                                       \
+  shm_cfg_t *name = (shm);                                                                         \
   ARG_UNUSED(name);
 
 static inline int shm_init(shm_t *shm, shm_cfg_t shm_cfg) {

@@ -1,10 +1,12 @@
 #ifndef LUENBERGER_H
 #define LUENBERGER_H
 
+#include "../filter/pll.h"
 #include "../util/util.h"
 
 typedef struct {
-  f32 fs;
+  f32         fs;
+  motor_cfg_t motor;
 } lbg_cfg_t;
 
 typedef struct {
@@ -14,6 +16,7 @@ typedef struct {
 } lbg_out_t;
 
 typedef struct {
+  pll_filter_t pll;
 } lbg_lo_t;
 
 typedef struct {
@@ -34,7 +37,7 @@ typedef struct {
   ARG_UNUSED(lo);
 
 #define DECL_LBG_PTR_RENAME(lbg, name)                                                             \
-  lbg_obs_t *(name) = (lbg);                                                                       \
+  lbg_obs_t *name = (lbg);                                                                         \
   ARG_UNUSED(name);
 
 static void lbg_init(lbg_obs_t *lbg, lbg_cfg_t lbg_cfg) {

@@ -86,10 +86,10 @@ typedef struct sched {
   ARG_UNUSED(ops);
 
 #define DECL_SCHED_PTR_RENAME(sched, name)                                                         \
-  sched_t *name = (sched);                                                                       \
+  sched_t *name = (sched);                                                                         \
   ARG_UNUSED(name);
 
-static inline  i32 sched_task_cmp(const sched_task_t *a, const sched_task_t *b) {
+static inline i32 sched_task_cmp(const sched_task_t *a, const sched_task_t *b) {
   if (a->cfg.priority < b->cfg.priority)
     return -1;
   if (a->cfg.priority > b->cfg.priority)
@@ -101,7 +101,7 @@ static inline  i32 sched_task_cmp(const sched_task_t *a, const sched_task_t *b) 
   return 0;
 }
 
-static inline  void sched_insert_ready(sched_lo_t *lo, sched_task_t *task) {
+static inline void sched_insert_ready(sched_lo_t *lo, sched_task_t *task) {
   rb_node_t **new_node = &lo->ready_tree.rb_node;
   rb_node_t  *parent   = NULL;
   while (*new_node) {
@@ -117,7 +117,7 @@ static inline  void sched_insert_ready(sched_lo_t *lo, sched_task_t *task) {
   rb_insert_color(&task->rb_node, &lo->ready_tree);
 }
 
-static inline  void sched_remove_ready(sched_lo_t *lo, sched_task_t *task) {
+static inline void sched_remove_ready(sched_lo_t *lo, sched_task_t *task) {
   rb_erase(&task->rb_node, &lo->ready_tree);
 }
 

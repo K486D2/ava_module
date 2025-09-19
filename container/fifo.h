@@ -26,14 +26,14 @@ constexpr auto memory_order_acq_rel = std::memory_order_acq_rel;
 
 #ifdef _MSC_VER
 #include <intrin.h>
-static inline  unsigned int clzll(unsigned long long x) {
+static inline unsigned int clzll(unsigned long long x) {
   unsigned long index;
   if (_BitScanReverse64(&index, x))
     return 63 - index;
   return 64; // x == 0
 }
 #else
-static inline  unsigned int clzll(unsigned long long x) {
+static inline unsigned int clzll(unsigned long long x) {
   return __builtin_clzll(x);
 }
 #endif
@@ -184,7 +184,7 @@ static inline size_t fifo_mpmc_buf_out(fifo_t *fifo, void *buf, void *data, size
 /*                                    SPSC                                    */
 /* -------------------------------------------------------------------------- */
 
-static inline  size_t fifo_spsc_in(fifo_t *fifo, const void *data, size_t size) {
+static inline size_t fifo_spsc_in(fifo_t *fifo, const void *data, size_t size) {
   size_t in  = atomic_load_explicit(&fifo->in, memory_order_relaxed);
   size_t out = atomic_load_explicit(&fifo->out, memory_order_acquire);
 
@@ -205,7 +205,7 @@ static inline  size_t fifo_spsc_in(fifo_t *fifo, const void *data, size_t size) 
   return size;
 }
 
-static inline  size_t fifo_spsc_out(fifo_t *fifo, void *data, size_t size) {
+static inline size_t fifo_spsc_out(fifo_t *fifo, void *data, size_t size) {
   size_t out = atomic_load_explicit(&fifo->out, memory_order_relaxed);
   size_t in  = atomic_load_explicit(&fifo->in, memory_order_acquire);
 
@@ -226,7 +226,7 @@ static inline  size_t fifo_spsc_out(fifo_t *fifo, void *data, size_t size) {
   return size;
 }
 
-static inline  size_t fifo_spsc_buf_in(fifo_t *fifo, void *buf, const void *data, size_t size) {
+static inline size_t fifo_spsc_buf_in(fifo_t *fifo, void *buf, const void *data, size_t size) {
   size_t in  = atomic_load_explicit(&fifo->in, memory_order_relaxed);
   size_t out = atomic_load_explicit(&fifo->out, memory_order_acquire);
 
@@ -247,7 +247,7 @@ static inline  size_t fifo_spsc_buf_in(fifo_t *fifo, void *buf, const void *data
   return size;
 }
 
-static inline  size_t fifo_spsc_buf_out(fifo_t *fifo, void *buf, void *data, size_t size) {
+static inline size_t fifo_spsc_buf_out(fifo_t *fifo, void *buf, void *data, size_t size) {
   size_t out = atomic_load_explicit(&fifo->out, memory_order_relaxed);
   size_t in  = atomic_load_explicit(&fifo->in, memory_order_acquire);
 

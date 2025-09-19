@@ -48,7 +48,7 @@ static inline DWORD WINAPI sched_thread_exec(LPVOID arg) {
 }
 #endif
 
-static inline  void thread_init(void *arg, i32 cpu_id) {
+static inline void thread_init(void *arg, i32 cpu_id) {
 #ifdef __linux__
   pthread_t sched_tid;
   i32       ret = pthread_create(&sched_tid, NULL, sched_thread_exec, arg);

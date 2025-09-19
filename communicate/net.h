@@ -95,8 +95,8 @@ typedef struct net {
   ARG_UNUSED(cfg);                                                                                 \
   ARG_UNUSED(lo);
 
-#define DECL_NET_PTR_RENAME(net, name)                                                            \
-  net_t *name = (net);                                                                           \
+#define DECL_NET_PTR_RENAME(net, name)                                                             \
+  net_t *name = (net);                                                                             \
   ARG_UNUSED(name);
 
 static inline int net_init(net_t *net, net_cfg_t net_cfg) {
@@ -250,11 +250,11 @@ typedef struct {
 } net_broadcast_t;
 
 static inline int net_broadcast(const char      *remote_ip,
-                         u16              remote_port,
-                         const u8        *txbuf,
-                         u32              size,
-                         net_broadcast_t *resp,
-                         u32              timeout_ms) {
+                                u16              remote_port,
+                                const u8        *txbuf,
+                                u32              size,
+                                net_broadcast_t *resp,
+                                u32              timeout_ms) {
   return 0;
 }
 

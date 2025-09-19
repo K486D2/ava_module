@@ -33,7 +33,7 @@ static inline const f32 COS_TABLE[] = {
     0.98768834059513772619004024769344f  // cos(90)
 };
 
-static inline  f32 fast_sinf(f32 x) {
+static inline f32 fast_sinf(f32 x) {
   x = (x) * (57.295779513082320876798154814105f);
 
   i32 sig = 0;
@@ -59,15 +59,15 @@ static inline  f32 fast_sinf(f32 x) {
   return (sig > 0) ? -y : y;
 }
 
-static inline  f32 fast_cosf(f32 x) {
+static inline f32 fast_cosf(f32 x) {
   return fast_sinf(x + 1.5707963267948966192313216916398f);
 }
 
-static inline  f32 fast_tanf(f32 x) {
+static inline f32 fast_tanf(f32 x) {
   return fast_sinf(x) / fast_cosf(x);
 }
 
-static inline  f32 fast_expf(f32 x) {
+static inline f32 fast_expf(f32 x) {
   union {
     u32 i;
     f32 f;
@@ -76,18 +76,18 @@ static inline  f32 fast_expf(f32 x) {
   return v.f;
 }
 
-static inline  f32 fast_absf(f32 x) {
+static inline f32 fast_absf(f32 x) {
   f32 y = x;
   if (x < 0.0f)
     y = -x;
   return y;
 }
 
-static inline  f32 fast_sqrtf(f32 x) {
+static inline f32 fast_sqrtf(f32 x) {
   return sqrtf(x);
 }
 
-static inline  f32 fast_modf(f32 x, f32 y) {
+static inline f32 fast_modf(f32 x, f32 y) {
   return fmodf(x, y);
 }
 

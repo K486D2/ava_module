@@ -43,7 +43,7 @@ typedef struct {
   ARG_UNUSED(lo);
 
 #define DECL_PID_PTR_RENAME(pid, name)                                                             \
-  pid_ctl_t *name = (pid);                                                                       \
+  pid_ctl_t *name = (pid);                                                                         \
   ARG_UNUSED(name);
 
 static inline void pid_init(pid_ctl_t *pid, pid_cfg_t pid_cfg) {

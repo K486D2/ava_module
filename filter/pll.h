@@ -1,8 +1,9 @@
 #ifndef PLL_H
 #define PLL_H
 
-#include "../util/util.h"
 #include "../util/mathdef.h"
+#include "../util/util.h"
+
 
 typedef struct {
   f32 fs;
@@ -48,7 +49,7 @@ typedef struct {
   ARG_UNUSED(lo);
 
 #define DECL_PLL_PTR_RENAME(pll, name)                                                             \
-  pll_filter_t *name = (pll);                                                                    \
+  pll_filter_t *name = (pll);                                                                      \
   ARG_UNUSED(name);
 
 static inline void pll_init(pll_filter_t *pll, pll_cfg_t pll_cfg) {

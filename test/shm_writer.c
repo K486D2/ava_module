@@ -5,7 +5,7 @@
 int main() {
   shm_t     shm     = {0};
   shm_cfg_t shm_cfg = {
-      .name   = "shm",
+      .name = "shm",
       // .access = PAGE_READWRITE,
   };
 
