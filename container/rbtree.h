@@ -27,44 +27,44 @@ typedef struct {
   }
 
 // 获取父节点
-static inline rb_node_t *rb_parent(const rb_node_t *rb) {
+static inline  rb_node_t *rb_parent(const rb_node_t *rb) {
   return (rb_node_t *)(rb->__rb_parent_color & ~3);
 }
 
 // 设置父节点
-static inline void rb_set_parent(rb_node_t *rb, rb_node_t *p) {
+static inline  void rb_set_parent(rb_node_t *rb, rb_node_t *p) {
   rb->__rb_parent_color = (u64)p | (rb->__rb_parent_color & 3);
 }
 
-static inline rb_color_t rb_color(const rb_node_t *rb) {
+static inline  rb_color_t rb_color(const rb_node_t *rb) {
   return (rb_color_t)(rb->__rb_parent_color & 1);
 }
 
-static inline void rb_set_color(rb_node_t *rb, rb_color_t color) {
+static inline  void rb_set_color(rb_node_t *rb, rb_color_t color) {
   rb->__rb_parent_color = (rb->__rb_parent_color & ~1) | color;
 }
 
-static inline bool rb_is_red(const rb_node_t *rb) {
+static inline  bool rb_is_red(const rb_node_t *rb) {
   return rb_color(rb) == RB_RED;
 }
 
-static inline bool rb_is_black(const rb_node_t *rb) {
+static inline  bool rb_is_black(const rb_node_t *rb) {
   return rb_color(rb) == RB_BLACK;
 }
 
-static inline void rb_set_red(rb_node_t *rb) {
+static inline  void rb_set_red(rb_node_t *rb) {
   rb_set_color(rb, RB_RED);
 }
 
-static inline void rb_set_black(rb_node_t *rb) {
+static inline  void rb_set_black(rb_node_t *rb) {
   rb_set_color(rb, RB_BLACK);
 }
 
-static inline bool rb_is_unlinked(const rb_node_t *rb) {
+static inline  bool rb_is_unlinked(const rb_node_t *rb) {
   return rb->__rb_parent_color == (u64)rb;
 }
 
-static inline void rb_link_node(rb_node_t *node, rb_node_t *parent, rb_node_t **rb_link) {
+static inline  void rb_link_node(rb_node_t *node, rb_node_t *parent, rb_node_t **rb_link) {
   node->__rb_parent_color = (u64)parent;
   node->rb_left = node->rb_right = NULL;
   *rb_link                       = node;
@@ -73,7 +73,7 @@ static inline void rb_link_node(rb_node_t *node, rb_node_t *parent, rb_node_t **
 // 容器宏(用于从节点获取包含结构)
 #define rb_entry(ptr, type, member) ((type *)((char *)(ptr) - offsetof(type, member)))
 
-static void __rb_rotate_left(rb_node_t *node, rb_root_t *root) {
+static inline void __rb_rotate_left(rb_node_t *node, rb_root_t *root) {
   rb_node_t *right  = node->rb_right;
   rb_node_t *parent = rb_parent(node);
 
@@ -94,7 +94,7 @@ static void __rb_rotate_left(rb_node_t *node, rb_root_t *root) {
   rb_set_parent(node, right);
 }
 
-static void __rb_rotate_right(rb_node_t *node, rb_root_t *root) {
+static inline void __rb_rotate_right(rb_node_t *node, rb_root_t *root) {
   rb_node_t *left   = node->rb_left;
   rb_node_t *parent = rb_parent(node);
 
@@ -115,7 +115,7 @@ static void __rb_rotate_right(rb_node_t *node, rb_root_t *root) {
   rb_set_parent(node, left);
 }
 
-static void rb_insert_color(rb_node_t *node, rb_root_t *root) {
+static inline void rb_insert_color(rb_node_t *node, rb_root_t *root) {
   rb_node_t *parent, *gparent, *uncle;
 
   while ((parent = rb_parent(node)) && rb_is_red(parent)) {
@@ -171,7 +171,7 @@ static void rb_insert_color(rb_node_t *node, rb_root_t *root) {
   rb_set_black(root->rb_node);
 }
 
-static void __rb_erase_color(rb_node_t *node, rb_node_t *parent, rb_root_t *root) {
+static inline void __rb_erase_color(rb_node_t *node, rb_node_t *parent, rb_root_t *root) {
   rb_node_t *sibling;
 
   while ((!node || rb_is_black(node)) && node != root->rb_node) {
@@ -240,7 +240,7 @@ static void __rb_erase_color(rb_node_t *node, rb_node_t *parent, rb_root_t *root
     rb_set_black(node);
 }
 
-static void rb_erase(rb_node_t *node, rb_root_t *root) {
+static inline void rb_erase(rb_node_t *node, rb_root_t *root) {
   rb_node_t *child, *parent;
   rb_color_t color;
 
@@ -306,7 +306,7 @@ color:
     __rb_erase_color(child, parent, root);
 }
 
-static rb_node_t *rb_first(const rb_root_t *root) {
+static inline rb_node_t *rb_first(const rb_root_t *root) {
   rb_node_t *n = root->rb_node;
   if (!n)
     return NULL;
@@ -315,7 +315,7 @@ static rb_node_t *rb_first(const rb_root_t *root) {
   return n;
 }
 
-static rb_node_t *rb_last(const rb_root_t *root) {
+static inline rb_node_t *rb_last(const rb_root_t *root) {
   rb_node_t *n = root->rb_node;
   if (!n)
     return NULL;
@@ -324,7 +324,7 @@ static rb_node_t *rb_last(const rb_root_t *root) {
   return n;
 }
 
-static rb_node_t *rb_next(const rb_node_t *node) {
+static inline rb_node_t *rb_next(const rb_node_t *node) {
   if (node->rb_right) {
     node = node->rb_right;
     while (node->rb_left)
@@ -340,7 +340,7 @@ static rb_node_t *rb_next(const rb_node_t *node) {
   return parent;
 }
 
-static rb_node_t *rb_prev(const rb_node_t *node) {
+static inline rb_node_t *rb_prev(const rb_node_t *node) {
   if (node->rb_left) {
     node = node->rb_left;
     while (node->rb_right)

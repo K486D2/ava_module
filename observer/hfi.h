@@ -66,10 +66,10 @@ typedef struct {
   ARG_UNUSED(lo);
 
 #define DECL_HFI_PTR_RENAME(hfi, name)                                                             \
-  hfi_obs_t *(name) = (hfi);                                                                       \
+  hfi_obs_t *name = (hfi);                                                                       \
   ARG_UNUSED(name);
 
-static void hfi_init(hfi_obs_t *hfi, hfi_cfg_t hfi_cfg) {
+static inline void hfi_init(hfi_obs_t *hfi, hfi_cfg_t hfi_cfg) {
   DECL_HFI_PTRS(hfi);
 
   *cfg = hfi_cfg;
@@ -82,7 +82,7 @@ static void hfi_init(hfi_obs_t *hfi, hfi_cfg_t hfi_cfg) {
   iir_init(&lo->iq_bpf, lo->iq_bpf.cfg);
 }
 
-static inline void hfi_polar_idf(hfi_obs_t *hfi) {
+static inline  void hfi_polar_idf(hfi_obs_t *hfi) {
   DECL_HFI_PTRS(hfi);
 
   out->id = 0.0f;
@@ -114,7 +114,7 @@ static inline void hfi_polar_idf(hfi_obs_t *hfi) {
   }
 }
 
-static void hfi_exec(hfi_obs_t *hfi) {
+static inline void hfi_exec(hfi_obs_t *hfi) {
   DECL_HFI_PTRS(hfi);
   DECL_IIR_PTR_RENAME(&lo->id_bpf, id_bpf);
   DECL_IIR_PTR_RENAME(&lo->iq_bpf, iq_bpf);
@@ -145,7 +145,7 @@ static void hfi_exec(hfi_obs_t *hfi) {
   out->omega = pll->out.omega;
 }
 
-static void hfi_exec_in(hfi_obs_t *hfi, f32_dq_t i_dq) {
+static inline void hfi_exec_in(hfi_obs_t *hfi, f32_dq_t i_dq) {
   DECL_HFI_PTRS(hfi);
 
   in->i_dq = i_dq;

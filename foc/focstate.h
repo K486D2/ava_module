@@ -3,7 +3,7 @@
 
 #include "focdef.h"
 
-static inline void foc_obs_i_ab(foc_t *foc) {
+static inline  void foc_obs_i_ab(foc_t *foc) {
   DECL_FOC_PTRS(foc);
 
   switch (lo->e_obs) {
@@ -18,7 +18,7 @@ static inline void foc_obs_i_ab(foc_t *foc) {
   }
 }
 
-static inline void foc_obs_i_dq(foc_t *foc) {
+static inline  void foc_obs_i_dq(foc_t *foc) {
   DECL_FOC_PTRS(foc);
 
   switch (lo->e_obs) {
@@ -34,7 +34,7 @@ static inline void foc_obs_i_dq(foc_t *foc) {
   }
 }
 
-static inline void foc_obs_v_dq(foc_t *foc) {
+static inline  void foc_obs_v_dq(foc_t *foc) {
   DECL_FOC_PTRS(foc);
 
   switch (lo->e_obs) {
@@ -47,7 +47,7 @@ static inline void foc_obs_v_dq(foc_t *foc) {
   }
 }
 
-static inline void foc_svpwm(foc_t *foc) {
+static inline  void foc_svpwm(foc_t *foc) {
   DECL_FOC_PTRS(foc);
 
   out->f32_v_uvw = inv_clarke(out->v_ab_sv);
@@ -72,7 +72,7 @@ static inline void foc_svpwm(foc_t *foc) {
   UVW_MUL(out->svpwm.u32_pwm_duty, out->svpwm.f32_pwm_duty, cfg->periph_cfg.pwm_full_cnt);
 }
 
-static inline void foc_select_theta(foc_t *foc) {
+static inline  void foc_select_theta(foc_t *foc) {
   DECL_FOC_PTRS(foc);
 
   switch (lo->e_theta) {
@@ -95,11 +95,11 @@ static inline void foc_select_theta(foc_t *foc) {
   }
 }
 
-static inline void foc_ready(foc_t *foc) {
+static inline  void foc_ready(foc_t *foc) {
   DECL_FOC_PTRS(foc);
 }
 
-static inline void foc_disable(foc_t *foc) {
+static inline  void foc_disable(foc_t *foc) {
   DECL_FOC_PTRS(foc);
 
   ops->f_set_drv(false);
@@ -115,14 +115,14 @@ static inline void foc_disable(foc_t *foc) {
   RESET_OUT(&foc->lo.hfi);
 }
 
-static inline void foc_vel_ctl(foc_t *foc) {
+static inline  void foc_vel_ctl(foc_t *foc) {
   DECL_FOC_PTRS(foc);
 
   pid_exec_in(&lo->vel_pid, lo->ref_pvct.vel, lo->fdb_pvct.vel, lo->ref_pvct.ffd_cur);
   lo->ref_i_dq.q = lo->vel_pid.out.val;
 }
 
-static inline void foc_pos_ctl(foc_t *foc) {
+static inline  void foc_pos_ctl(foc_t *foc) {
   DECL_FOC_PTRS(foc);
 
   pid_exec_in(&lo->pos_pid, lo->ref_pvct.pos, lo->fdb_pvct.pos, lo->ref_pvct.ffd_vel);
@@ -131,14 +131,14 @@ static inline void foc_pos_ctl(foc_t *foc) {
   foc_vel_ctl(foc);
 }
 
-static inline void foc_pd_ctl(foc_t *foc) {
+static inline  void foc_pd_ctl(foc_t *foc) {
   DECL_FOC_PTRS(foc);
 
   lo->ref_i_dq.q = lo->pd_pid.cfg.kp * (lo->ref_pvct.pos - lo->fdb_pvct.pos) +
                    lo->pd_pid.cfg.kd * (lo->ref_pvct.vel - lo->fdb_pvct.vel) + lo->ref_pvct.tor;
 }
 
-static inline void foc_enable(foc_t *foc) {
+static inline  void foc_enable(foc_t *foc) {
   DECL_FOC_PTRS(foc);
 
   ops->f_set_drv(true);
@@ -219,7 +219,7 @@ static inline void foc_enable(foc_t *foc) {
   ops->f_set_pwm(cfg->periph_cfg.pwm_full_cnt, out->svpwm.u32_pwm_duty);
 }
 
-static inline int foc_adc_cali(foc_t *foc) {
+static inline  int foc_adc_cali(foc_t *foc) {
   DECL_FOC_PTRS(foc);
 
   ops->f_set_drv(true);
@@ -236,7 +236,7 @@ static inline int foc_adc_cali(foc_t *foc) {
   return -MEBUSY;
 }
 
-static inline void foc_cali(foc_t *foc) {
+static inline  void foc_cali(foc_t *foc) {
   DECL_FOC_PTRS(foc);
 
   switch (lo->e_cali) {

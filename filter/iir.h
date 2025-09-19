@@ -58,10 +58,10 @@ typedef struct {
   ARG_UNUSED(lo);
 
 #define DECL_IIR_PTR_RENAME(iir, name)                                                             \
-  iir_filter_t *(name) = (iir);                                                                    \
+  iir_filter_t *name = (iir);                                                                    \
   ARG_UNUSED(name);
 
-static int iir_init(iir_filter_t *iir, iir_cfg_t iir_cfg) {
+static inline int iir_init(iir_filter_t *iir, iir_cfg_t iir_cfg) {
   ARG_CHECK(iir);
   DECL_IIR_PTRS(iir);
 
@@ -137,7 +137,7 @@ static int iir_init(iir_filter_t *iir, iir_cfg_t iir_cfg) {
   return 0;
 }
 
-static int iir_exec(iir_filter_t *iir) {
+static inline int iir_exec(iir_filter_t *iir) {
   ARG_CHECK(iir);
   DECL_IIR_PTRS(iir);
 
@@ -162,7 +162,7 @@ static int iir_exec(iir_filter_t *iir) {
   return 0;
 }
 
-static int iir_exec_in(iir_filter_t *iir, f32 x) {
+static inline int iir_exec_in(iir_filter_t *iir, f32 x) {
   ARG_CHECK(iir);
   DECL_IIR_PTRS(iir);
 

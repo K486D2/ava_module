@@ -61,10 +61,10 @@ typedef struct {
   ARG_UNUSED(ops);
 
 #define DECL_LOGGER_PTRS_PREFIX(logger, name)                                                      \
-  logger_t *(name) = (logger);                                                                     \
+  logger_t *name = (logger);                                                                     \
   ARG_UNUSED(name);
 
-static void logger_init(logger_t *logger, logger_cfg_t logger_cfg) {
+static inline void logger_init(logger_t *logger, logger_cfg_t logger_cfg) {
   DECL_LOGGER_PTRS(logger);
 
   *cfg = logger_cfg;
@@ -72,7 +72,7 @@ static void logger_init(logger_t *logger, logger_cfg_t logger_cfg) {
   fifo_init(&lo->fifo, lo->buf, sizeof(lo->buf));
 }
 
-static void logger_flush(logger_t *logger) {
+static inline void logger_flush(logger_t *logger) {
   DECL_LOGGER_PTRS(logger);
 
   logger_msg_t msg;
@@ -80,7 +80,7 @@ static void logger_flush(logger_t *logger) {
   ops->f_print(cfg->file, (char *)msg.buf, msg.len);
 }
 
-static void logger_write(logger_t *logger, const char *format, ...) {
+static inline void logger_write(logger_t *logger, const char *format, ...) {
   DECL_LOGGER_PTRS(logger);
 
   logger_msg_t msg;
@@ -92,7 +92,7 @@ static void logger_write(logger_t *logger, const char *format, ...) {
   fifo_mpmc_in(&lo->fifo, &msg, sizeof(msg));
 }
 
-static void logger_data(logger_t *logger, const char *format, ...) {
+static inline void logger_data(logger_t *logger, const char *format, ...) {
   DECL_LOGGER_PTRS(logger);
 
   if (cfg->level > LOGGER_LEVEL_DATA)
@@ -104,7 +104,7 @@ static void logger_data(logger_t *logger, const char *format, ...) {
   va_end(args);
 }
 
-static void logger_debug(logger_t *logger, const char *format, ...) {
+static inline void logger_debug(logger_t *logger, const char *format, ...) {
   DECL_LOGGER_PTRS(logger);
 
   if (cfg->level > LOGGER_LEVEL_DEBUG)
@@ -116,7 +116,7 @@ static void logger_debug(logger_t *logger, const char *format, ...) {
   va_end(args);
 }
 
-static void logger_info(logger_t *logger, const char *format, ...) {
+static inline void logger_info(logger_t *logger, const char *format, ...) {
   DECL_LOGGER_PTRS(logger);
 
   if (cfg->level > LOGGER_LEVEL_INFO)
@@ -128,7 +128,7 @@ static void logger_info(logger_t *logger, const char *format, ...) {
   va_end(args);
 }
 
-static void logger_warn(logger_t *logger, const char *format, ...) {
+static inline void logger_warn(logger_t *logger, const char *format, ...) {
   DECL_LOGGER_PTRS(logger);
 
   if (cfg->level > LOGGER_LEVEL_WARN)
@@ -140,7 +140,7 @@ static void logger_warn(logger_t *logger, const char *format, ...) {
   va_end(args);
 }
 
-static void logger_error(logger_t *logger, const char *format, ...) {
+static inline void logger_error(logger_t *logger, const char *format, ...) {
   DECL_LOGGER_PTRS(logger);
 
   if (cfg->level > LOGGER_LEVEL_ERROR)

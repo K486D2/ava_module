@@ -4,7 +4,7 @@
 #include "focdef.h"
 #include "focstate.h"
 
-static void foc_init(foc_t *foc, foc_cfg_t foc_cfg) {
+static inline void foc_init(foc_t *foc, foc_cfg_t foc_cfg) {
   DECL_FOC_PTRS(foc);
 
   *cfg = foc_cfg;
@@ -38,7 +38,7 @@ static void foc_init(foc_t *foc, foc_cfg_t foc_cfg) {
   hfi_init(&lo->hfi, lo->hfi.cfg);
 }
 
-static void foc_exec(foc_t *foc) {
+static inline void foc_exec(foc_t *foc) {
   DECL_FOC_PTRS(foc);
 
   lo->exec_cnt++;

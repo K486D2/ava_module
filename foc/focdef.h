@@ -166,7 +166,7 @@ typedef struct {
   ARG_UNUSED(ops);
 
 #define DECL_FOC_PTR_RENAME(foc, name)                                                             \
-  foc_t *(name) = (foc);                                                                           \
+  foc_t *name = (foc);                                                                           \
   ARG_UNUSED(name);
 
 #endif // !FOCDEF_H

@@ -46,10 +46,10 @@ typedef struct {
   ARG_UNUSED(lo);
 
 #define DECL_SMO_PTR_RENAME(smo, name)                                                             \
-  smo_obs_t *(name) = (smo);                                                                       \
+  smo_obs_t *name = (smo);                                                                       \
   ARG_UNUSED(name);
 
-static void smo_init(smo_obs_t *smo, smo_cfg_t smo_cfg) {
+static inline void smo_init(smo_obs_t *smo, smo_cfg_t smo_cfg) {
   DECL_SMO_PTRS(smo);
 
   *cfg = smo_cfg;
@@ -66,7 +66,7 @@ static void smo_init(smo_obs_t *smo, smo_cfg_t smo_cfg) {
  *
  * @param smo
  */
-static void smo_exec(smo_obs_t *smo) {
+static inline void smo_exec(smo_obs_t *smo) {
   DECL_SMO_PTRS(smo);
   DECL_PLL_PTR_RENAME(&smo->lo.pll, pll);
 
@@ -101,7 +101,7 @@ static void smo_exec(smo_obs_t *smo) {
   WARP_TAU(out->theta);
 }
 
-static void smo_exec_in(smo_obs_t *smo, f32_ab_t i_ab, f32_ab_t v_ab) {
+static inline void smo_exec_in(smo_obs_t *smo, f32_ab_t i_ab, f32_ab_t v_ab) {
   DECL_SMO_PTRS(smo);
 
   in->i_ab = i_ab;

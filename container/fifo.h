@@ -26,14 +26,14 @@ constexpr auto memory_order_acq_rel = std::memory_order_acq_rel;
 
 #ifdef _MSC_VER
 #include <intrin.h>
-static inline unsigned int clzll(unsigned long long x) {
+static inline  unsigned int clzll(unsigned long long x) {
   unsigned long index;
   if (_BitScanReverse64(&index, x))
     return 63 - index;
   return 64; // x == 0
 }
 #else
-static inline unsigned int clzll(unsigned long long x) {
+static inline  unsigned int clzll(unsigned long long x) {
   return __builtin_clzll(x);
 }
 #endif
@@ -48,28 +48,28 @@ typedef struct {
   atomic_t(size_t) out; // 读取位置
 } fifo_t;
 
-static void fifo_reset(fifo_t *fifo) {
+static inline void fifo_reset(fifo_t *fifo) {
   atomic_store(&fifo->in, 0);
   atomic_store(&fifo->out, 0);
 }
 
-static size_t fifo_len(fifo_t *fifo) {
+static inline size_t fifo_len(fifo_t *fifo) {
   return atomic_load(&fifo->in) - atomic_load(&fifo->out);
 }
 
-static size_t fifo_avail(fifo_t *fifo) {
+static inline size_t fifo_avail(fifo_t *fifo) {
   return fifo->size - fifo_len(fifo);
 }
 
-static bool fifo_is_empty(fifo_t *fifo) {
+static inline bool fifo_is_empty(fifo_t *fifo) {
   return fifo_len(fifo) == 0;
 }
 
-static bool fifo_is_full(fifo_t *fifo) {
+static inline bool fifo_is_full(fifo_t *fifo) {
   return fifo_len(fifo) == fifo->size;
 }
 
-static void fifo_init(fifo_t *fifo, void *buf, size_t buf_size) {
+static inline void fifo_init(fifo_t *fifo, void *buf, size_t buf_size) {
   if (!IS_POWER_OF_2(buf_size))
     buf_size = ROUNDUP_POW_OF_2(buf_size);
 
@@ -79,7 +79,7 @@ static void fifo_init(fifo_t *fifo, void *buf, size_t buf_size) {
   atomic_store(&fifo->out, 0);
 }
 
-static void fifo_buf_init(fifo_t *fifo, size_t buf_size) {
+static inline void fifo_buf_init(fifo_t *fifo, size_t buf_size) {
   if (!IS_POWER_OF_2(buf_size))
     buf_size = ROUNDUP_POW_OF_2(buf_size);
 
@@ -92,7 +92,7 @@ static void fifo_buf_init(fifo_t *fifo, size_t buf_size) {
 /*                                    MPMC                                    */
 /* -------------------------------------------------------------------------- */
 
-static size_t fifo_mpmc_in(fifo_t *fifo, const void *data, size_t size) {
+static inline size_t fifo_mpmc_in(fifo_t *fifo, const void *data, size_t size) {
   size_t pos, newpos;
   do {
     pos         = atomic_load_explicit(&fifo->in, memory_order_acquire);
@@ -114,7 +114,7 @@ static size_t fifo_mpmc_in(fifo_t *fifo, const void *data, size_t size) {
   return size;
 }
 
-static size_t fifo_mpmc_out(fifo_t *fifo, void *data, size_t size) {
+static inline size_t fifo_mpmc_out(fifo_t *fifo, void *data, size_t size) {
   size_t pos, newpos;
   do {
     pos          = atomic_load_explicit(&fifo->out, memory_order_acquire);
@@ -136,7 +136,7 @@ static size_t fifo_mpmc_out(fifo_t *fifo, void *data, size_t size) {
   return size;
 }
 
-static size_t fifo_mpmc_buf_in(fifo_t *fifo, void *buf, const void *data, size_t size) {
+static inline size_t fifo_mpmc_buf_in(fifo_t *fifo, void *buf, const void *data, size_t size) {
   size_t pos, newpos;
   do {
     pos         = atomic_load_explicit(&fifo->in, memory_order_acquire);
@@ -158,7 +158,7 @@ static size_t fifo_mpmc_buf_in(fifo_t *fifo, void *buf, const void *data, size_t
   return size;
 }
 
-static size_t fifo_mpmc_buf_out(fifo_t *fifo, void *buf, void *data, size_t size) {
+static inline size_t fifo_mpmc_buf_out(fifo_t *fifo, void *buf, void *data, size_t size) {
   size_t pos, newpos;
   do {
     pos          = atomic_load_explicit(&fifo->out, memory_order_acquire);
@@ -184,7 +184,7 @@ static size_t fifo_mpmc_buf_out(fifo_t *fifo, void *buf, void *data, size_t size
 /*                                    SPSC                                    */
 /* -------------------------------------------------------------------------- */
 
-static inline size_t fifo_spsc_in(fifo_t *fifo, const void *data, size_t size) {
+static inline  size_t fifo_spsc_in(fifo_t *fifo, const void *data, size_t size) {
   size_t in  = atomic_load_explicit(&fifo->in, memory_order_relaxed);
   size_t out = atomic_load_explicit(&fifo->out, memory_order_acquire);
 
@@ -205,7 +205,7 @@ static inline size_t fifo_spsc_in(fifo_t *fifo, const void *data, size_t size) {
   return size;
 }
 
-static inline size_t fifo_spsc_out(fifo_t *fifo, void *data, size_t size) {
+static inline  size_t fifo_spsc_out(fifo_t *fifo, void *data, size_t size) {
   size_t out = atomic_load_explicit(&fifo->out, memory_order_relaxed);
   size_t in  = atomic_load_explicit(&fifo->in, memory_order_acquire);
 
@@ -226,7 +226,7 @@ static inline size_t fifo_spsc_out(fifo_t *fifo, void *data, size_t size) {
   return size;
 }
 
-static inline size_t fifo_spsc_buf_in(fifo_t *fifo, void *buf, const void *data, size_t size) {
+static inline  size_t fifo_spsc_buf_in(fifo_t *fifo, void *buf, const void *data, size_t size) {
   size_t in  = atomic_load_explicit(&fifo->in, memory_order_relaxed);
   size_t out = atomic_load_explicit(&fifo->out, memory_order_acquire);
 
@@ -247,7 +247,7 @@ static inline size_t fifo_spsc_buf_in(fifo_t *fifo, void *buf, const void *data,
   return size;
 }
 
-static inline size_t fifo_spsc_buf_out(fifo_t *fifo, void *buf, void *data, size_t size) {
+static inline  size_t fifo_spsc_buf_out(fifo_t *fifo, void *buf, void *data, size_t size) {
   size_t out = atomic_load_explicit(&fifo->out, memory_order_relaxed);
   size_t in  = atomic_load_explicit(&fifo->in, memory_order_acquire);
 

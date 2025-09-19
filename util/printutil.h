@@ -35,7 +35,7 @@
 #define STYLE_HIDDEN    "\033[8m"
 
 // 检测是否支持颜色输出
-static inline int supports_color(void) {
+static inline  int supports_color(void) {
 #ifdef _WIN32
   // Windows下默认不支持ANSI颜色，但可以通过设置支持
   return 0; // 暂时禁用Windows下的颜色
@@ -46,7 +46,7 @@ static inline int supports_color(void) {
 }
 
 // 基础颜色打印函数
-static inline void cprintf(const char *color, const char *fmt, ...) {
+static inline  void cprintf(const char *color, const char *fmt, ...) {
   va_list args;
   va_start(args, fmt);
 
@@ -62,49 +62,49 @@ static inline void cprintf(const char *color, const char *fmt, ...) {
 }
 
 // 便捷的颜色打印函数
-static inline void print_red(const char *fmt, ...) {
+static inline  void print_red(const char *fmt, ...) {
   va_list args;
   va_start(args, fmt);
   cprintf(COLOR_RED, fmt, args);
   va_end(args);
 }
 
-static inline void print_green(const char *fmt, ...) {
+static inline  void print_green(const char *fmt, ...) {
   va_list args;
   va_start(args, fmt);
   cprintf(COLOR_GREEN, fmt, args);
   va_end(args);
 }
 
-static inline void print_yellow(const char *fmt, ...) {
+static inline  void print_yellow(const char *fmt, ...) {
   va_list args;
   va_start(args, fmt);
   cprintf(COLOR_YELLOW, fmt, args);
   va_end(args);
 }
 
-static inline void print_blue(const char *fmt, ...) {
+static inline  void print_blue(const char *fmt, ...) {
   va_list args;
   va_start(args, fmt);
   cprintf(COLOR_BLUE, fmt, args);
   va_end(args);
 }
 
-static inline void print_magenta(const char *fmt, ...) {
+static inline  void print_magenta(const char *fmt, ...) {
   va_list args;
   va_start(args, fmt);
   cprintf(COLOR_MAGENTA, fmt, args);
   va_end(args);
 }
 
-static inline void print_cyan(const char *fmt, ...) {
+static inline  void print_cyan(const char *fmt, ...) {
   va_list args;
   va_start(args, fmt);
   cprintf(COLOR_CYAN, fmt, args);
   va_end(args);
 }
 
-static inline void print_bold(const char *fmt, ...) {
+static inline  void print_bold(const char *fmt, ...) {
   va_list args;
   va_start(args, fmt);
   cprintf(STYLE_BOLD, fmt, args);
@@ -112,7 +112,7 @@ static inline void print_bold(const char *fmt, ...) {
 }
 
 // 日志级别的颜色打印
-static inline void print_info(const char *fmt, ...) {
+static inline  void print_info(const char *fmt, ...) {
   va_list args;
   va_start(args, fmt);
   cprintf(COLOR_BLUE, "[INFO] ");
@@ -121,7 +121,7 @@ static inline void print_info(const char *fmt, ...) {
   va_end(args);
 }
 
-static inline void print_success(const char *fmt, ...) {
+static inline  void print_success(const char *fmt, ...) {
   va_list args;
   va_start(args, fmt);
   cprintf(COLOR_GREEN, "[SUCCESS] ");
@@ -130,7 +130,7 @@ static inline void print_success(const char *fmt, ...) {
   va_end(args);
 }
 
-static inline void print_warning(const char *fmt, ...) {
+static inline  void print_warning(const char *fmt, ...) {
   va_list args;
   va_start(args, fmt);
   cprintf(COLOR_YELLOW, "[WARNING] ");
@@ -139,7 +139,7 @@ static inline void print_warning(const char *fmt, ...) {
   va_end(args);
 }
 
-static inline void print_error(const char *fmt, ...) {
+static inline  void print_error(const char *fmt, ...) {
   va_list args;
   va_start(args, fmt);
   cprintf(COLOR_RED, "[ERROR] ");
@@ -148,7 +148,7 @@ static inline void print_error(const char *fmt, ...) {
   va_end(args);
 }
 
-static inline void print_debug(const char *fmt, ...) {
+static inline  void print_debug(const char *fmt, ...) {
   va_list args;
   va_start(args, fmt);
   cprintf(COLOR_CYAN, "[DEBUG] ");
@@ -158,7 +158,7 @@ static inline void print_debug(const char *fmt, ...) {
 }
 
 // 带时间戳的日志打印
-static inline void print_info_ts(const char *fmt, ...) {
+static inline  void print_info_ts(const char *fmt, ...) {
   va_list args;
   va_start(args, fmt);
   cprintf(COLOR_BLUE, "[INFO] ");
@@ -167,7 +167,7 @@ static inline void print_info_ts(const char *fmt, ...) {
   va_end(args);
 }
 
-static inline void print_error_ts(const char *fmt, ...) {
+static inline  void print_error_ts(const char *fmt, ...) {
   va_list args;
   va_start(args, fmt);
   cprintf(COLOR_RED, "[ERROR] ");
@@ -177,7 +177,7 @@ static inline void print_error_ts(const char *fmt, ...) {
 }
 
 // 进度条打印
-static inline void print_progress(int percent, const char *label) {
+static inline  void print_progress(int percent, const char *label) {
   int bar_width = 50;
   int pos       = bar_width * percent / 100;
 
@@ -196,7 +196,7 @@ static inline void print_progress(int percent, const char *label) {
 }
 
 // 表格打印辅助函数
-static inline void print_table_header(const char *fmt, ...) {
+static inline  void print_table_header(const char *fmt, ...) {
   va_list args;
   va_start(args, fmt);
   cprintf(STYLE_BOLD COLOR_BLUE, fmt, args);
@@ -204,7 +204,7 @@ static inline void print_table_header(const char *fmt, ...) {
   va_end(args);
 }
 
-static inline void print_table_row(const char *fmt, ...) {
+static inline  void print_table_row(const char *fmt, ...) {
   va_list args;
   va_start(args, fmt);
   printf("  ");

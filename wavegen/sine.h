@@ -35,16 +35,16 @@ typedef struct {
   ARG_UNUSED(lo);
 
 #define DECL_SINE_PTR_RENAME(sine, name)                                                           \
-  sine_t *(name) = (sine);                                                                         \
+  sine_t *name = (sine);                                                                         \
   ARG_UNUSED(name);
 
-static inline void sine_init(sine_t *sine, sine_cfg_t sine_cfg) {
+static inline  void sine_init(sine_t *sine, sine_cfg_t sine_cfg) {
   DECL_SINE_PTRS(sine);
 
   *cfg = sine_cfg;
 }
 
-static inline void sine_exec(sine_t *sine) {
+static inline  void sine_exec(sine_t *sine) {
   DECL_SINE_PTRS(sine);
 
   lo->phase_incr = TAU * cfg->wave_freq / cfg->fs;

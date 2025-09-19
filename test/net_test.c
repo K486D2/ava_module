@@ -5,12 +5,12 @@
 
 net_t net;
 
-static int init(void) {
+static inline int init(void) {
   net_cfg_t net_cfg = {.type = NET_TYPE_UDP};
   return net_init(&net, net_cfg);
 }
 
-static int exec(void) {
+static inline int exec(void) {
   net_ch_t ch = {
       .remote_ip = "192.168.137.101",
       // .remote_ip   = "127.0.0.1",

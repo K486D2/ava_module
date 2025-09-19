@@ -48,10 +48,10 @@ typedef struct {
   ARG_UNUSED(lo);
 
 #define DECL_PLL_PTR_RENAME(pll, name)                                                             \
-  pll_filter_t *(name) = (pll);                                                                    \
+  pll_filter_t *name = (pll);                                                                    \
   ARG_UNUSED(name);
 
-static void pll_init(pll_filter_t *pll, pll_cfg_t pll_cfg) {
+static inline void pll_init(pll_filter_t *pll, pll_cfg_t pll_cfg) {
   DECL_PLL_PTRS(pll);
 
   *cfg = pll_cfg;
@@ -61,7 +61,7 @@ static void pll_init(pll_filter_t *pll, pll_cfg_t pll_cfg) {
   cfg->ffd_lpf_fc = 0.5f * cfg->lpf_fc;
 }
 
-static void pll_exec(pll_filter_t *pll) {
+static inline void pll_exec(pll_filter_t *pll) {
   DECL_PLL_PTRS(pll);
 
   // LF环路滤波器
@@ -74,7 +74,7 @@ static void pll_exec(pll_filter_t *pll) {
   WARP_TAU(out->theta);
 }
 
-static void pll_exec_ab_in(pll_filter_t *pll, f32_ab_t ab) {
+static inline void pll_exec_ab_in(pll_filter_t *pll, f32_ab_t ab) {
   DECL_PLL_PTRS(pll);
 
   in->ab = ab;
@@ -85,7 +85,7 @@ static void pll_exec_ab_in(pll_filter_t *pll, f32_ab_t ab) {
   pll_exec(pll);
 }
 
-static void pll_exec_theta_in(pll_filter_t *pll, f32 theta) {
+static inline void pll_exec_theta_in(pll_filter_t *pll, f32 theta) {
   DECL_PLL_PTRS(pll);
 
   in->theta = theta;

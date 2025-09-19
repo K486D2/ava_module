@@ -6,7 +6,7 @@
 
 logger_t logger;
 
-static inline void print(FILE *file, char *str, u32 len) {
+static inline  void print(FILE *file, char *str, u32 len) {
   printf("%s", str);
 }
 

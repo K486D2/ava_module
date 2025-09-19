@@ -18,7 +18,7 @@ typedef struct {
 } task_data_t;
 
 // 任务1：高频任务，每100ms执行一次
-static void task1_callback(void *arg) {
+static inline void task1_callback(void *arg) {
   task_data_t *data = (task_data_t *)arg;
   data->cnt++;
   u64 ts = get_mono_ts_ms();
@@ -26,7 +26,7 @@ static void task1_callback(void *arg) {
 }
 
 // 任务2：中频任务，每500ms执行一次
-static void task2_callback(void *arg) {
+static inline void task2_callback(void *arg) {
   task_data_t *data = (task_data_t *)arg;
   data->cnt++;
   u64 ts = get_mono_ts_ms();
@@ -34,7 +34,7 @@ static void task2_callback(void *arg) {
 }
 
 // 任务3：低频任务，每1000ms执行一次
-static void task3_callback(void *arg) {
+static inline void task3_callback(void *arg) {
   task_data_t *data = (task_data_t *)arg;
   data->cnt++;
   u64 ts = get_mono_ts_ms();
@@ -42,7 +42,7 @@ static void task3_callback(void *arg) {
 }
 
 // 任务4：有限次数任务，每200ms执行一次，最多执行10次
-static void task4_callback(void *arg) {
+static inline void task4_callback(void *arg) {
   task_data_t *data = (task_data_t *)arg;
   data->cnt++;
   u64 ts = get_mono_ts_ms();

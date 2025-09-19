@@ -43,14 +43,14 @@ typedef struct {
   maf_filter_t *name = (maf);                                                                      \
   ARG_UNUSED(name);
 
-static void maf_init(maf_filter_t *maf, maf_cfg_t maf_cfg) {
+static inline void maf_init(maf_filter_t *maf, maf_cfg_t maf_cfg) {
   DECL_MAF_PTRS(maf);
 
   *cfg = maf_cfg;
   fifo_init(&lo->fifo, cfg->buf, cfg->buf_size);
 }
 
-static void maf_exec(maf_filter_t *maf) {
+static inline void maf_exec(maf_filter_t *maf) {
   DECL_MAF_PTRS(maf);
 
   f32 prev_x;
@@ -63,7 +63,7 @@ static void maf_exec(maf_filter_t *maf) {
   lo->x_sum /= (f32)cfg->buf_size;
 }
 
-static void maf_exec_in(maf_filter_t *maf, f32 x) {
+static inline void maf_exec_in(maf_filter_t *maf, f32 x) {
   DECL_MAF_PTRS(maf);
 
   in->x = x;

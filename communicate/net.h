@@ -96,10 +96,10 @@ typedef struct net {
   ARG_UNUSED(lo);
 
 #define DECL_NET_PTR_RENAME(net, name)                                                            \
-  net_t *(name) = (net);                                                                           \
+  net_t *name = (net);                                                                           \
   ARG_UNUSED(name);
 
-static int net_init(net_t *net, net_cfg_t net_cfg) {
+static inline int net_init(net_t *net, net_cfg_t net_cfg) {
   DECL_NET_PTRS(net);
 
   *cfg = net_cfg;
@@ -113,7 +113,7 @@ static int net_init(net_t *net, net_cfg_t net_cfg) {
   return 0;
 }
 
-static int net_set_nonblock(net_ch_t *ch) {
+static inline int net_set_nonblock(net_ch_t *ch) {
 #ifdef __linux__
   int flags = fcntl(ch->sock, F_GETFL, 0);
   if (flags < 0)
@@ -129,7 +129,7 @@ static int net_set_nonblock(net_ch_t *ch) {
 #endif
 }
 
-static int net_add_ch(net_t *net, net_ch_t *ch) {
+static inline int net_add_ch(net_t *net, net_ch_t *ch) {
   DECL_NET_PTRS(net);
 
   switch (cfg->type) {
@@ -176,7 +176,7 @@ cleanup:
   return ret;
 }
 
-static int net_send(net_ch_t *ch, void *txbuf, u32 size) {
+static inline int net_send(net_ch_t *ch, void *txbuf, u32 size) {
 #ifdef __linux__
   int ret = send(ch->sock, txbuf, size, 0);
 #elif defined(_WIN32)
@@ -185,7 +185,7 @@ static int net_send(net_ch_t *ch, void *txbuf, u32 size) {
   return ret;
 }
 
-static int net_recv_yield(net_ch_t *ch, void *rxbuf, u32 size, u32 timeout_ms) {
+static inline int net_recv_yield(net_ch_t *ch, void *rxbuf, u32 size, u32 timeout_ms) {
   struct timeval tv = {
       .tv_sec  = (i32)timeout_ms / 1000,                      // 秒
       .tv_usec = (i32)(timeout_ms - tv.tv_sec * 1000) * 1000, // 微秒
@@ -201,7 +201,7 @@ static int net_recv_yield(net_ch_t *ch, void *rxbuf, u32 size, u32 timeout_ms) {
   return ret;
 }
 
-static int net_recv_spin(net_ch_t *ch, void *rxbuf, u32 size, u32 timeout_ms) {
+static inline int net_recv_spin(net_ch_t *ch, void *rxbuf, u32 size, u32 timeout_ms) {
   u64 start_ts_ns = get_mono_ts_ns();
   u64 curr_ts_ns  = 0;
   while (curr_ts_ns < start_ts_ns + (u64)(timeout_ms * 1e6)) {
@@ -217,7 +217,7 @@ static int net_recv_spin(net_ch_t *ch, void *rxbuf, u32 size, u32 timeout_ms) {
   return -METIMEOUT;
 }
 
-static int net_recv(net_ch_t *ch, void *rxbuf, u32 size, u32 timeout_ms) {
+static inline int net_recv(net_ch_t *ch, void *rxbuf, u32 size, u32 timeout_ms) {
   int ret;
   switch (ch->recv_mode) {
   case NET_RECV_YIELD:
@@ -232,7 +232,7 @@ static int net_recv(net_ch_t *ch, void *rxbuf, u32 size, u32 timeout_ms) {
   return ret;
 }
 
-static int
+static inline int
 net_send_recv(net_ch_t *ch, void *txbuf, u32 tx_size, void *rxbuf, u32 rx_size, u32 timeout_ms) {
   int ret;
 
@@ -249,7 +249,7 @@ typedef struct {
   char resp[MAX_RESP_BUF_SIZE];
 } net_broadcast_t;
 
-static int net_broadcast(const char      *remote_ip,
+static inline int net_broadcast(const char      *remote_ip,
                          u16              remote_port,
                          const u8        *txbuf,
                          u32              size,

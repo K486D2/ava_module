@@ -219,7 +219,7 @@
     (ret).b = (x).b / (y).b;                                                                       \
   } while (0)
 
-static void find_max(const float *arr, size_t n, float *max_val, size_t *max_idx) {
+static inline void find_max(const float *arr, size_t n, float *max_val, size_t *max_idx) {
   if (n == 0) {
     *max_val = 0.0f;
     *max_idx = 0;

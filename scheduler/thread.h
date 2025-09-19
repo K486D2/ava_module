@@ -6,20 +6,20 @@
 #include "../util/typedef.h"
 
 struct sched;
-static i32 sched_exec(struct sched *sched);
+static inline i32 sched_exec(struct sched *sched);
 
 #ifdef __linux__
 #include <pthread.h>
 #include <sched.h>
 
-static void *sched_thread_exec(void *arg) {
+static inline void *sched_thread_exec(void *arg) {
   struct sched *t = (struct sched *)arg;
   while (true)
     sched_exec(t);
   return NULL;
 }
 
-static void bind_thread_to_cpu(pthread_t thread_tid, i32 cpu_id) {
+static inline void bind_thread_to_cpu(pthread_t thread_tid, i32 cpu_id) {
   cpu_set_t cpuset;
   CPU_ZERO(&cpuset);
   CPU_SET(cpu_id, &cpuset);
@@ -31,8 +31,8 @@ static void bind_thread_to_cpu(pthread_t thread_tid, i32 cpu_id) {
 #elif defined(_WIN32)
 #include <windows.h>
 
-static DWORD WINAPI sched_thread_exec(LPVOID arg);
-static void         bind_thread_to_cpu(HANDLE thread_handle, i32 cpu_id) {
+static inline DWORD WINAPI sched_thread_exec(LPVOID arg);
+static inline void         bind_thread_to_cpu(HANDLE thread_handle, i32 cpu_id) {
   DWORD_PTR mask = 1u << cpu_id;
   DWORD_PTR ret  = SetThreadAffinityMask(thread_handle, mask);
   if (!ret)
@@ -40,7 +40,7 @@ static void         bind_thread_to_cpu(HANDLE thread_handle, i32 cpu_id) {
   printf("[SCHED] Bind thread to CPU %d success\n", cpu_id);
 }
 
-static DWORD WINAPI sched_thread_exec(LPVOID arg) {
+static inline DWORD WINAPI sched_thread_exec(LPVOID arg) {
   struct sched *t = (struct sched *)arg;
   while (true)
     sched_exec(t);
@@ -48,7 +48,7 @@ static DWORD WINAPI sched_thread_exec(LPVOID arg) {
 }
 #endif
 
-static inline void thread_init(void *arg, i32 cpu_id) {
+static inline  void thread_init(void *arg, i32 cpu_id) {
 #ifdef __linux__
   pthread_t sched_tid;
   i32       ret = pthread_create(&sched_tid, NULL, sched_thread_exec, arg);

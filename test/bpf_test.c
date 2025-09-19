@@ -4,7 +4,7 @@
 #define DURATION    1.0f
 #define NUM_SAMPLES (SAMPLE_RATE * DURATION)
 
-static f32 generate_test_signal(int sample_index) {
+static inline f32 generate_test_signal(int sample_index) {
   f32 t             = sample_index / SAMPLE_RATE;
   f32 signal_50hz   = SIN(2 * PI * 50.0f * t);
   f32 signal_1000hz = SIN(2 * PI * 1000.0f * t);

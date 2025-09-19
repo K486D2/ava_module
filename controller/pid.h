@@ -43,16 +43,16 @@ typedef struct {
   ARG_UNUSED(lo);
 
 #define DECL_PID_PTR_RENAME(pid, name)                                                             \
-  pid_ctl_t *(name) = (pid);                                                                       \
+  pid_ctl_t *name = (pid);                                                                       \
   ARG_UNUSED(name);
 
-static void pid_init(pid_ctl_t *pid, pid_cfg_t pid_cfg) {
+static inline void pid_init(pid_ctl_t *pid, pid_cfg_t pid_cfg) {
   DECL_PID_PTRS(pid);
 
   *cfg = pid_cfg;
 }
 
-static void pid_exec(pid_ctl_t *pid) {
+static inline void pid_exec(pid_ctl_t *pid) {
   DECL_PID_PTRS(pid);
 
   lo->err = in->ref - in->fdb;
@@ -66,7 +66,7 @@ static void pid_exec(pid_ctl_t *pid) {
   CLAMP(out->val, -cfg->out_max, cfg->out_max);
 }
 
-static void pid_exec_in(pid_ctl_t *pid, f32 ref, f32 fdb, f32 ffd) {
+static inline void pid_exec_in(pid_ctl_t *pid, f32 ref, f32 fdb, f32 ffd) {
   DECL_PID_PTRS(pid);
 
   in->ref = ref;

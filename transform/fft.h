@@ -3,7 +3,7 @@
 
 #if defined(__linux__) || defined(_WIN32)
 #include "fftw3.h"
-#else if defined(ARM_MATH)
+#elif defined(ARM_MATH)
 #include "arm_const_structs.h"
 #include "arm_math.h"
 #endif
@@ -50,7 +50,7 @@ typedef struct {
   f32    max_freq;
 #if defined(__linux__) || defined(_WIN32)
   fftwf_complex buf[FFT_POINT_SIZE / 2 + 1];
-#else if defined(ARM_MATH)
+#elif defined(ARM_MATH)
   f32 buf[FFT_POINT_SIZE];
 #endif
 } fft_out_t;
@@ -59,7 +59,7 @@ typedef struct {
   size_t in_idx;
 #if defined(__linux__) || defined(_WIN32)
   fftwf_plan p;
-#else if defined(ARM_MATH)
+#elif defined(ARM_MATH)
   arm_rfft_fast_instance_f32 S;
 #endif
 } fft_lo_t;
@@ -82,25 +82,25 @@ typedef struct {
   ARG_UNUSED(lo);
 
 #define DECL_FFT_PTR_RENAME(fft, name)                                                             \
-  fft_t *(name) = (fft);                                                                           \
+  fft_t *name = (fft);                                                                             \
   ARG_UNUSED(name);
 
-static void fft_init(fft_t *fft, fft_cfg_t fft_cfg) {
+static inline void fft_init(fft_t *fft, fft_cfg_t fft_cfg) {
   DECL_FFT_PTRS(fft);
 
   *cfg = fft_cfg;
 
   cfg->flag       = 0;
-  out->resolution = cfg->fs / FFT_POINT_SIZE;
+  out->resolution = cfg->fs / (f32)FFT_POINT_SIZE;
 
 #if defined(__linux__) || defined(_WIN32)
   lo->p = fftwf_plan_dft_r2c_1d(FFT_POINT_SIZE, in->buf, out->buf, FFTW_ESTIMATE);
-#else if defined(ARM_MATH)
+#elif defined(ARM_MATH)
   arm_rfft_fast_init_f32(&lo->S, FFT_POINT_SIZE);
 #endif
 }
 
-static void fft_exec(fft_t *fft) {
+static inline void fft_exec(fft_t *fft) {
   DECL_FFT_PTRS(fft);
 
 #if defined(__linux__) || defined(_WIN32)
@@ -108,7 +108,7 @@ static void fft_exec(fft_t *fft) {
   for (int i = 0; i < FFT_POINT_SIZE / 2 + 1; i++)
     out->mag[i] = SQRT(out->buf[i][0] * out->buf[i][0] + out->buf[i][1] * out->buf[i][1]);
   find_max(&out->mag[1], FFT_POINT_SIZE >> 1, &out->max_mag, &out->out_idx);
-#else if defined(ARM_MATH)
+#elif defined(ARM_MATH)
   arm_rfft_fast_f32(&lo->S, in->buf, out->buf, cfg->flag);
   arm_cmplx_mag_f32(out->buf, out->mag, FFT_POINT_SIZE >> 1);
   arm_max_f32(&out->mag[1], FFT_POINT_SIZE >> 1, &out->max_mag, &out->out_idx);
@@ -117,7 +117,7 @@ static void fft_exec(fft_t *fft) {
   out->max_freq = out->out_idx * cfg->fs / (f32)FFT_POINT_SIZE;
 }
 
-static void fft_destroy(fft_t *fft) {
+static inline void fft_destroy(fft_t *fft) {
   DECL_FFT_PTRS(fft);
 
 #if defined(__linux__) || defined(_WIN32)
@@ -125,7 +125,7 @@ static void fft_destroy(fft_t *fft) {
 #endif
 }
 
-static void fft_exec_in(fft_t *fft, f32 val) {
+static inline void fft_exec_in(fft_t *fft, f32 val) {
   DECL_FFT_PTRS(fft);
 
   in->buf[lo->in_idx++] = val;

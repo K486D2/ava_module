@@ -36,16 +36,16 @@ typedef struct {
   ARG_UNUSED(lo);
 
 #define DECL_SQUARE_PTR_RENAME(square, name)                                                       \
-  square_t *(name) = (square);                                                                     \
+  square_t *name = (square);                                                                     \
   ARG_UNUSED(name)
 
-static inline void square_init(square_t *square, square_cfg_t square_cfg) {
+static inline  void square_init(square_t *square, square_cfg_t square_cfg) {
   DECL_SQUARE_PTRS(square);
 
   *cfg = square_cfg;
 }
 
-static inline void square_exec(square_t *square) {
+static inline  void square_exec(square_t *square) {
   DECL_SQUARE_PTRS(square);
 
   lo->phase_incr = TAU * cfg->wave_freq / cfg->fs;
