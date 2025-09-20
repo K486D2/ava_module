@@ -14,54 +14,58 @@
 #include "../util/util.h"
 
 typedef enum {
-  FFT_SIZE_32      = 32,
-  FFT_SIZE_64      = 64,
-  FFT_SIZE_128     = 128,
-  FFT_SIZE_256     = 256,
-  FFT_SIZE_512     = 512,
-  FFT_SIZE_1024    = 1024,
-  FFT_SIZE_2048    = 2048,
-  FFT_SIZE_4096    = 4096,
-  FFT_SIZE_8192    = 8192,
-  FFT_SIZE_16384   = 16384,
-  FFT_SIZE_32768   = 32768,
-  FFT_SIZE_65536   = 65536,
-  FFT_SIZE_131072  = 131072,
-  FFT_SIZE_262144  = 262144,
-  FFT_SIZE_524288  = 524288,
-  FFT_SIZE_1048576 = 1048576,
+  FFT_LEN_32      = 32,
+  FFT_LEN_64      = 64,
+  FFT_LEN_128     = 128,
+  FFT_LEN_256     = 256,
+  FFT_LEN_512     = 512,
+  FFT_LEN_1024    = 1024,
+  FFT_LEN_2048    = 2048,
+  FFT_LEN_4096    = 4096,
+  FFT_LEN_8192    = 8192,
+  FFT_LEN_16384   = 16384,
+  FFT_LEN_32768   = 32768,
+  FFT_LEN_65536   = 65536,
+  FFT_LEN_131072  = 131072,
+  FFT_LEN_262144  = 262144,
+  FFT_LEN_524288  = 524288,
+  FFT_LEN_1048576 = 1048576,
 } fft_size_e;
 
-#define FFT_POINT_SIZE FFT_SIZE_65536
 typedef struct {
-  f32 fs;
-  u8  flag;
+  f32    fs;
+  u8     flag;
+  size_t buf_len;
+  f32   *in_buf;
+#if defined(__linux__) || defined(_WIN32)
+  fftwf_complex *out_buf;
+#elif defined(ARM_MATH)
+  f32 *out_buf;
+#endif
+  f32 *mag_buf;
 } fft_cfg_t;
 
 typedef struct {
-  f32 buf[FFT_POINT_SIZE];
+  f32 *buf;
 } fft_in_t;
 
 typedef struct {
   f32    resolution;
   size_t out_idx;
-  f32    mag[FFT_POINT_SIZE];
+  f32   *mag_buf;
   f32    max_mag;
   f32    max_freq;
-#if defined(__linux__) || defined(_WIN32)
-  fftwf_complex buf[FFT_POINT_SIZE / 2 + 1];
-#elif defined(ARM_MATH)
-  f32 buf[FFT_POINT_SIZE];
-#endif
 } fft_out_t;
 
 typedef struct {
   u32    elapsed_us;
   size_t in_idx;
 #if defined(__linux__) || defined(_WIN32)
-  fftwf_plan p;
+  fftwf_plan     p;
+  fftwf_complex *buf;
 #elif defined(ARM_MATH)
   arm_rfft_fast_instance_f32 s;
+  f32                       *buf;
 #endif
 } fft_lo_t;
 
@@ -91,13 +95,16 @@ static inline void fft_init(fft_t *fft, fft_cfg_t fft_cfg) {
 
   *cfg = fft_cfg;
 
-  cfg->flag       = 0;
-  out->resolution = cfg->fs / (f32)FFT_POINT_SIZE;
+  in->buf      = cfg->in_buf;
+  lo->buf      = cfg->out_buf;
+  out->mag_buf = cfg->mag_buf;
+
+  out->resolution = cfg->fs / (f32)cfg->buf_len;
 
 #if defined(__linux__) || defined(_WIN32)
-  lo->p = fftwf_plan_dft_r2c_1d(FFT_POINT_SIZE, in->buf, out->buf, FFTW_ESTIMATE);
+  lo->p = fftwf_plan_dft_r2c_1d(cfg->buf_len, in->buf, lo->buf, FFTW_ESTIMATE);
 #elif defined(ARM_MATH)
-  arm_rfft_fast_init_f32(&lo->s, FFT_POINT_SIZE);
+  arm_rfft_fast_init_f32(&lo->s, (u16)cfg->buf_len);
 #endif
 }
 
@@ -106,16 +113,16 @@ static inline void fft_exec(fft_t *fft) {
 
 #if defined(__linux__) || defined(_WIN32)
   fftwf_execute(lo->p);
-  for (int i = 0; i < FFT_POINT_SIZE / 2 + 1; i++)
-    out->mag[i] = SQRT(out->buf[i][0] * out->buf[i][0] + out->buf[i][1] * out->buf[i][1]);
-  find_max(&out->mag[1], FFT_POINT_SIZE >> 1, &out->max_mag, &out->out_idx);
+  for (int i = 0; i < cfg->buf_len / 2 + 1; i++)
+    out->mag_buf[i] = SQRT(lo->buf[i][0] * lo->buf[i][0] + lo->buf[i][1] * lo->buf[i][1]);
+  find_max(&out->mag_buf[1], cfg->buf_len >> 1, &out->max_mag, &out->out_idx);
 #elif defined(ARM_MATH)
-  arm_rfft_fast_f32(&lo->s, in->buf, out->buf, cfg->flag);
-  arm_cmplx_mag_f32(out->buf, out->mag, FFT_POINT_SIZE >> 1);
-  arm_max_f32(&out->mag[1], FFT_POINT_SIZE >> 1, &out->max_mag, &out->out_idx);
+  arm_rfft_fast_f32(&lo->s, in->buf, lo->buf, cfg->flag);
+  arm_cmplx_mag_f32(lo->buf, out->mag_buf, cfg->buf_len >> 1);
+  arm_max_f32(&out->mag_buf[1], cfg->buf_len >> 1, &out->max_mag, &out->out_idx);
 #endif
 
-  out->max_freq = out->out_idx * cfg->fs / (f32)FFT_POINT_SIZE;
+  out->max_freq = out->out_idx * cfg->fs / (f32)cfg->buf_len;
 }
 
 static inline void fft_destroy(fft_t *fft) {
@@ -126,22 +133,26 @@ static inline void fft_destroy(fft_t *fft) {
 #endif
 }
 
+static inline void fft_exec_cpy_in(fft_t *fft, f32 *buf, size_t buf_size) {
+  DECL_FFT_PTRS(fft);
+
+  memcpy(in->buf, buf, buf_size);
+
+  u64 start = get_mono_ts_us();
+  fft_exec(fft);
+  lo->elapsed_us = (u32)(get_mono_ts_us() - start);
+}
+
 static inline void fft_exec_in(fft_t *fft, f32 val) {
   DECL_FFT_PTRS(fft);
 
   in->buf[lo->in_idx++] = val;
-  if (lo->in_idx >= FFT_POINT_SIZE) {
+  if (lo->in_idx >= cfg->buf_len) {
     lo->in_idx = 0;
 
     u64 start = get_mono_ts_us();
     fft_exec(fft);
     lo->elapsed_us = (u32)(get_mono_ts_us() - start);
-
-    printf("elapsed_us: %u, freq: %f, idx: %zu, mag: %f\n",
-           lo->elapsed_us,
-           out->max_freq,
-           out->out_idx,
-           out->max_mag);
   }
 }
 

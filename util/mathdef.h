@@ -25,15 +25,15 @@
 #define CPYSGN(x, y) copysignf(x, y)
 #define LOG(x)       log(x)
 #elif defined(ARM_MATH)
-#define SIN(x)         arm_sin_f32(x)
-#define COS(x)         arm_cos_f32(x)
-#define ATAN2(y, x, r) arm_atan2_f32(y, x, r)
-#define ABS(x)         fast_absf(x)
-#define EXP(x)         fast_expf(x)
-#define SQRT(x)        fast_sqrtf(x)
-#define MOD(x, y)      fast_modf(x, y) // __hardfp_fmodf
-#define CPYSGN(x, y)   copysignf(x, y)
-#define LOG(x)         log(x)
+#define SIN(x)       arm_sin_f32(x)
+#define COS(x)       arm_cos_f32(x)
+#define ATAN2(y, x)  atan2f(y, x)
+#define ABS(x)       fast_absf(x)
+#define EXP(x)       fast_expf(x)
+#define SQRT(x)      fast_sqrtf(x)
+#define MOD(x, y)    fast_modf(x, y) // __hardfp_fmodf
+#define CPYSGN(x, y) copysignf(x, y)
+#define LOG(x)       log(x)
 #else
 #define SIN(x)       sinf(x)
 #define SINH(x)      sinhf(x)
@@ -50,18 +50,27 @@
 #ifndef PI
 #define PI 3.1415926F
 #endif
-#define TAU 6.2831853F
-// #define E                              2.7182818F
-#define DIV_PI_BY_2                    1.5707963F
-#define LN2                            0.6931471F
-#define DIV_2_BY_3                     0.6666666F
-#define SQRT_2                         1.4142135F
-#define SQRT_3                         1.7320508F
-#define DIV_1_BY_SQRT_3                0.5773502F
-#define DIV_SQRT_3_BY_2                0.8660254F
 
-#define MIN(x, y)                      (((x) < (y)) ? (x) : (y))
-#define MAX(x, y)                      (((x) > (y)) ? (x) : (y))
+#ifndef E
+#define E 2.7182818F
+#endif
+
+#define TAU             6.2831853F
+#define DIV_PI_BY_2     1.5707963F
+#define LN2             0.6931471F
+#define DIV_2_BY_3      0.6666666F
+#define SQRT_2          1.4142135F
+#define SQRT_3          1.7320508F
+#define DIV_1_BY_SQRT_3 0.5773502F
+#define DIV_SQRT_3_BY_2 0.8660254F
+
+#ifndef MIN
+#define MIN(x, y) ((x) < (y) ? (x) : (y))
+#endif
+
+#ifndef MAX
+#define MAX(x, y) ((x) > (y) ? (x) : (y))
+#endif
 
 #define IS_NAN(x)                      (isnan(x))
 #define IS_IN_RANGE(val, min, max)     ((val) >= (min) && (val) <= (max))

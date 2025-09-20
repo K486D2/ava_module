@@ -10,17 +10,11 @@
 #define SCHED_TASK_MAX 16
 #endif
 
+typedef void (*sched_cb_f)(void *arg);
+
 typedef enum {
   SCHED_TYPE_CFS,
 } sched_type_e;
-
-typedef struct {
-  f32          exec_freq; // 时间戳更新频率
-  u8           cpu_id;
-  sched_type_e type;
-} sched_cfg_t;
-
-typedef void (*sched_cb_f)(void *arg);
 
 typedef enum {
   SCHED_TASK_STATE_BLOCKED,
@@ -40,7 +34,7 @@ typedef struct {
 } sched_task_cfg_t;
 
 typedef struct {
-  sched_task_state_e state;
+  sched_task_state_e e_state;
   u32                exec_cnt;
   u32                elapsed;
   u32                create_ts;
@@ -52,6 +46,12 @@ typedef struct {
   sched_task_status_t status;
   rb_node_t           rb_node;
 } sched_task_t;
+
+typedef struct {
+  f32          exec_freq; // 时间戳更新频率
+  u8           cpu_id;
+  sched_type_e type;
+} sched_cfg_t;
 
 typedef struct {
   f32          elapsed_us;
@@ -89,7 +89,7 @@ typedef struct sched {
   sched_t *name = (sched);                                                                         \
   ARG_UNUSED(name);
 
-static inline i32 sched_task_cmp(const sched_task_t *a, const sched_task_t *b) {
+static inline int sched_task_cmp(const sched_task_t *a, const sched_task_t *b) {
   if (a->cfg.priority < b->cfg.priority)
     return -1;
   if (a->cfg.priority > b->cfg.priority)
@@ -129,7 +129,7 @@ static inline i32 sched_register_task(sched_t *sched, sched_task_cfg_t sched_tas
   lo->tasks[lo->tasks_num].status.create_ts    = lo->curr_ts;
   lo->tasks[lo->tasks_num].status.next_exec_ts = lo->curr_ts + HZ_TO_US(cfg->exec_freq);
 
-  if (lo->tasks[lo->tasks_num].status.state == SCHED_TASK_STATE_READY)
+  if (lo->tasks[lo->tasks_num].status.e_state == SCHED_TASK_STATE_READY)
     sched_insert_ready(lo, &lo->tasks[lo->tasks_num]);
 
   lo->tasks_num++;
@@ -137,18 +137,18 @@ static inline i32 sched_register_task(sched_t *sched, sched_task_cfg_t sched_tas
   return 0;
 }
 
-static inline i32 sched_set_task_state(sched_t *sched, u32 task_id, sched_task_state_e state) {
+static inline int sched_set_task_state(sched_t *sched, u32 task_id, sched_task_state_e e_state) {
   DECL_SCHED_PTRS(sched);
 
   if (task_id >= lo->tasks_num)
     return -MEINVAL;
 
-  sched_task_t *task = &lo->tasks[task_id];
-  task->status.state = state;
+  sched_task_t *task   = &lo->tasks[task_id];
+  task->status.e_state = e_state;
 
-  if (state == SCHED_TASK_STATE_READY)
+  if (e_state == SCHED_TASK_STATE_READY)
     sched_insert_ready(lo, task);
-  else if (state == SCHED_TASK_STATE_SUSPENDED)
+  else if (e_state == SCHED_TASK_STATE_SUSPENDED)
     sched_remove_ready(lo, task);
 
   return 0;
@@ -164,7 +164,7 @@ static inline sched_task_t *sched_get_task(sched_t *sched) {
   return rb_entry(node, sched_task_t, rb_node);
 }
 
-static inline i32 sched_init(sched_t *sched, sched_cfg_t sched_cfg) {
+static inline int sched_init(sched_t *sched, sched_cfg_t sched_cfg) {
   DECL_SCHED_PTRS(sched);
 
   *cfg = sched_cfg;
@@ -182,7 +182,7 @@ static inline i32 sched_init(sched_t *sched, sched_cfg_t sched_cfg) {
   return 0;
 }
 
-static inline i32 sched_exec(sched_t *sched) {
+static inline int sched_exec(sched_t *sched) {
   DECL_SCHED_PTRS(sched);
 
   lo->curr_ts = ops->f_get_ts();
@@ -190,7 +190,7 @@ static inline i32 sched_exec(sched_t *sched) {
   sched_task_t *task = sched_get_task(sched);
   if (!task->cfg.f_cb) {
     sched_remove_ready(lo, task);
-    task->status.state = SCHED_TASK_STATE_SUSPENDED;
+    task->status.e_state = SCHED_TASK_STATE_SUSPENDED;
     return -MEINVAL;
   }
 
@@ -200,17 +200,17 @@ static inline i32 sched_exec(sched_t *sched) {
   if (lo->curr_ts - task->status.create_ts < task->cfg.delay * HZ_TO_US(cfg->exec_freq))
     return 0;
 
-  u64 begin_ts       = lo->curr_ts;
-  task->status.state = SCHED_TASK_STATE_RUNNING;
+  u64 begin_ts         = lo->curr_ts;
+  task->status.e_state = SCHED_TASK_STATE_RUNNING;
   sched_remove_ready(lo, task);
   task->cfg.f_cb(task->cfg.arg);
   task->status.exec_cnt++;
-  task->status.state   = SCHED_TASK_STATE_READY;
+  task->status.e_state = SCHED_TASK_STATE_READY;
   u64 end_ts           = ops->f_get_ts();
   task->status.elapsed = end_ts - begin_ts;
 
   if (task->cfg.exec_cnt_max != 0 && task->status.exec_cnt >= task->cfg.exec_cnt_max) {
-    task->status.state = SCHED_TASK_STATE_SUSPENDED;
+    task->status.e_state = SCHED_TASK_STATE_SUSPENDED;
     return 0;
   }
 
