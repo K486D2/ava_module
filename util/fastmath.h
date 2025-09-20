@@ -7,7 +7,7 @@
 
 #define f32_HOLLYST 0.017453292519943295769236907684886F
 
-static inline const f32 SIN_TABLE[] = {
+static const f32 SIN_TABLE[] = {
     0.0f,                                // sin(0)
     0.17364817766693034885171662676931f, // sin(10)
     0.34202014332566873304409961468226f, // sin(20)
@@ -20,7 +20,7 @@ static inline const f32 SIN_TABLE[] = {
     1.0f                                 // sin(90)
 };
 
-static inline const f32 COS_TABLE[] = {
+static const f32 COS_TABLE[] = {
     1.0f,                                // cos(0)
     0.99984769515639123915701155881391f, // cos(10)
     0.99939082701909573000624344004393f, // cos(20)

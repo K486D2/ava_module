@@ -25,8 +25,8 @@ static inline void bind_thread_to_cpu(pthread_t thread_tid, i32 cpu_id) {
   CPU_SET(cpu_id, &cpuset);
   i32 ret = pthread_setaffinity_np(thread_tid, sizeof(cpu_set_t), &cpuset);
   if (ret)
-    printf("[SCHED] Set thread affinity failed, errcode: %d\n", ret);
-  printf("[SCHED] Bind thread to CPU %d success\n", cpu_id);
+    printf("[SCHED] set thread affinity failed, errcode: %d\n", ret);
+  printf("[SCHED] bind thread to CPU %d success\n", cpu_id);
 }
 #elif defined(_WIN32)
 #include <windows.h>
@@ -36,8 +36,8 @@ static inline void         bind_thread_to_cpu(HANDLE thread_handle, i32 cpu_id) 
   DWORD_PTR mask = 1u << cpu_id;
   DWORD_PTR ret  = SetThreadAffinityMask(thread_handle, mask);
   if (!ret)
-    printf("[SCHED] Set thread affinity failed, errcode: %lu\n", GetLastError());
-  printf("[SCHED] Bind thread to CPU %d success\n", cpu_id);
+    printf("[SCHED] set thread affinity failed, errcode: %lu\n", GetLastError());
+  printf("[SCHED] bind thread to CPU %d success\n", cpu_id);
 }
 
 static inline DWORD WINAPI sched_thread_exec(LPVOID arg) {
@@ -53,7 +53,7 @@ static inline void thread_init(void *arg, i32 cpu_id) {
   pthread_t sched_tid;
   i32       ret = pthread_create(&sched_tid, NULL, sched_thread_exec, arg);
   if (ret != 0) {
-    printf("[SCHED] Create thread failed, errcode: %d\n", ret);
+    printf("[SCHED] create thread failed, errcode: %d\n", ret);
     return;
   }
 #elif defined(_WIN32)
@@ -66,7 +66,7 @@ static inline void thread_init(void *arg, i32 cpu_id) {
                                   &thread_id         // 用于接收线程ID
   );
   if (sched_tid == NULL) {
-    printf("[SCHED] Create thread failed, errcode: %lu\n", GetLastError());
+    printf("[SCHED] create thread failed, errcode: %lu\n", GetLastError());
     return;
   }
 #endif

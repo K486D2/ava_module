@@ -33,7 +33,7 @@ typedef struct {
   u32        id;           // 任务ID
   u32        priority;     // 任务优先级, 数值越小优先级越高
   u32        exec_freq;    // 执行频率
-  u32        exec_cnt_max; // 执行次数
+  u32        exec_cnt_max; // 最多执行次数
   u32        delay;        // 初始延时
   sched_cb_f f_cb;         // 回调函数
   void      *arg;          // 回调参数

@@ -18,6 +18,62 @@ typedef struct {
   u32_uvw_t u32_pwm_duty;
 } svpwm_t;
 
+typedef enum {
+  FOC_STATE_NULL,
+  FOC_STATE_CALI,
+  FOC_STATE_READY,
+  FOC_STATE_DISABLE,
+  FOC_STATE_ENABLE,
+} foc_state_e;
+
+typedef enum {
+  FOC_THETA_NULL,
+  FOC_THETA_FORCE,
+  FOC_THETA_SENSOR,
+  FOC_THETA_SENSORLESS,
+  FOC_THETA_SENSORFUSION,
+} foc_theta_e;
+
+typedef enum {
+  FOC_OBS_NULL,
+  FOC_OBS_SMO,
+  FOC_OBS_HFI,
+} foc_obs_e;
+
+typedef enum {
+  FOC_CALI_INIT,  // 初始化
+  FOC_CALI_CW,    // 顺时针旋转校准
+  FOC_CALI_CCW,   // 逆时针旋转校准
+  FOC_CALI_FINISH // 校准完成
+} foc_cali_e;
+
+typedef enum {
+  FOC_MODE_VOL,
+  FOC_MODE_CUR,
+  FOC_MODE_VEL,
+  FOC_MODE_POS,
+  FOC_MODE_PD,
+  FOC_MODE_ASC,
+} foc_mode_e;
+
+typedef struct {
+  u32 NULL_FUNC_PTR : 1;
+} foc_fault_t;
+
+typedef struct {
+  f32 pos, ffd_vel;
+  f32 vel, ffd_cur;
+  f32 cur;
+  f32 tor;
+} foc_ref_pvct_t;
+
+typedef struct {
+  f32 pos;
+  f32 vel;
+  f32 cur;
+  f32 tor;
+} foc_fdb_pvct_t;
+
 typedef struct {
   // 电气角度
   f32 theta, comp_theta, omega;
@@ -59,71 +115,25 @@ typedef struct {
   svpwm_t   svpwm;
 } foc_out_t;
 
-typedef enum {
-  FOC_STATE_NULL,
-  FOC_STATE_CALI,
-  FOC_STATE_READY,
-  FOC_STATE_DISABLE,
-  FOC_STATE_ENABLE,
-} foc_state_e;
-
-typedef enum {
-  FOC_THETA_NULL,
-  FOC_THETA_FORCE,
-  FOC_THETA_SENSOR,
-  FOC_THETA_SENSORLESS,
-  FOC_THETA_SENSORFUSION,
-} foc_theta_e;
-
-typedef enum {
-  FOC_OBS_NULL,
-  FOC_OBS_SMO,
-  FOC_OBS_HFI,
-} foc_obs_e;
-
-typedef enum {
-  FOC_CALI_INIT,  // 初始化
-  FOC_CALI_CW,    // 顺时针旋转校准
-  FOC_CALI_CCW,   // 逆时针旋转校准
-  FOC_CALI_FINISH // 校准完成
-} foc_cali_e;
-
-typedef enum {
-  FOC_MODE_CUR,
-  FOC_MODE_PD,
-  FOC_MODE_POS,
-  FOC_MODE_VEL,
-  FOC_MODE_ASC,
-} foc_mode_e;
-
-typedef struct {
-  u32 NULL_FUNC_PTR : 1;
-} foc_fault_t;
-
-typedef struct {
-  f32 pos, ffd_vel;
-  f32 vel, ffd_cur;
-  f32 cur;
-  f32 tor;
-} foc_pvct_t;
-
 typedef struct {
   f32 elapsed_us;
   u32 exec_cnt;
   u32 adc_cali_cnt, theta_cali_cnt, theta_cali_hold_cnt;
   f32 theta_offset_sum;
 
-  f32_dq_t   ref_i_dq;
-  f32_dq_t   ffd_v_dq;
-  foc_pvct_t ref_pvct, fdb_pvct;
+  foc_ref_pvct_t ref_pvct;
+  foc_fdb_pvct_t fdb_pvct;
+
+  f32_dq_t ref_i_dq;
+  f32_dq_t ffd_v_dq;
 
   foc_fault_t fault;
 
-  foc_cali_e  e_cali;
   foc_state_e e_state;
   foc_theta_e e_theta;
-  foc_obs_e   e_obs;
   foc_mode_e  e_mode;
+  foc_obs_e   e_obs;
+  foc_cali_e  e_cali;
 
   pid_ctl_t id_pid, iq_pid;
   pid_ctl_t pd_pid, vel_pid, pos_pid;
@@ -166,7 +176,7 @@ typedef struct {
   ARG_UNUSED(ops);
 
 #define DECL_FOC_PTR_RENAME(foc, name)                                                             \
-  foc_t *name = (foc);                                                                           \
+  foc_t *name = (foc);                                                                             \
   ARG_UNUSED(name);
 
 #endif // !FOCDEF_H

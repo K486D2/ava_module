@@ -1,7 +1,7 @@
 #ifndef FOC_H
 #define FOC_H
 
-#include "focdef.h"
+#include "foccali.h"
 #include "focstate.h"
 
 static inline void foc_init(foc_t *foc, foc_cfg_t foc_cfg) {
@@ -38,10 +38,8 @@ static inline void foc_init(foc_t *foc, foc_cfg_t foc_cfg) {
   hfi_init(&lo->hfi, lo->hfi.cfg);
 }
 
-static inline void foc_exec(foc_t *foc) {
+static inline void foc_rotor_cal(foc_t *foc) {
   DECL_FOC_PTRS(foc);
-
-  lo->exec_cnt++;
 
   // 机械角度获取与圈数计算
   in->rotor.mech_theta = ops->f_get_theta();
@@ -72,8 +70,29 @@ static inline void foc_exec(foc_t *foc) {
     in->rotor.theta = in->rotor.sensor_theta;
     in->rotor.omega = in->rotor.sensor_omega;
   }
+}
 
-  // FOC状态切换
+static inline void foc_set_ref(foc_t *foc) {
+  DECL_FOC_PTRS(foc);
+
+  lo->ref_i_dq.q = lo->ref_pvct.cur;
+}
+
+static inline void foc_get_fdb(foc_t *foc) {
+  DECL_FOC_PTRS(foc);
+
+  lo->fdb_pvct.pos = in->rotor.mech_total_theta;
+  lo->fdb_pvct.vel = in->rotor.mech_omega;
+  lo->fdb_pvct.cur = in->i_dq.q;
+}
+
+static inline void foc_exec(foc_t *foc) {
+  DECL_FOC_PTRS(foc);
+
+  lo->exec_cnt++;
+
+  foc_rotor_cal(foc);
+
   switch (lo->e_state) {
   case FOC_STATE_CALI:
     foc_cali(foc);
@@ -85,15 +104,14 @@ static inline void foc_exec(foc_t *foc) {
     foc_disable(foc);
     break;
   case FOC_STATE_ENABLE:
+    foc_set_ref(foc);
     foc_enable(foc);
     break;
   default:
     break;
   }
 
-  lo->fdb_pvct.pos = in->rotor.mech_total_theta;
-  lo->fdb_pvct.vel = in->rotor.mech_omega;
-  lo->fdb_pvct.cur = in->i_dq.q;
+  foc_get_fdb(foc);
 }
 
 #endif // !FOC_H
