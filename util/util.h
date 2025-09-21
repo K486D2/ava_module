@@ -99,6 +99,13 @@ static inline u64 get_real_ts_s(void) {
   return get_real_ts_ns() / 1000000000u;
 }
 
+static inline void delay_us(u64 us) {
+  u64 start = get_mono_ts_us();
+  while ((get_mono_ts_us() - start) < us) {
+    asm volatile("" ::: "memory");
+  }
+}
+
 static inline i32 format_ts_ms(u64 ts_ms, char *buf, u32 len) {
   time_t    sec = ts_ms / 1000u;
   int       ms  = ts_ms % 1000u;
