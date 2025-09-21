@@ -47,7 +47,7 @@ static inline void maf_init(maf_filter_t *maf, maf_cfg_t maf_cfg) {
   DECL_MAF_PTRS(maf);
 
   *cfg = maf_cfg;
-  fifo_init(&lo->fifo, cfg->buf, cfg->buf_size);
+  fifo_init(&lo->fifo, cfg->buf, cfg->buf_size, FIFO_POLICY_DISCARD);
 }
 
 static inline void maf_exec(maf_filter_t *maf) {

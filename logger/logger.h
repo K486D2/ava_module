@@ -61,7 +61,7 @@ typedef struct {
   ARG_UNUSED(ops);
 
 #define DECL_LOGGER_PTRS_PREFIX(logger, name)                                                      \
-  logger_t *name = (logger);                                                                     \
+  logger_t *name = (logger);                                                                       \
   ARG_UNUSED(name);
 
 static inline void logger_init(logger_t *logger, logger_cfg_t logger_cfg) {
@@ -69,7 +69,7 @@ static inline void logger_init(logger_t *logger, logger_cfg_t logger_cfg) {
 
   *cfg = logger_cfg;
 
-  fifo_init(&lo->fifo, lo->buf, sizeof(lo->buf));
+  fifo_init(&lo->fifo, lo->buf, sizeof(lo->buf), FIFO_POLICY_DISCARD);
 }
 
 static inline void logger_flush(logger_t *logger) {
