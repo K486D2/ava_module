@@ -13,12 +13,11 @@
 #include "../container/fifo.h"
 #include "../util/util.h"
 
-#define SHM_SIZE      1024
+#define SHM_SIZE 1024
 
-#define SHM_NAME_SIZE 32
 typedef struct {
-  char name[SHM_NAME_SIZE];
-  u32  access;
+  const char *name;
+  u32         access;
 } shm_cfg_t;
 
 typedef struct {
