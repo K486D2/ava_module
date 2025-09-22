@@ -86,7 +86,7 @@ static inline void foc_enable(foc_t *foc) {
   // 克拉克变换
   in->i_ab = clarke(in->f32_i_uvw, cfg->periph_cfg.mi);
 
-  // 无感观测器(alpha-beta)
+  // 无感观测器(iab)
   foc_obs_i_ab(foc);
 
   // 电角度源选择
@@ -101,6 +101,8 @@ static inline void foc_enable(foc_t *foc) {
   // 观测器电角度和传感器电角度误差计算
   in->rotor.fusion_theta_err = in->rotor.sensor_theta - in->rotor.obs_theta;
   WARP_PI(in->rotor.fusion_theta_err);
+
+  foc_select_mode(foc);
 
   switch (lo->e_mode) {
   case FOC_MODE_VOL: {

@@ -48,6 +48,7 @@ typedef enum {
 } foc_cali_e;
 
 typedef enum {
+  FOC_MODE_NULL,
   FOC_MODE_VOL,
   FOC_MODE_CUR,
   FOC_MODE_VEL,
@@ -131,7 +132,7 @@ typedef struct {
 
   foc_state_e e_state;
   foc_theta_e e_theta;
-  foc_mode_e  e_mode;
+  foc_mode_e  e_mode, e_last_mode;
   foc_obs_e   e_obs;
   foc_cali_e  e_cali;
 

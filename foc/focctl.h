@@ -3,12 +3,40 @@
 
 #include "focdef.h"
 
+static inline void foc_select_mode(foc_t *foc) {
+  DECL_FOC_PTRS(foc);
+
+  if (lo->e_mode == lo->e_last_mode)
+    return;
+
+  switch (lo->e_mode) {
+  case FOC_MODE_CUR: {
+    lo->ref_pvct.cur = 0.0f;
+  } break;
+  case FOC_MODE_VEL: {
+    lo->ref_pvct.vel = 0.0f;
+  } break;
+  case FOC_MODE_POS: {
+    lo->ref_pvct.pos = lo->fdb_pvct.pos;
+  } break;
+  case FOC_MODE_PD: {
+    lo->ref_pvct.pos = lo->fdb_pvct.pos;
+  } break;
+  default:
+    break;
+  }
+
+  lo->e_last_mode = lo->e_mode;
+}
+
 static inline void foc_vol_ctl(foc_t *foc) {
   DECL_FOC_PTRS(foc);
 }
 
 static inline void foc_cur_ctl(foc_t *foc) {
   DECL_FOC_PTRS(foc);
+
+  lo->ref_i_dq.q = lo->ref_pvct.cur;
 
   // Q轴电流环
   DECL_PID_PTR_RENAME(&lo->iq_pid, iq_pid);
@@ -29,7 +57,7 @@ static inline void foc_vel_ctl(foc_t *foc) {
   DECL_FOC_PTRS(foc);
 
   pid_exec_in(&lo->vel_pid, lo->ref_pvct.vel, lo->fdb_pvct.vel, lo->ref_pvct.ffd_cur);
-  lo->ref_i_dq.q = lo->vel_pid.out.val;
+  lo->ref_pvct.cur = lo->vel_pid.out.val;
 }
 
 static inline void foc_pos_ctl(foc_t *foc) {
@@ -42,8 +70,8 @@ static inline void foc_pos_ctl(foc_t *foc) {
 static inline void foc_pd_ctl(foc_t *foc) {
   DECL_FOC_PTRS(foc);
 
-  lo->ref_i_dq.q = lo->pd_pid.cfg.kp * (lo->ref_pvct.pos - lo->fdb_pvct.pos) +
-                   lo->pd_pid.cfg.kd * (lo->ref_pvct.vel - lo->fdb_pvct.vel) + lo->ref_pvct.tor;
+  lo->ref_pvct.cur = lo->pd_pid.cfg.kp * (lo->ref_pvct.pos - lo->fdb_pvct.pos) +
+                     lo->pd_pid.cfg.kd * (lo->ref_pvct.vel - lo->fdb_pvct.vel) + lo->ref_pvct.tor;
 }
 
 #endif // !FOCCTL_H

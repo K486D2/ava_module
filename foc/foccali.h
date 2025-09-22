@@ -29,6 +29,7 @@ static inline void foc_cali(foc_t *foc) {
       break;
     lo->ref_i_dq.d        = cfg->ref_theta_cali_id;
     in->rotor.force_omega = cfg->ref_theta_cali_omega;
+    lo->e_mode            = FOC_MODE_CUR;
     lo->e_theta           = FOC_THETA_FORCE;
     lo->e_cali            = FOC_CALI_CW;
   } break;
@@ -69,6 +70,7 @@ static inline void foc_cali(foc_t *foc) {
     lo->ref_i_dq.d                        = 0.0f;
     in->rotor.force_theta                 = 0.0f;
     in->rotor.force_omega                 = 0.0f;
+    lo->e_mode                            = FOC_MODE_NULL;
     lo->e_theta                           = FOC_THETA_NULL;
     lo->e_state                           = FOC_STATE_READY;
   } break;
