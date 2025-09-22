@@ -50,11 +50,11 @@ typedef struct {
 } fft_in_t;
 
 typedef struct {
-  f32    resolution;
+  f32    fr;
+  f32    ft;
   size_t out_idx;
   f32   *mag_buf;
   f32    max_mag;
-  f32    max_freq;
 } fft_out_t;
 
 typedef struct {
@@ -99,7 +99,7 @@ static inline void fft_init(fft_t *fft, fft_cfg_t fft_cfg) {
   lo->buf      = cfg->out_buf;
   out->mag_buf = cfg->mag_buf;
 
-  out->resolution = cfg->fs / (f32)cfg->buf_len;
+  out->fr = cfg->fs / (f32)cfg->buf_len;
 
 #if defined(__linux__) || defined(_WIN32)
   lo->p = fftwf_plan_dft_r2c_1d(cfg->buf_len, in->buf, lo->buf, FFTW_ESTIMATE);
@@ -122,7 +122,7 @@ static inline void fft_exec(fft_t *fft) {
   arm_max_f32(&out->mag_buf[1], cfg->buf_len >> 1, &out->max_mag, &out->out_idx);
 #endif
 
-  out->max_freq = out->out_idx * cfg->fs / (f32)cfg->buf_len;
+  out->ft = out->out_idx * cfg->fs / (f32)cfg->buf_len;
 }
 
 static inline void fft_destroy(fft_t *fft) {
