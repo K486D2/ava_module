@@ -37,7 +37,7 @@ static inline void foc_cur_ctl(foc_t *foc) {
   DECL_FOC_PTRS(foc);
 
   lo->ref_i_dq.d = lo->comp_i_dq.d;
-  lo->ref_i_dq.q = lo->ref_pvct.cur;
+  lo->ref_i_dq.q = lo->ref_pvct.cur + lo->comp_i_dq.q;
 
   // Q轴电流环
   DECL_PID_PTR_RENAME(&lo->iq_pid, iq_pid);

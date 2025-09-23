@@ -59,7 +59,7 @@ typedef struct {
   f32 psi; // Wb
   f32 wc;  // 电流环带宽
   f32 j;   // 转子惯量
-  f32 cur2tor[3], tor2cur[3], max_tor;
+  f32 cur2tor[4], tor2cur[4], max_tor;
 } motor_cfg_t;
 
 typedef struct {
