@@ -36,6 +36,7 @@ static inline void foc_vol_ctl(foc_t *foc) {
 static inline void foc_cur_ctl(foc_t *foc) {
   DECL_FOC_PTRS(foc);
 
+  lo->ref_i_dq.d = lo->comp_i_dq.d;
   lo->ref_i_dq.q = lo->ref_pvct.cur;
 
   // Q轴电流环
@@ -71,7 +72,8 @@ static inline void foc_pd_ctl(foc_t *foc) {
   DECL_FOC_PTRS(foc);
 
   lo->ref_pvct.cur = lo->pd_pid.cfg.kp * (lo->ref_pvct.pos - lo->fdb_pvct.pos) +
-                     lo->pd_pid.cfg.kd * (lo->ref_pvct.vel - lo->fdb_pvct.vel) + lo->ref_pvct.tor;
+                     lo->pd_pid.cfg.kd * (lo->ref_pvct.vel - lo->fdb_pvct.vel) +
+                     lo->ref_pvct.elec_tor;
 }
 
 #endif // !FOCCTL_H

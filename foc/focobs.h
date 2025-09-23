@@ -10,8 +10,8 @@ static inline void foc_obs_i_ab(foc_t *foc) {
   case FOC_OBS_SMO: {
     DECL_SMO_PTR_RENAME(&lo->smo, smo);
     smo_exec_in(smo, in->i_ab, out->v_ab);
-    in->rotor.obs_theta = smo->out.theta;
-    in->rotor.obs_omega = smo->out.omega;
+    in->rotor.obs_theta = smo->out.est_theta;
+    in->rotor.obs_omega = smo->out.est_omega;
   } break;
   default:
     break;
@@ -25,9 +25,20 @@ static inline void foc_obs_i_dq(foc_t *foc) {
   case FOC_OBS_HFI: {
     DECL_HFI_PTR_RENAME(&lo->hfi, hfi);
     hfi_exec_in(hfi, in->i_dq);
-    in->rotor.obs_theta = hfi->out.theta;
-    in->rotor.obs_omega = hfi->out.omega;
+    in->rotor.obs_theta = hfi->out.est_theta;
+    in->rotor.obs_omega = hfi->out.est_omega;
     lo->ref_i_dq.d      = hfi->out.id;
+  } break;
+  case FOC_OBS_LBG: {
+    DECL_LBG_PTR_RENAME(&lo->lbg, lbg);
+    lbg_exec_in(lbg, in->rotor.theta, lo->fdb_pvct.elec_tor);
+    in->rotor.obs_theta   = lbg->out.est_theta;
+    in->rotor.obs_omega   = lbg->out.est_omega;
+    lo->fdb_pvct.load_tor = lbg->out.est_load_tor;
+    lo->comp_i_dq.q       = CPYSGN(poly_eval(cfg->motor_cfg.tor2cur,
+                                       ARRAY_SIZE(cfg->motor_cfg.tor2cur),
+                                       ABS(lo->fdb_pvct.load_tor)),
+                             lo->fdb_pvct.load_tor);
   } break;
   default:
     break;

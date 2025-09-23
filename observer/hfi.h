@@ -19,8 +19,8 @@ typedef struct {
 } hfi_in_t;
 
 typedef struct {
-  f32 theta;
-  f32 omega;
+  f32 est_theta;
+  f32 est_omega;
   f32 id;
   f32 vd;
 } hfi_out_t;
@@ -143,9 +143,9 @@ static inline void hfi_exec(hfi_obs_t *hfi) {
   hfi_polar_idf(hfi);
 
   // 角度计算
-  out->theta = pll->out.theta + lo->polar_offset;
-  WARP_TAU(out->theta);
-  out->omega = pll->out.omega;
+  out->est_theta = pll->out.theta + lo->polar_offset;
+  WARP_TAU(out->est_theta);
+  out->est_omega = pll->out.omega;
 }
 
 static inline void hfi_exec_in(hfi_obs_t *hfi, f32_dq_t i_dq) {

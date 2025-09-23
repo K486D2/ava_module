@@ -38,6 +38,7 @@ typedef enum {
   FOC_OBS_NULL,
   FOC_OBS_SMO,
   FOC_OBS_HFI,
+  FOC_OBS_LBG,
 } foc_obs_e;
 
 typedef enum {
@@ -65,14 +66,14 @@ typedef struct {
   f32 pos, ffd_vel;
   f32 vel, ffd_cur;
   f32 cur;
-  f32 tor;
+  f32 elec_tor;
 } foc_ref_pvct_t;
 
 typedef struct {
   f32 pos;
   f32 vel;
   f32 cur;
-  f32 tor;
+  f32 elec_tor, load_tor;
 } foc_fdb_pvct_t;
 
 typedef struct {
@@ -125,7 +126,7 @@ typedef struct {
   foc_ref_pvct_t ref_pvct;
   foc_fdb_pvct_t fdb_pvct;
 
-  f32_dq_t ref_i_dq;
+  f32_dq_t ref_i_dq, comp_i_dq;
   f32_dq_t ffd_v_dq;
 
   foc_fault_t fault;
@@ -142,6 +143,7 @@ typedef struct {
   pll_filter_t pll;
   smo_obs_t    smo;
   hfi_obs_t    hfi;
+  lbg_obs_t    lbg;
 } foc_lo_t;
 
 typedef adc_raw_t (*foc_get_adc_f)(void);

@@ -20,6 +20,9 @@ static inline void foc_init(foc_t *foc, foc_cfg_t foc_cfg) {
 
   lo->hfi.cfg.fs = cfg->exec_freq;
 
+  lo->lbg.cfg.fs    = cfg->exec_freq;
+  lo->lbg.cfg.motor = cfg->motor_cfg;
+
   pid_cfg_t cur_pid_cfg = {
       .fs = cfg->exec_freq,
       .kp = cfg->motor_cfg.wc * cfg->motor_cfg.ld,
@@ -36,6 +39,7 @@ static inline void foc_init(foc_t *foc, foc_cfg_t foc_cfg) {
   pll_init(&lo->pll, lo->pll.cfg);
   smo_init(&lo->smo, lo->smo.cfg);
   hfi_init(&lo->hfi, lo->hfi.cfg);
+  lbg_init(&lo->lbg, lo->lbg.cfg);
 }
 
 static inline void foc_rotor_cal(foc_t *foc) {

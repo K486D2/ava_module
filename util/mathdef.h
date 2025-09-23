@@ -309,4 +309,11 @@ static inline void find_max(const float *arr, size_t n, float *max_val, size_t *
 #endif
 }
 
+static inline f32 poly_eval(const f32 *coeffs, u32 order, f32 x) {
+  f32 result = coeffs[order];
+  for (int i = order - 1; i >= 0; i--)
+    result = result * x + coeffs[i];
+  return result;
+}
+
 #endif // !MATHDEF_H

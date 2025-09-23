@@ -7,15 +7,28 @@
 typedef struct {
   f32         fs;
   motor_cfg_t motor;
+  f32         wc;
 } lbg_cfg_t;
 
 typedef struct {
+  f32 theta;
+  f32 elec_tor;
 } lbg_in_t;
 
 typedef struct {
+  f32 est_theta, est_omega;
+  f32 est_load_tor;
+  f32 sum_tor;
 } lbg_out_t;
 
 typedef struct {
+  f32 g1;
+  f32 kp, ki;
+
+  f32 theta_err, mech_theta_err;
+  f32 ki_out;
+  f32 est_omega;
+
   pll_filter_t pll;
 } lbg_lo_t;
 
@@ -44,10 +57,45 @@ static void lbg_init(lbg_obs_t *lbg, lbg_cfg_t lbg_cfg) {
   DECL_LBG_PTRS(lbg);
 
   *cfg = lbg_cfg;
+
+  lo->g1 = 2.0f * cfg->wc;
+  lo->kp = 2.0f * SQ(cfg->wc) * cfg->motor.j * 8.0f;
+  lo->ki = SQ(cfg->wc) * cfg->wc * cfg->motor.j / cfg->fs;
 }
 
-static void lbg_exec(lbg_obs_t *smo) {
-  DECL_LBG_PTRS(smo);
+static void lbg_exec(lbg_obs_t *lbg) {
+  DECL_LBG_PTRS(lbg);
+
+  // 电角度
+  lo->theta_err = in->theta - out->est_theta;
+  WARP_PI(lo->theta_err);
+
+  // 机械角度
+  lo->mech_theta_err = lo->theta_err / (f32)cfg->motor.npp;
+
+  // 负载力矩
+  INTEGRATOR(lo->ki_out, lo->mech_theta_err, lo->ki, cfg->fs);
+  CLAMP(lo->ki_out, -cfg->motor.max_tor, cfg->motor.max_tor);
+
+  // 负载力矩方向为反
+  out->est_load_tor = -lo->ki_out;
+
+  out->sum_tor = in->elec_tor + lo->kp * lo->mech_theta_err + lo->ki_out;
+
+  INTEGRATOR(lo->est_omega, out->sum_tor, 1.0f / cfg->motor.j, cfg->fs);
+  out->est_omega = lo->g1 * lo->mech_theta_err + lo->est_omega;
+
+  INTEGRATOR(out->est_theta, out->est_omega, cfg->motor.npp, cfg->fs);
+  WARP_TAU(out->est_theta);
+}
+
+static void lbg_exec_in(lbg_obs_t *lbg, f32 theta, f32 elec_tor) {
+  DECL_LBG_PTRS(lbg);
+
+  in->theta    = theta;
+  in->elec_tor = elec_tor;
+
+  lbg_exec(lbg);
 }
 
 #endif // !LUENBERGER_H

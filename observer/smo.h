@@ -16,8 +16,8 @@ typedef struct {
 } smo_in_t;
 
 typedef struct {
-  f32 theta;
-  f32 omega;
+  f32 est_theta;
+  f32 est_omega;
 } smo_out_t;
 
 typedef struct {
@@ -97,10 +97,10 @@ static inline void smo_exec(smo_obs_t *smo) {
                            : (cfg->ks * lo->est_i_ab_err.b / cfg->es0);
 
   pll_exec_ab_in(&lo->pll, lo->est_emf_v_ab);
-  out->omega = pll->out.omega;
+  out->est_omega = pll->out.omega;
 
-  out->theta = ATAN2(-lo->est_emf_v_ab.a * out->omega, lo->est_emf_v_ab.b * out->omega);
-  WARP_TAU(out->theta);
+  out->est_theta = ATAN2(-lo->est_emf_v_ab.a * out->est_omega, lo->est_emf_v_ab.b * out->est_omega);
+  WARP_TAU(out->est_theta);
 }
 
 static inline void smo_exec_in(smo_obs_t *smo, f32_ab_t i_ab, f32_ab_t v_ab) {
