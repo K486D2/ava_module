@@ -26,10 +26,10 @@ typedef struct {
 } hfi_out_t;
 
 typedef enum {
-  POLAR_IDF_NULL,
-  POLAR_IDF_POSITIVE,
-  POLAR_IDF_NEGATIVE,
-  POALR_IDF_FINISH,
+  HFI_POLAR_IDF_NULL,
+  HFI_POLAR_IDF_POSITIVE,
+  HFI_POLAR_IDF_NEGATIVE,
+  HFI_POALR_IDF_FINISH,
 } polar_idf_e;
 
 typedef struct {
@@ -66,7 +66,7 @@ typedef struct {
   ARG_UNUSED(lo);
 
 #define DECL_HFI_PTR_RENAME(hfi, name)                                                             \
-  hfi_obs_t *name = (hfi);                                                                       \
+  hfi_obs_t *name = (hfi);                                                                         \
   ARG_UNUSED(name);
 
 static inline void hfi_init(hfi_obs_t *hfi, hfi_cfg_t hfi_cfg) {
@@ -74,44 +74,46 @@ static inline void hfi_init(hfi_obs_t *hfi, hfi_cfg_t hfi_cfg) {
 
   *cfg = hfi_cfg;
 
-  lo->id_bpf.cfg.fs = lo->iq_bpf.cfg.fs = cfg->fs;
-  lo->polar_cnt_max                     = (u32)(cfg->fs / 3.0f);
+  lo->pll.cfg.fs = lo->id_bpf.cfg.fs = lo->iq_bpf.cfg.fs = cfg->fs;
+  lo->polar_cnt_max                                      = (u32)(cfg->fs / 3.0f);
 
   pll_init(&lo->pll, lo->pll.cfg);
   iir_init(&lo->id_bpf, lo->id_bpf.cfg);
   iir_init(&lo->iq_bpf, lo->iq_bpf.cfg);
 }
 
-static inline  void hfi_polar_idf(hfi_obs_t *hfi) {
+static inline void hfi_polar_idf(hfi_obs_t *hfi) {
   DECL_HFI_PTRS(hfi);
 
   out->id = 0.0f;
-  lo->polar_cnt++;
   switch (lo->e_polar_idf) {
-  case POLAR_IDF_NULL: {
+  case HFI_POLAR_IDF_NULL: {
     if (lo->polar_cnt > lo->polar_cnt_max * 1)
-      lo->e_polar_idf = POLAR_IDF_POSITIVE;
+      lo->e_polar_idf = HFI_POLAR_IDF_POSITIVE;
   } break;
-  case POLAR_IDF_POSITIVE: {
+  case HFI_POLAR_IDF_POSITIVE: {
     out->id = cfg->hfi_id;
     lo->id_pos += ABS(lo->lpf_id);
     if (lo->polar_cnt > lo->polar_cnt_max * 2)
-      lo->e_polar_idf = POLAR_IDF_NEGATIVE;
+      lo->e_polar_idf = HFI_POLAR_IDF_NEGATIVE;
   } break;
-  case POLAR_IDF_NEGATIVE: {
+  case HFI_POLAR_IDF_NEGATIVE: {
     out->id = -cfg->hfi_id;
     lo->id_neg += ABS(lo->lpf_id);
-    if (lo->polar_cnt == lo->polar_cnt_max * 3)
-      lo->e_polar_idf = POALR_IDF_FINISH;
+    if (lo->polar_cnt == lo->polar_cnt_max * 3) {
+      // cfg->hfi_vd      = (ABS(lo->id_pos) > ABS(lo->id_neg)) ? cfg->hfi_vd : -cfg->hfi_vd;
+      lo->polar_offset = (ABS(lo->id_pos) > ABS(lo->id_neg)) ? 0.0f : PI;
+      lo->polar_cnt    = 0;
+      lo->e_polar_idf  = HFI_POALR_IDF_FINISH;
+    }
   } break;
-  case POALR_IDF_FINISH: {
-    cfg->hfi_vd      = (ABS(lo->id_pos) > ABS(lo->id_neg)) ? cfg->hfi_vd : -cfg->hfi_vd;
-    lo->polar_offset = (ABS(lo->id_pos) > ABS(lo->id_neg)) ? 0.0f : PI;
-    lo->polar_cnt    = 0;
-  } break;
+  case HFI_POALR_IDF_FINISH:
+    return;
   default:
     break;
   }
+
+  lo->polar_cnt++;
 }
 
 static inline void hfi_exec(hfi_obs_t *hfi) {
@@ -140,6 +142,7 @@ static inline void hfi_exec(hfi_obs_t *hfi) {
   // 极性辨识
   hfi_polar_idf(hfi);
 
+  // 角度计算
   out->theta = pll->out.theta + lo->polar_offset;
   WARP_TAU(out->theta);
   out->omega = pll->out.omega;

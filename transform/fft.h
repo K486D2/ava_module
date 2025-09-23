@@ -117,6 +117,7 @@ static inline void fft_exec(fft_t *fft) {
     out->mag_buf[i] = SQRT(lo->buf[i][0] * lo->buf[i][0] + lo->buf[i][1] * lo->buf[i][1]);
   find_max(&out->mag_buf[1], cfg->buf_len >> 1, &out->max_mag, &out->out_idx);
 #elif defined(ARM_MATH)
+  arm_hanning_f32(lo->buf, cfg->buf_len);
   arm_rfft_fast_f32(&lo->s, in->buf, lo->buf, cfg->flag);
   arm_cmplx_mag_f32(lo->buf, out->mag_buf, cfg->buf_len >> 1);
   arm_max_f32(&out->mag_buf[1], cfg->buf_len >> 1, &out->max_mag, &out->out_idx);

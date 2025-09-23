@@ -54,6 +54,8 @@ static inline void smo_init(smo_obs_t *smo, smo_cfg_t smo_cfg) {
 
   *cfg = smo_cfg;
 
+  lo->pll.cfg.fs = cfg->fs;
+
   pll_init(&lo->pll, lo->pll.cfg);
 }
 

@@ -15,10 +15,10 @@ static inline void foc_init(foc_t *foc, foc_cfg_t foc_cfg) {
 
   lo->pll.cfg.fs = cfg->exec_freq;
 
-  lo->smo.cfg.fs = lo->smo.lo.pll.cfg.fs = cfg->exec_freq;
-  lo->smo.cfg.motor_cfg                  = cfg->motor_cfg;
+  lo->smo.cfg.fs        = cfg->exec_freq;
+  lo->smo.cfg.motor_cfg = cfg->motor_cfg;
 
-  lo->hfi.cfg.fs = lo->hfi.lo.pll.cfg.fs = cfg->exec_freq;
+  lo->hfi.cfg.fs = cfg->exec_freq;
 
   pid_cfg_t cur_pid_cfg = {
       .fs = cfg->exec_freq,
