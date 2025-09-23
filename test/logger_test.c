@@ -6,8 +6,8 @@
 
 logger_t logger;
 
-static inline void print(FILE *file, char *str, u32 len) {
-  printf("%s", str);
+static inline void print(void *fp, char *str, u32 len) {
+  fwrite(str, sizeof(char), len, fp ? fp : stdout);
 }
 
 void *flush_thread_func(void *arg) {
@@ -44,16 +44,16 @@ void *write_thread_func(void *arg) {
   return NULL;
 }
 
-#define THREAD_COUNT 100
+#define THREAD_COUNT 10
 
 int main() {
   logger_cfg_t logger_cfg = {
       .level         = LOGGER_LEVEL_DEBUG,
       .new_line_sign = '\n',
       .prefix        = "",
-      .file          = stdout,
+      .fp            = stdout,
   };
-  logger.ops.f_print = print;
+  logger.ops.f_flush = print;
   logger_init(&logger, logger_cfg);
 
   pthread_t flush_thread;
