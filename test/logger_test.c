@@ -6,7 +6,7 @@
 
 logger_t logger;
 
-static inline  void print(FILE *file, char *str, u32 len) {
+static inline void print(FILE *file, char *str, u32 len) {
   printf("%s", str);
 }
 
@@ -44,7 +44,7 @@ void *write_thread_func(void *arg) {
   return NULL;
 }
 
-#define THREAD_COUNT 10
+#define THREAD_COUNT 100
 
 int main() {
   logger_cfg_t logger_cfg = {

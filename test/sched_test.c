@@ -148,7 +148,7 @@ int main() {
     // 每1秒打印一次统计信息
     u64 curr_ts = get_mono_ts_ms();
     if (curr_ts - last_print_ts >= 1000) {
-      printf("\n=== STATISTICS (RUN TIME: %u ms) ===\n", curr_ts - start_ts);
+      printf("\n=== STATISTICS (RUN TIME: %llu ms) ===\n", curr_ts - start_ts);
       printf("Task1 EXEC_CNT: %u\n", task1_data.cnt);
       printf("Task2 EXEC_CNT: %u\n", task2_data.cnt);
       printf("Task3 EXEC_CNT: %u\n", task3_data.cnt);

@@ -76,8 +76,8 @@ static inline void logger_flush(logger_t *logger) {
   DECL_LOGGER_PTRS(logger);
 
   logger_msg_t msg;
-  fifo_mpmc_out(&lo->fifo, &msg, sizeof(msg));
-  ops->f_print(cfg->file, (char *)msg.buf, msg.len);
+  while (fifo_mpmc_out(&lo->fifo, &msg, sizeof(msg)))
+    ops->f_print(cfg->file, (char *)msg.buf, msg.len);
 }
 
 static inline void logger_write(logger_t *logger, const char *format, ...) {
@@ -88,6 +88,9 @@ static inline void logger_write(logger_t *logger, const char *format, ...) {
   va_start(args, format);
   msg.len = vsnprintf((char *)msg.buf, sizeof(msg.buf), format, args);
   va_end(args);
+
+  if (msg.len > sizeof(msg.buf))
+    msg.len = sizeof(msg.buf);
 
   fifo_mpmc_in(&lo->fifo, &msg, sizeof(msg));
 }
