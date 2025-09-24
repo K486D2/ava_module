@@ -74,7 +74,7 @@ static inline void logger_flush(logger_t *logger) {
     return;
 
   u8 c;
-  while (fifo_mpmc_out(&lo->fifo, &c, sizeof(u8)))
+  while (fifo_mpmc_out(&lo->fifo, &c, sizeof(c)) != 0)
     ops->f_putchar(cfg->fp, c);
 }
 

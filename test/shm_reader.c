@@ -27,7 +27,7 @@ int main() {
            cnt,
            atomic_load(&fifo->in),
            atomic_load(&fifo->out),
-           fifo_get_len(fifo));
+           fifo_get_avail(fifo));
   }
 
   return 0;

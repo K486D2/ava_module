@@ -5,6 +5,7 @@
 #include "../logger/logger.h"
 
 logger_t logger;
+u8       LOGGER_BUF[4 * 1024];
 
 static inline void print(void *fp, u8 c) {
   fwrite(&c, sizeof(u8), 1, fp ? fp : stdout);
@@ -50,8 +51,9 @@ int main() {
   logger_cfg_t logger_cfg = {
       .level         = LOGGER_LEVEL_DEBUG,
       .new_line_sign = '\n',
-      .prefix        = "",
       .fp            = stdout,
+      .buf           = LOGGER_BUF,
+      .buf_size      = sizeof(LOGGER_BUF),
   };
   logger.ops.f_putchar = print;
   logger_init(&logger, logger_cfg);
