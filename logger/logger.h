@@ -89,7 +89,7 @@ static inline void logger_write(logger_t *logger, const char *format, ...) {
 
   if (size < 0)
     return;
-  if (size > sizeof(buf))
+  if ((size_t)size > sizeof(buf))
     size = sizeof(buf);
 
   fifo_mpmc_in(&lo->fifo, buf, size);

@@ -6,8 +6,8 @@
 
 logger_t logger;
 
-static inline void print(void *fp, char *str, u32 len) {
-  fwrite(str, sizeof(char), len, fp ? fp : stdout);
+static inline void print(void *fp, u8 c) {
+  fwrite(&c, sizeof(u8), 1, fp ? fp : stdout);
 }
 
 void *flush_thread_func(void *arg) {
