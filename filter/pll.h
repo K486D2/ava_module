@@ -4,7 +4,6 @@
 #include "../util/mathdef.h"
 #include "../util/util.h"
 
-
 typedef struct {
   f32 fs;
   f32 wc;
@@ -25,10 +24,11 @@ typedef struct {
 } pll_out_t;
 
 typedef struct {
-  f32 ki_out;
-  f32 prev_theta;
-  f32 theta_err;
-  f32 ffd_omega, lpf_ffd_omega;
+  pll_cfg_t cfg;
+  f32       ki_out;
+  f32       prev_theta;
+  f32       theta_err;
+  f32       ffd_omega, lpf_ffd_omega;
 } pll_lo_t;
 
 typedef struct {
@@ -63,6 +63,7 @@ static inline void pll_init(pll_filter_t *pll, pll_cfg_t pll_cfg) {
 }
 
 static inline void pll_exec(pll_filter_t *pll) {
+  CFG_CHECK(pll, pll_init);
   DECL_PLL_PTRS(pll);
 
   // LF环路滤波器

@@ -53,7 +53,7 @@ int main() {
       .prefix        = "",
       .fp            = stdout,
   };
-  logger.ops.f_flush = print;
+  logger.ops.f_putchar = print;
   logger_init(&logger, logger_cfg);
 
   pthread_t flush_thread;

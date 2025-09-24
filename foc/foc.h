@@ -76,12 +76,6 @@ static inline void foc_rotor_cal(foc_t *foc) {
   }
 }
 
-static inline void foc_set_ref(foc_t *foc) {
-  DECL_FOC_PTRS(foc);
-
-  lo->ref_i_dq.q = lo->ref_pvct.cur;
-}
-
 static inline void foc_get_fdb(foc_t *foc) {
   DECL_FOC_PTRS(foc);
 
@@ -108,7 +102,6 @@ static inline void foc_exec(foc_t *foc) {
     foc_disable(foc);
     break;
   case FOC_STATE_ENABLE:
-    foc_set_ref(foc);
     foc_enable(foc);
     break;
   default:

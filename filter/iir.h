@@ -32,12 +32,13 @@ typedef struct {
 } iir_out_t;
 
 typedef struct {
-  f32 rc;
-  f32 normal_a0, normal_a1, normal_a2, normal_a3, normal_a4;
-  f32 x1, x2, y1, y2;
-  f32 w0, sin_w0, cos_w0, alpha;
-  f32 b0, b1, b2;
-  f32 a0, a1, a2;
+  iir_cfg_t cfg;
+  f32       rc;
+  f32       normal_a0, normal_a1, normal_a2, normal_a3, normal_a4;
+  f32       x1, x2, y1, y2;
+  f32       w0, sin_w0, cos_w0, alpha;
+  f32       b0, b1, b2;
+  f32       a0, a1, a2;
 } iir_lo_t;
 
 typedef struct {
@@ -139,6 +140,7 @@ static inline int iir_init(iir_filter_t *iir, iir_cfg_t iir_cfg) {
 
 static inline int iir_exec(iir_filter_t *iir) {
   ARG_CHECK(iir);
+  CFG_CHECK(iir, iir_init);
   DECL_IIR_PTRS(iir);
 
   switch (cfg->order) {

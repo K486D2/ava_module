@@ -8,6 +8,7 @@ typedef struct {
   f32         fs;
   motor_cfg_t motor;
   f32         wc;
+  f32         damp;
 } lbg_cfg_t;
 
 typedef struct {
@@ -22,14 +23,14 @@ typedef struct {
 } lbg_out_t;
 
 typedef struct {
+  lbg_cfg_t cfg;
+
   f32 g1;
   f32 kp, ki;
 
   f32 theta_err, mech_theta_err;
   f32 ki_out;
   f32 est_omega;
-
-  pll_filter_t pll;
 } lbg_lo_t;
 
 typedef struct {
@@ -56,14 +57,15 @@ typedef struct {
 static void lbg_init(lbg_obs_t *lbg, lbg_cfg_t lbg_cfg) {
   DECL_LBG_PTRS(lbg);
 
-  *cfg = lbg_cfg;
+  *cfg = lo->cfg = lbg_cfg;
 
   lo->g1 = 2.0f * cfg->wc;
-  lo->kp = 2.0f * SQ(cfg->wc) * cfg->motor.j * 8.0f;
-  lo->ki = SQ(cfg->wc) * cfg->wc * cfg->motor.j / cfg->fs;
+  lo->kp = 2.0f * SQ(cfg->wc) * cfg->motor.j * cfg->damp;
+  lo->ki = SQ(cfg->wc) * cfg->wc * cfg->motor.j;
 }
 
 static void lbg_exec(lbg_obs_t *lbg) {
+  CFG_CHECK(lbg, lbg_init);
   DECL_LBG_PTRS(lbg);
 
   // 电角度
@@ -85,7 +87,7 @@ static void lbg_exec(lbg_obs_t *lbg) {
   INTEGRATOR(lo->est_omega, out->sum_tor, 1.0f / cfg->motor.j, cfg->fs);
   out->est_omega = lo->g1 * lo->mech_theta_err + lo->est_omega;
 
-  INTEGRATOR(out->est_theta, out->est_omega, cfg->motor.npp, cfg->fs);
+  INTEGRATOR(out->est_theta, out->est_omega, (f32)cfg->motor.npp, cfg->fs);
   WARP_TAU(out->est_theta);
 }
 

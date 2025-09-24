@@ -28,6 +28,12 @@
       return -MEINVAL;                                                                             \
   } while (0)
 
+#define CFG_CHECK(p, f_init)                                                                       \
+  do {                                                                                             \
+    if (memcmp(&((p)->cfg), &((p)->lo.cfg), sizeof((p)->cfg)) != 0)                                \
+      f_init((p), (p)->cfg);                                                                       \
+  } while (0)
+
 #define BUILD_BUG_ON_ZERO(e) (sizeof(struct { int : -!!(e); }))
 #define __same_type(a, b)    __builtin_types_compatible_p(typeof(a), typeof(b))
 #define __must_be_array(a)   BUILD_BUG_ON_ZERO(__same_type((a), &(a)[0]))

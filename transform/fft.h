@@ -10,6 +10,7 @@
 
 #include <string.h>
 
+#include "../container/fifo.h"
 #include "../util/mathdef.h"
 #include "../util/util.h"
 
@@ -36,6 +37,7 @@ typedef struct {
   f32    fs;
   u8     flag;
   size_t buf_len;
+  f32   *fifo_buf;
   f32   *in_buf;
 #if defined(__linux__) || defined(_WIN32)
   fftwf_complex *out_buf;
@@ -59,7 +61,8 @@ typedef struct {
 
 typedef struct {
   u32    elapsed_us;
-  size_t in_idx;
+  fifo_t fifo;
+  bool   neet_exec;
 #if defined(__linux__) || defined(_WIN32)
   fftwf_plan     p;
   fftwf_complex *buf;
@@ -95,6 +98,8 @@ static inline void fft_init(fft_t *fft, fft_cfg_t fft_cfg) {
 
   *cfg = fft_cfg;
 
+  fifo_init(&lo->fifo, cfg->fifo_buf, cfg->buf_len * sizeof(f32), FIFO_POLICY_DISCARD);
+
   in->buf      = cfg->in_buf;
   lo->buf      = cfg->out_buf;
   out->mag_buf = cfg->mag_buf;
@@ -111,6 +116,13 @@ static inline void fft_init(fft_t *fft, fft_cfg_t fft_cfg) {
 static inline void fft_exec(fft_t *fft) {
   DECL_FFT_PTRS(fft);
 
+  if (!lo->neet_exec)
+    return;
+
+  u64 start = get_mono_ts_us();
+
+  memcpy(in->buf, lo->fifo.buf, lo->fifo.buf_size);
+
 #if defined(__linux__) || defined(_WIN32)
   fftwf_execute(lo->p);
   for (int i = 0; i < cfg->buf_len / 2 + 1; i++)
@@ -124,6 +136,10 @@ static inline void fft_exec(fft_t *fft) {
 #endif
 
   out->ft = out->out_idx * cfg->fs / (f32)cfg->buf_len;
+
+  lo->neet_exec = false;
+
+  lo->elapsed_us = (u32)(get_mono_ts_us() - start);
 }
 
 static inline void fft_destroy(fft_t *fft) {
@@ -134,27 +150,11 @@ static inline void fft_destroy(fft_t *fft) {
 #endif
 }
 
-static inline void fft_exec_cpy_in(fft_t *fft, f32 *buf, size_t buf_size) {
-  DECL_FFT_PTRS(fft);
-
-  memcpy(in->buf, buf, buf_size);
-
-  u64 start = get_mono_ts_us();
-  fft_exec(fft);
-  lo->elapsed_us = (u32)(get_mono_ts_us() - start);
-}
-
 static inline void fft_exec_in(fft_t *fft, f32 val) {
   DECL_FFT_PTRS(fft);
 
-  in->buf[lo->in_idx++] = val;
-  if (lo->in_idx >= cfg->buf_len) {
-    lo->in_idx = 0;
-
-    u64 start = get_mono_ts_us();
-    fft_exec(fft);
-    lo->elapsed_us = (u32)(get_mono_ts_us() - start);
-  }
+  if (fifo_spsc_in(&lo->fifo, &val, sizeof(val)) == 0)
+    lo->neet_exec = true;
 }
 
 #endif // !FFT_H

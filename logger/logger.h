@@ -8,10 +8,6 @@
 #include "../container/fifo.h"
 #include "../util/util.h"
 
-#define LOGGER_TIMESTAMP_SIZE 32
-#define LOGGER_LEVEL_SIZE     16
-#define LOGGER_FIFO_BUF_SIZE  1024
-
 typedef enum {
   LOGGER_LEVEL_DATA,  // 数据
   LOGGER_LEVEL_DEBUG, // 调试
@@ -25,20 +21,22 @@ typedef struct {
   char           new_line_sign; // 换行符
   const char    *prefix;        // 前缀
   void          *fp;
+  u8            *buf;
+  size_t         buf_size;
 } logger_cfg_t;
 
 typedef struct {
   fifo_t fifo;
-  u8     buf[LOGGER_FIFO_BUF_SIZE];
+  u8    *buf;
   bool   flush_flag;
 } logger_lo_t;
 
 typedef u64 (*logger_get_ts_f)(void);
-typedef void (*logger_flush_f)(void *fp, char *str, u32 size);
+typedef void (*logger_putchar_f)(void *fp, u8 c);
 
 typedef struct {
-  logger_get_ts_f f_get_ts;
-  logger_flush_f  f_flush;
+  logger_get_ts_f  f_get_ts;
+  logger_putchar_f f_putchar;
 } logger_ops_t;
 
 typedef struct {
@@ -64,7 +62,9 @@ static inline void logger_init(logger_t *logger, logger_cfg_t logger_cfg) {
 
   *cfg = logger_cfg;
 
-  fifo_init(&lo->fifo, lo->buf, sizeof(lo->buf), FIFO_POLICY_DISCARD);
+  lo->buf = cfg->buf;
+
+  fifo_init(&lo->fifo, lo->buf, cfg->buf_size, FIFO_POLICY_DISCARD);
 }
 
 static inline void logger_flush(logger_t *logger) {
@@ -73,18 +73,18 @@ static inline void logger_flush(logger_t *logger) {
   if (!lo->flush_flag)
     return;
 
-  char c;
-  while (fifo_mpmc_out(&lo->fifo, &c, sizeof(char)))
-    ops->f_flush(cfg->fp, &c, sizeof(char));
+  u8 c;
+  while (fifo_mpmc_out(&lo->fifo, &c, sizeof(u8)))
+    ops->f_putchar(cfg->fp, c);
 }
 
 static inline void logger_write(logger_t *logger, const char *format, ...) {
   DECL_LOGGER_PTRS(logger);
 
-  char    buf[128];
+  u8      buf[128];
   va_list args;
   va_start(args, format);
-  int size = vsnprintf(buf, sizeof(buf), format, args);
+  int size = vsnprintf((char *)buf, sizeof(buf), format, args);
   va_end(args);
 
   if (size < 0)
