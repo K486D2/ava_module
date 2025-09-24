@@ -5,10 +5,12 @@
 #include "../logger/logger.h"
 
 logger_t logger;
-u8       LOGGER_BUF[4 * 1024];
 
-static inline void print(void *fp, u8 c) {
-  fwrite(&c, sizeof(u8), 1, fp ? fp : stdout);
+u8 LOGGER_FIFO_BUF[4 * 1024];
+u8 LOGGER_LINE_BUF[128];
+
+static inline void logger_stdout(void *fp, const u8 *data, size_t size) {
+  fwrite(data, 1, size, fp);
 }
 
 void *flush_thread_func(void *arg) {
@@ -52,10 +54,12 @@ int main() {
       .level         = LOGGER_LEVEL_DEBUG,
       .new_line_sign = '\n',
       .fp            = stdout,
-      .buf           = LOGGER_BUF,
-      .buf_size      = sizeof(LOGGER_BUF),
+      .fifo_buf      = LOGGER_FIFO_BUF,
+      .fifo_buf_size = sizeof(LOGGER_FIFO_BUF),
+      .line_buf      = LOGGER_LINE_BUF,
+      .line_buf_size = sizeof(LOGGER_LINE_BUF),
   };
-  logger.ops.f_putchar = print;
+  logger.ops.f_flush = logger_stdout;
   logger_init(&logger, logger_cfg);
 
   pthread_t flush_thread;

@@ -15,28 +15,28 @@
 #include "../util/util.h"
 
 typedef enum {
-  FFT_LEN_32      = 32,
-  FFT_LEN_64      = 64,
-  FFT_LEN_128     = 128,
-  FFT_LEN_256     = 256,
-  FFT_LEN_512     = 512,
-  FFT_LEN_1024    = 1024,
-  FFT_LEN_2048    = 2048,
-  FFT_LEN_4096    = 4096,
-  FFT_LEN_8192    = 8192,
-  FFT_LEN_16384   = 16384,
-  FFT_LEN_32768   = 32768,
-  FFT_LEN_65536   = 65536,
-  FFT_LEN_131072  = 131072,
-  FFT_LEN_262144  = 262144,
-  FFT_LEN_524288  = 524288,
-  FFT_LEN_1048576 = 1048576,
+  FFT_POINT_32      = 32,
+  FFT_POINT_64      = 64,
+  FFT_POINT_128     = 128,
+  FFT_POINT_256     = 256,
+  FFT_POINT_512     = 512,
+  FFT_POINT_1024    = 1024,
+  FFT_POINT_2048    = 2048,
+  FFT_POINT_4096    = 4096,
+  FFT_POINT_8192    = 8192,
+  FFT_POINT_16384   = 16384,
+  FFT_POINT_32768   = 32768,
+  FFT_POINT_65536   = 65536,
+  FFT_POINT_131072  = 131072,
+  FFT_POINT_262144  = 262144,
+  FFT_POINT_524288  = 524288,
+  FFT_POINT_1048576 = 1048576,
 } fft_size_e;
 
 typedef struct {
   f32    fs;
   u8     flag;
-  size_t buf_len;
+  size_t point_num;
   f32   *fifo_buf;
   f32   *in_buf;
 #if defined(__linux__) || defined(_WIN32)
@@ -98,18 +98,18 @@ static inline void fft_init(fft_t *fft, fft_cfg_t fft_cfg) {
 
   *cfg = fft_cfg;
 
-  fifo_init(&lo->fifo, cfg->fifo_buf, cfg->buf_len * sizeof(f32), FIFO_POLICY_DISCARD);
+  fifo_init(&lo->fifo, cfg->fifo_buf, cfg->point_num * sizeof(f32), FIFO_POLICY_DISCARD);
 
   in->buf      = cfg->in_buf;
   lo->buf      = cfg->out_buf;
   out->mag_buf = cfg->mag_buf;
 
-  out->fr = cfg->fs / (f32)cfg->buf_len;
+  out->fr = cfg->fs / (f32)cfg->point_num;
 
 #if defined(__linux__) || defined(_WIN32)
-  lo->p = fftwf_plan_dft_r2c_1d(cfg->buf_len, in->buf, lo->buf, FFTW_ESTIMATE);
+  lo->p = fftwf_plan_dft_r2c_1d(cfg->point_num, in->buf, lo->buf, FFTW_ESTIMATE);
 #elif defined(ARM_MATH)
-  arm_rfft_fast_init_f32(&lo->s, (u16)cfg->buf_len);
+  arm_rfft_fast_init_f32(&lo->s, (u16)cfg->point_num);
 #endif
 }
 
@@ -125,17 +125,17 @@ static inline void fft_exec(fft_t *fft) {
 
 #if defined(__linux__) || defined(_WIN32)
   fftwf_execute(lo->p);
-  for (int i = 0; i < cfg->buf_len / 2 + 1; i++)
+  for (int i = 0; i < cfg->point_num / 2 + 1; i++)
     out->mag_buf[i] = SQRT(lo->buf[i][0] * lo->buf[i][0] + lo->buf[i][1] * lo->buf[i][1]);
-  find_max(&out->mag_buf[1], cfg->buf_len >> 1, &out->max_mag, &out->out_idx);
+  find_max(&out->mag_buf[1], cfg->point_num >> 1, &out->max_mag, &out->out_idx);
 #elif defined(ARM_MATH)
-  arm_hanning_f32(lo->buf, cfg->buf_len);
+  arm_hanning_f32(lo->buf, cfg->point_num);
   arm_rfft_fast_f32(&lo->s, in->buf, lo->buf, cfg->flag);
-  arm_cmplx_mag_f32(lo->buf, out->mag_buf, cfg->buf_len >> 1);
-  arm_max_f32(&out->mag_buf[1], cfg->buf_len >> 1, &out->max_mag, &out->out_idx);
+  arm_cmplx_mag_f32(lo->buf, out->mag_buf, cfg->point_num >> 1);
+  arm_max_f32(&out->mag_buf[1], cfg->point_num >> 1, &out->max_mag, &out->out_idx);
 #endif
 
-  out->ft = out->out_idx * cfg->fs / (f32)cfg->buf_len;
+  out->ft = out->out_idx * cfg->fs / (f32)cfg->point_num;
 
   lo->neet_exec = false;
 

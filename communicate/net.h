@@ -249,13 +249,13 @@ typedef struct {
   char resp[MAX_RESP_BUF_SIZE];
 } net_broadcast_t;
 
-static inline int net_broadcast(const char      *remote_ip,
-                                u16              remote_port,
-                                const u8        *txbuf,
-                                u32              size,
-                                net_broadcast_t *resp,
-                                u32              timeout_ms) {
-  return 0;
-}
+// static inline int net_broadcast(const char      *remote_ip,
+//                                 u16              remote_port,
+//                                 const u8        *txbuf,
+//                                 u32              size,
+//                                 net_broadcast_t *resp,
+//                                 u32              timeout_ms) {
+//   return 0;
+// }
 
 #endif // !NET_H

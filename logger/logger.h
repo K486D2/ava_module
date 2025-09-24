@@ -17,26 +17,26 @@ typedef enum {
 } logger_level_e;
 
 typedef struct {
-  logger_level_e level;         // 最低级别
-  char           new_line_sign; // 换行符
-  const char    *prefix;        // 前缀
+  logger_level_e level;
+  char           new_line_sign;
+  const char    *prefix;
   void          *fp;
-  u8            *buf;
-  size_t         buf_size;
+  u8            *fifo_buf, *line_buf;
+  size_t         fifo_buf_size, line_buf_size;
 } logger_cfg_t;
 
 typedef struct {
   fifo_t fifo;
-  u8    *buf;
-  bool   flush_flag;
+  u8    *fifo_buf;
+  u8    *line_buf;
 } logger_lo_t;
 
 typedef u64 (*logger_get_ts_f)(void);
-typedef void (*logger_putchar_f)(void *fp, u8 c);
+typedef void (*logger_flush_f)(void *fp, const u8 *data, size_t size);
 
 typedef struct {
-  logger_get_ts_f  f_get_ts;
-  logger_putchar_f f_putchar;
+  logger_get_ts_f f_get_ts;
+  logger_flush_f  f_flush;
 } logger_ops_t;
 
 typedef struct {
@@ -62,99 +62,99 @@ static inline void logger_init(logger_t *logger, logger_cfg_t logger_cfg) {
 
   *cfg = logger_cfg;
 
-  lo->buf = cfg->buf;
+  lo->fifo_buf = cfg->fifo_buf;
+  lo->line_buf = cfg->line_buf;
 
-  fifo_init(&lo->fifo, lo->buf, cfg->buf_size, FIFO_POLICY_DISCARD);
+  fifo_init(&lo->fifo, lo->fifo_buf, cfg->fifo_buf_size, FIFO_POLICY_DISCARD);
 }
 
 static inline void logger_flush(logger_t *logger) {
   DECL_LOGGER_PTRS(logger);
 
-  if (!lo->flush_flag)
-    return;
+  size_t size = 0;
+  u8     c;
 
-  u8 c;
-  while (fifo_mpmc_out(&lo->fifo, &c, sizeof(c)) != 0)
-    ops->f_putchar(cfg->fp, c);
+  while (size < cfg->line_buf_size && fifo_mpmc_out(&lo->fifo, &c, sizeof(c)) != 0) {
+    lo->line_buf[size++] = c;
+    if (c == cfg->new_line_sign)
+      break;
+  }
+
+  if (size > 0)
+    ops->f_flush(cfg->fp, lo->line_buf, size);
 }
 
-static inline void logger_write(logger_t *logger, const char *format, ...) {
+static inline void logger_write(logger_t *logger, const char *fmt, va_list args) {
   DECL_LOGGER_PTRS(logger);
 
-  u8      buf[128];
-  va_list args;
-  va_start(args, format);
-  int size = vsnprintf((char *)buf, sizeof(buf), format, args);
-  va_end(args);
+  u8 buf[128];
 
+  int size = vsnprintf((char *)buf, sizeof(buf), fmt, args);
   if (size < 0)
     return;
   if ((size_t)size > sizeof(buf))
     size = sizeof(buf);
 
   fifo_mpmc_in(&lo->fifo, buf, size);
-
-  if (memchr(buf, cfg->new_line_sign, size) || fifo_is_full(&lo->fifo))
-    lo->flush_flag = true;
 }
 
-static inline void logger_data(logger_t *logger, const char *format, ...) {
+static inline void logger_data(logger_t *logger, const char *fmt, ...) {
   DECL_LOGGER_PTRS(logger);
 
   if (cfg->level > LOGGER_LEVEL_DATA)
     return;
 
   va_list args;
-  va_start(args, format);
-  logger_write(logger, format, args);
+  va_start(args, fmt);
+  logger_write(logger, fmt, args);
   va_end(args);
 }
 
-static inline void logger_debug(logger_t *logger, const char *format, ...) {
+static inline void logger_debug(logger_t *logger, const char *fmt, ...) {
   DECL_LOGGER_PTRS(logger);
 
   if (cfg->level > LOGGER_LEVEL_DEBUG)
     return;
 
   va_list args;
-  va_start(args, format);
-  logger_write(logger, format, args);
+  va_start(args, fmt);
+  logger_write(logger, fmt, args);
   va_end(args);
 }
 
-static inline void logger_info(logger_t *logger, const char *format, ...) {
+static inline void logger_info(logger_t *logger, const char *fmt, ...) {
   DECL_LOGGER_PTRS(logger);
 
   if (cfg->level > LOGGER_LEVEL_INFO)
     return;
 
   va_list args;
-  va_start(args, format);
-  logger_write(logger, format, args);
+  va_start(args, fmt);
+  logger_write(logger, fmt, args);
   va_end(args);
 }
 
-static inline void logger_warn(logger_t *logger, const char *format, ...) {
+static inline void logger_warn(logger_t *logger, const char *fmt, ...) {
   DECL_LOGGER_PTRS(logger);
 
   if (cfg->level > LOGGER_LEVEL_WARN)
     return;
 
   va_list args;
-  va_start(args, format);
-  logger_write(logger, format, args);
+  va_start(args, fmt);
+  logger_write(logger, fmt, args);
   va_end(args);
 }
 
-static inline void logger_error(logger_t *logger, const char *format, ...) {
+static inline void logger_error(logger_t *logger, const char *fmt, ...) {
   DECL_LOGGER_PTRS(logger);
 
   if (cfg->level > LOGGER_LEVEL_ERROR)
     return;
 
   va_list args;
-  va_start(args, format);
-  logger_write(logger, format, args);
+  va_start(args, fmt);
+  logger_write(logger, fmt, args);
   va_end(args);
 }
 

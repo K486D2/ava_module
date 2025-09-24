@@ -5,8 +5,8 @@
 #include "../util/util.h"
 
 typedef struct {
-  f32 *buf;
-  u32  buf_size;
+  f32 *fifo_buf;
+  u32  fifo_buf_size;
 } maf_cfg_t;
 
 typedef struct {
@@ -47,7 +47,7 @@ static inline void maf_init(maf_filter_t *maf, maf_cfg_t maf_cfg) {
   DECL_MAF_PTRS(maf);
 
   *cfg = maf_cfg;
-  fifo_init(&lo->fifo, cfg->buf, cfg->buf_size, FIFO_POLICY_DISCARD);
+  fifo_init(&lo->fifo, cfg->fifo_buf, cfg->fifo_buf_size, FIFO_POLICY_DISCARD);
 }
 
 static inline void maf_exec(maf_filter_t *maf) {
@@ -60,7 +60,7 @@ static inline void maf_exec(maf_filter_t *maf) {
   fifo_spsc_in(&lo->fifo, &in->x, sizeof(in->x));
 
   lo->x_sum += in->x;
-  lo->x_sum /= (f32)cfg->buf_size;
+  lo->x_sum /= (f32)cfg->fifo_buf_size;
 }
 
 static inline void maf_exec_in(maf_filter_t *maf, f32 x) {
