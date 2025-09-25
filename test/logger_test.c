@@ -7,23 +7,16 @@
 logger_t logger;
 
 u8 LOGGER_FIFO_BUF[4 * 1024];
-u8 LOGGER_LINE_BUF[128];
 
-static inline void logger_stdout(void *fp, const u8 *data, size_t size) {
-  fwrite(data, 1, size, fp);
+static inline void logger_putc(u8 c, void *fp) {
+  fputc(c, (FILE *)fp);
 }
 
 void *flush_thread_func(void *arg) {
   logger_t *logger = (logger_t *)arg;
-  while (1) {
+  while (1)
     logger_flush(logger);
 
-#ifdef _WIN32
-    Sleep(1);
-#else
-    usleep(1000);
-#endif
-  }
   return NULL;
 }
 
@@ -56,10 +49,8 @@ int main() {
       .fp            = stdout,
       .fifo_buf      = LOGGER_FIFO_BUF,
       .fifo_buf_size = sizeof(LOGGER_FIFO_BUF),
-      .line_buf      = LOGGER_LINE_BUF,
-      .line_buf_size = sizeof(LOGGER_LINE_BUF),
   };
-  logger.ops.f_flush = logger_stdout;
+  logger.ops.f_putc = logger_putc;
   logger_init(&logger, logger_cfg);
 
   pthread_t flush_thread;
