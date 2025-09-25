@@ -1,13 +1,6 @@
 #ifndef UTIL_H
 #define UTIL_H
 
-#ifdef _WIN32
-#include <windows.h>
-#endif
-
-#include <string.h>
-#include <time.h>
-
 #include "benchmark.h"
 #include "def.h"
 #include "printutil.h"
@@ -48,69 +41,6 @@ static inline void swap_byte_order(void *data, const u32 size) {
   for (u32 i = 0; i < size / 4; ++i) {
     u32 val = p[i];
     p[i]    = (val >> 24) | ((val >> 8) & 0x0000FF00) | ((val << 8) & 0x00FF0000) | (val << 24);
-  }
-}
-
-static inline u64 get_mono_ts_ns(void) {
-#ifdef __linux__
-  struct timespec ts;
-  clock_gettime(CLOCK_MONOTONIC_RAW, &ts);
-  return ts.tv_sec * NANO_PER_SEC + ts.tv_nsec;
-#elif defined(_WIN32)
-  LARGE_INTEGER frequency, counter;
-  QueryPerformanceFrequency(&frequency);
-  QueryPerformanceCounter(&counter);
-  return counter.QuadPart * 1000000000ull / frequency.QuadPart;
-#endif
-  return 0ull;
-}
-
-static inline u64 get_mono_ts_us(void) {
-  return get_mono_ts_ns() / 1000u;
-}
-
-static inline u64 get_mono_ts_ms(void) {
-  return get_mono_ts_ns() / 1000000u;
-}
-
-static inline u64 get_mono_ts_s(void) {
-  return get_mono_ts_ns() / 1000000000u;
-}
-
-static inline u64 get_real_ts_ns(void) {
-#ifdef __linux__
-  struct timespec ts;
-  clock_gettime(CLOCK_REALTIME, &ts);
-  return ts.tv_sec * NANO_PER_SEC + ts.tv_nsec;
-#elif defined(_WIN32)
-  FILETIME ft;
-  GetSystemTimeAsFileTime(&ft);
-
-  ULARGE_INTEGER uli;
-  uli.LowPart  = ft.dwLowDateTime;
-  uli.HighPart = ft.dwHighDateTime;
-
-  return (uli.QuadPart - WIN_TO_UNIX_EPOCH) * 100u;
-#endif
-  return 0ull;
-}
-
-static inline u64 get_real_ts_us(void) {
-  return get_real_ts_ns() / 1000u;
-}
-
-static inline u64 get_real_ts_ms(void) {
-  return get_real_ts_ns() / 1000000u;
-}
-
-static inline u64 get_real_ts_s(void) {
-  return get_real_ts_ns() / 1000000000u;
-}
-
-static inline void delay_us(u64 us) {
-  u64 start = get_mono_ts_us();
-  while ((get_mono_ts_us() - start) < us) {
-    asm volatile("" ::: "memory");
   }
 }
 

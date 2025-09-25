@@ -49,7 +49,7 @@ typedef enum {
 typedef struct {
   fifo_policy_e e_policy;
   void         *buf;      // 缓冲区指针
-  size_t        buf_size; // 缓冲区大小(必须是2的幂)
+  size_t        buf_size; // 缓冲区大小(2^n)
   atomic_t(size_t) in;    // 写入位置
   atomic_t(size_t) out;   // 读取位置
   atomic_t(size_t) committed;

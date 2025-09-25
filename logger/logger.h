@@ -21,8 +21,8 @@ typedef enum {
 } logger_mode_e;
 
 typedef struct {
-  logger_mode_e  mode;
-  logger_level_e level;
+  logger_mode_e  e_mode;
+  logger_level_e e_level;
   char           new_line_sign;
   const char    *prefix;
   void          *fp;
@@ -84,7 +84,7 @@ static inline void logger_flush(logger_t *logger) {
     if (c == '\n' || size == cfg->tx_buf_size) {
       ops->f_tx(cfg->fp, lo->tx_buf, size);
       size     = 0;
-      lo->busy = cfg->mode == LOGGER_ASYNC ? true : false;
+      lo->busy = cfg->e_mode == LOGGER_ASYNC ? true : false;
     }
   }
 }
@@ -106,7 +106,7 @@ static inline void logger_write(logger_t *logger, const char *fmt, va_list args)
 static inline void logger_data(logger_t *logger, const char *fmt, ...) {
   DECL_LOGGER_PTRS(logger);
 
-  if (cfg->level > LOGGER_LEVEL_DATA)
+  if (cfg->e_level > LOGGER_LEVEL_DATA)
     return;
 
   va_list args;
@@ -118,7 +118,7 @@ static inline void logger_data(logger_t *logger, const char *fmt, ...) {
 static inline void logger_debug(logger_t *logger, const char *fmt, ...) {
   DECL_LOGGER_PTRS(logger);
 
-  if (cfg->level > LOGGER_LEVEL_DEBUG)
+  if (cfg->e_level > LOGGER_LEVEL_DEBUG)
     return;
 
   va_list args;
@@ -130,7 +130,7 @@ static inline void logger_debug(logger_t *logger, const char *fmt, ...) {
 static inline void logger_info(logger_t *logger, const char *fmt, ...) {
   DECL_LOGGER_PTRS(logger);
 
-  if (cfg->level > LOGGER_LEVEL_INFO)
+  if (cfg->e_level > LOGGER_LEVEL_INFO)
     return;
 
   va_list args;
@@ -142,7 +142,7 @@ static inline void logger_info(logger_t *logger, const char *fmt, ...) {
 static inline void logger_warn(logger_t *logger, const char *fmt, ...) {
   DECL_LOGGER_PTRS(logger);
 
-  if (cfg->level > LOGGER_LEVEL_WARN)
+  if (cfg->e_level > LOGGER_LEVEL_WARN)
     return;
 
   va_list args;
@@ -154,7 +154,7 @@ static inline void logger_warn(logger_t *logger, const char *fmt, ...) {
 static inline void logger_error(logger_t *logger, const char *fmt, ...) {
   DECL_LOGGER_PTRS(logger);
 
-  if (cfg->level > LOGGER_LEVEL_ERROR)
+  if (cfg->e_level > LOGGER_LEVEL_ERROR)
     return;
 
   va_list args;

@@ -74,7 +74,7 @@
 
 #define IS_NAN(x)                      (isnan(x))
 #define IS_IN_RANGE(val, min, max)     ((val) >= (min) && (val) <= (max))
-#define IS_EQ(x, y)                    (ABS((x) - (y)) <= (1e-6f * MAX(ABS(x), ABS(y)) + 1e-6f))
+#define IS_EQ(x, y)                    (ABS((x) - (y)) <= (1E-6F * MAX(ABS(x), ABS(y)) + 1E-6F))
 
 #define SGN(x)                         ((x) == 0.0F ? 0.0F : (x) > 0.0F ? 1.0F : -1.0F)
 
@@ -86,7 +86,12 @@
 #define RAD_TO_DEG(rad)                ((rad) * 57.2957795F)
 #define DEG_TO_RAD(deg)                ((deg) / 57.2957795F)
 
-#define US_TO_S(us)                    ((us) / 1000000U)
+#define US_TO_S(us)                    ((us) / 1000000.0F)
+#define S_TO_US(s)                     ((s) * 1000000U)
+#define US_TO_MS(us)                   ((us) / 1000.0F)
+#define MS_TO_US(ms)                   ((ms) * 1000U)
+#define MS_TO_S(ms)                    ((ms) / 1000.0F)
+#define S_TO_MS(s)                     ((s) * 1000U)
 
 #define HZ_TO_S(hz)                    (1.0F / (hz))
 #define HZ_TO_MS(hz)                   (1.0F / (hz) * 1000U)

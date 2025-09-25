@@ -19,11 +19,7 @@ void *flush_thread_func(void *arg) {
   while (true)
     logger_flush(logger);
 
-#ifdef _WIN32
-  Sleep(1);
-#else
-  usleep(1000);
-#endif
+  delay_ms(1, YIELD);
   return NULL;
 }
 
@@ -37,11 +33,7 @@ void *write_thread_func(void *arg) {
     logger_debug(&logger, "Thread %lu: cnt: %llu\n", (unsigned long)pthread_self(), cnt++);
 #endif
 
-#ifdef _WIN32
-    Sleep(1);
-#else
-    usleep(1000);
-#endif
+    delay_ms(1, YIELD);
   }
   return NULL;
 }
@@ -50,8 +42,8 @@ void *write_thread_func(void *arg) {
 
 int main() {
   logger_cfg_t logger_cfg = {
-      .mode          = LOGGER_SYNC,
-      .level         = LOGGER_LEVEL_DEBUG,
+      .e_mode        = LOGGER_SYNC,
+      .e_level       = LOGGER_LEVEL_DEBUG,
       .new_line_sign = '\n',
       .fp            = stdout,
       .fifo_buf      = LOGGER_FIFO_BUF,
