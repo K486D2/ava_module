@@ -12,6 +12,8 @@
 #include "def.h"
 #include "printutil.h"
 
+#define AT(x) __attribute__((section(x)))
+
 #define ATOMIC_EXEC(code)                                                                          \
   do {                                                                                             \
     volatile u32 _primask = __get_PRIMASK();                                                       \
