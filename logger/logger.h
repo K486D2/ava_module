@@ -23,7 +23,7 @@ typedef enum {
 typedef struct {
   logger_mode_e  e_mode;
   logger_level_e e_level;
-  char           new_line_sign;
+  char           end_sign;
   const char    *prefix;
   void          *fp;
   u8            *fifo_buf, *tx_buf;

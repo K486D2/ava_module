@@ -28,9 +28,9 @@ void *write_thread_func(void *arg) {
 
   while (true) {
 #ifdef _WIN32
-    logger_debug(&logger, "Thread %lu: cnt: %llu\n", (unsigned long)GetCurrentThreadId(), cnt++);
+    logger_debug(&logger, "Thread %lu,\tcnt: %llu\n", (unsigned long)GetCurrentThreadId(), cnt++);
 #else
-    logger_debug(&logger, "Thread %lu: cnt: %llu\n", (unsigned long)pthread_self(), cnt++);
+    logger_debug(&logger, "Thread %lu,\tcnt: %llu\n", (unsigned long)pthread_self(), cnt++);
 #endif
 
     delay_ms(1, YIELD);
@@ -44,7 +44,7 @@ int main() {
   logger_cfg_t logger_cfg = {
       .e_mode        = LOGGER_SYNC,
       .e_level       = LOGGER_LEVEL_DEBUG,
-      .new_line_sign = '\n',
+      .end_sign      = '\n',
       .fp            = stdout,
       .fifo_buf      = LOGGER_FIFO_BUF,
       .fifo_buf_size = sizeof(LOGGER_FIFO_BUF),
