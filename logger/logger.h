@@ -15,27 +15,34 @@ typedef enum {
   LOGGER_LEVEL_ERROR, // 错误
 } logger_level_e;
 
+typedef enum {
+  LOGGER_SYNC,
+  LOGGER_ASYNC,
+} logger_mode_e;
+
 typedef struct {
+  logger_mode_e  mode;
   logger_level_e level;
   char           new_line_sign;
   const char    *prefix;
   void          *fp;
-  u8            *fifo_buf;
-  size_t         fifo_buf_size;
+  u8            *fifo_buf, *tx_buf;
+  size_t         fifo_buf_size, tx_buf_size;
 } logger_cfg_t;
 
 typedef struct {
   fifo_t fifo;
   u8    *fifo_buf;
+  u8    *tx_buf;
   bool   busy;
 } logger_lo_t;
 
 typedef u64 (*logger_get_ts_f)(void);
-typedef void (*logger_putc_f)(u8 c, void *fp);
+typedef void (*logger_tx_f)(void *fp, const u8 *data, size_t size);
 
 typedef struct {
   logger_get_ts_f f_get_ts;
-  logger_putc_f   f_putc;
+  logger_tx_f     f_tx;
 } logger_ops_t;
 
 typedef struct {
@@ -62,6 +69,7 @@ static inline void logger_init(logger_t *logger, logger_cfg_t logger_cfg) {
   *cfg = logger_cfg;
 
   lo->fifo_buf = cfg->fifo_buf;
+  lo->tx_buf   = cfg->tx_buf;
 
   fifo_init(&lo->fifo, lo->fifo_buf, cfg->fifo_buf_size, FIFO_POLICY_DISCARD);
 }
@@ -69,12 +77,15 @@ static inline void logger_init(logger_t *logger, logger_cfg_t logger_cfg) {
 static inline void logger_flush(logger_t *logger) {
   DECL_LOGGER_PTRS(logger);
 
-  u8 c;
+  u32 size = 0;
+  u8  c;
   while (!lo->busy && fifo_mpmc_out(&lo->fifo, &c, sizeof(c)) != 0) {
-    ops->f_putc(c, cfg->fp);
-    lo->busy = true;
-    if (c == '\n')
-      break;
+    lo->tx_buf[size++] = c;
+    if (c == '\n' || size == cfg->tx_buf_size) {
+      ops->f_tx(cfg->fp, lo->tx_buf, size);
+      size     = 0;
+      lo->busy = cfg->mode == LOGGER_ASYNC ? true : false;
+    }
   }
 }
 

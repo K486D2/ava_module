@@ -6,23 +6,29 @@
 
 logger_t logger;
 
-u8 LOGGER_FIFO_BUF[4 * 1024];
+u8 LOGGER_TX_BUF[1024];
+u8 LOGGER_FIFO_BUF[1024 * 1024];
 
-static inline void logger_putc(u8 c, void *fp) {
-  fputc(c, (FILE *)fp);
+static inline void logger_stdout(void *fp, const u8 *data, size_t size) {
+  fwrite(data, size, 1, fp);
+  fflush(fp);
 }
 
 void *flush_thread_func(void *arg) {
   logger_t *logger = (logger_t *)arg;
-  while (1)
+  while (true)
     logger_flush(logger);
 
+#ifdef _WIN32
+  Sleep(1);
+#else
+  usleep(1000);
+#endif
   return NULL;
 }
 
 void *write_thread_func(void *arg) {
-  u64 *p_cnt = (u64 *)arg;
-  u64  cnt   = *p_cnt;
+  u64 cnt = *(u64 *)arg;
 
   while (true) {
 #ifdef _WIN32
@@ -40,17 +46,20 @@ void *write_thread_func(void *arg) {
   return NULL;
 }
 
-#define THREAD_COUNT 10
+#define THREAD_COUNT 100
 
 int main() {
   logger_cfg_t logger_cfg = {
+      .mode          = LOGGER_SYNC,
       .level         = LOGGER_LEVEL_DEBUG,
       .new_line_sign = '\n',
       .fp            = stdout,
       .fifo_buf      = LOGGER_FIFO_BUF,
       .fifo_buf_size = sizeof(LOGGER_FIFO_BUF),
+      .tx_buf        = LOGGER_TX_BUF,
+      .tx_buf_size   = sizeof(LOGGER_TX_BUF),
   };
-  logger.ops.f_putc = logger_putc;
+  logger.ops.f_tx = logger_stdout;
   logger_init(&logger, logger_cfg);
 
   pthread_t flush_thread;
