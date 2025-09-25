@@ -2,7 +2,6 @@
 #define LOGGER_H
 
 #include <stdarg.h>
-#include <stdio.h>
 #include <string.h>
 
 #include "../container/fifo.h"
@@ -28,6 +27,7 @@ typedef struct {
 typedef struct {
   fifo_t fifo;
   u8    *fifo_buf;
+  bool   busy;
 } logger_lo_t;
 
 typedef u64 (*logger_get_ts_f)(void);
@@ -70,8 +70,11 @@ static inline void logger_flush(logger_t *logger) {
   DECL_LOGGER_PTRS(logger);
 
   u8 c;
-  while (fifo_mpmc_out(&lo->fifo, &c, sizeof(c)) != 0) {
+  while (!lo->busy && fifo_mpmc_out(&lo->fifo, &c, sizeof(c)) != 0) {
     ops->f_putc(c, cfg->fp);
+    lo->busy = true;
+    if (c == '\n')
+      break;
   }
 }
 

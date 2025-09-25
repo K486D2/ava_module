@@ -78,8 +78,6 @@ static void lbg_exec(lbg_obs_t *lbg) {
   // 负载力矩
   INTEGRATOR(lo->ki_out, lo->mech_theta_err, lo->ki, cfg->fs);
   CLAMP(lo->ki_out, -cfg->motor.max_tor, cfg->motor.max_tor);
-
-  // 负载力矩方向为反
   out->est_load_tor = -lo->ki_out;
 
   out->sum_tor = in->elec_tor + lo->kp * lo->mech_theta_err + lo->ki_out;

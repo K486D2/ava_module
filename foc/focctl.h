@@ -36,7 +36,10 @@ static inline void foc_vol_ctl(foc_t *foc) {
 static inline void foc_cur_ctl(foc_t *foc) {
   DECL_FOC_PTRS(foc);
 
-  lo->ref_i_dq.d = lo->comp_i_dq.d;
+  if (++lo->cur_div_cnt < cfg->cur_div)
+    return;
+  lo->cur_div_cnt = 0;
+
   lo->ref_i_dq.q = lo->ref_pvct.cur + lo->comp_i_dq.q;
 
   // Q轴电流环
@@ -57,6 +60,10 @@ static inline void foc_cur_ctl(foc_t *foc) {
 static inline void foc_vel_ctl(foc_t *foc) {
   DECL_FOC_PTRS(foc);
 
+  if (++lo->vel_div_cnt < cfg->vel_div)
+    return;
+  lo->vel_div_cnt = 0;
+
   pid_exec_in(&lo->vel_pid, lo->ref_pvct.vel, lo->fdb_pvct.vel, lo->ref_pvct.ffd_cur);
   lo->ref_pvct.cur = lo->vel_pid.out.val;
 }
@@ -64,12 +71,20 @@ static inline void foc_vel_ctl(foc_t *foc) {
 static inline void foc_pos_ctl(foc_t *foc) {
   DECL_FOC_PTRS(foc);
 
+  if (++lo->pos_div_cnt < cfg->pos_div)
+    return;
+  lo->pos_div_cnt = 0;
+
   pid_exec_in(&lo->pos_pid, lo->ref_pvct.pos, lo->fdb_pvct.pos, lo->ref_pvct.ffd_vel);
   lo->ref_pvct.vel = lo->pos_pid.out.val;
 }
 
 static inline void foc_pd_ctl(foc_t *foc) {
   DECL_FOC_PTRS(foc);
+
+  if (++lo->pd_div_cnt < cfg->pd_div)
+    return;
+  lo->pd_div_cnt = 0;
 
   lo->ref_pvct.cur = lo->pd_pid.cfg.kp * (lo->ref_pvct.pos - lo->fdb_pvct.pos) +
                      lo->pd_pid.cfg.kd * (lo->ref_pvct.vel - lo->fdb_pvct.vel) +

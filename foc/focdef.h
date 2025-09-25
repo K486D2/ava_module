@@ -98,6 +98,7 @@ typedef struct {
   motor_cfg_t  motor_cfg;
   periph_cfg_t periph_cfg;
   pid_cfg_t    vel_cfg, pos_cfg, pd_cfg;
+  u32          cur_div, vel_div, pos_div, pd_div;
 } foc_cfg_t;
 
 typedef struct {
@@ -138,7 +139,9 @@ typedef struct {
   foc_cali_e  e_cali;
 
   pid_ctl_t id_pid, iq_pid;
-  pid_ctl_t pd_pid, vel_pid, pos_pid;
+  pid_ctl_t vel_pid, pos_pid, pd_pid;
+
+  u32 cur_div_cnt, vel_div_cnt, pos_div_cnt, pd_div_cnt;
 
   pll_filter_t pll;
   smo_obs_t    smo;
