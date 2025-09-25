@@ -78,6 +78,13 @@ typedef enum {
   YIELD,
 } delay_e;
 
+static inline void spin(u32 us) {
+  u64 start = get_mono_ts_us();
+  while ((get_mono_ts_us() - start) < us) {
+    asm volatile("nop" ::: "memory");
+  }
+}
+
 #ifdef __linux__
 static inline void yield(u32 ms) {
   usleep(1000u * ms)
@@ -87,14 +94,11 @@ static inline void yield(u32 ms) {
 static inline void yield(u32 ms) {
   Sleep(ms);
 }
-#endif
-
-static inline void spin(u32 us) {
-  u64 start = get_mono_ts_us();
-  while ((get_mono_ts_us() - start) < us) {
-    asm volatile("nop" ::: "memory");
-  }
+#else
+static inline void yield(u32 ms) {
+  spin(MS_TO_US(ms));
 }
+#endif
 
 static inline void delay_us(u64 us) {
   spin(us);

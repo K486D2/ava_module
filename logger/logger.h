@@ -94,13 +94,21 @@ static inline void logger_write(logger_t *logger, const char *fmt, va_list args)
 
   u8 buf[128];
 
-  int size = vsnprintf((char *)buf, sizeof(buf), fmt, args);
+  int size = snprintf((char *)buf, sizeof(buf), "[%llu] ", ops->f_get_ts());
   if (size < 0)
     return;
-  if ((size_t)size > sizeof(buf))
-    size = sizeof(buf);
 
-  fifo_mpmc_in(&lo->fifo, buf, size);
+  if ((size_t)size >= sizeof(buf))
+    size = sizeof(buf) - 1;
+
+  int appended = vsnprintf((char *)buf + size, sizeof(buf) - size, fmt, args);
+  if (appended < 0)
+    return;
+
+  if ((size_t)(size + appended) > sizeof(buf))
+    appended = sizeof(buf) - size;
+
+  fifo_mpmc_in(&lo->fifo, buf, size + appended);
 }
 
 static inline void logger_data(logger_t *logger, const char *fmt, ...) {

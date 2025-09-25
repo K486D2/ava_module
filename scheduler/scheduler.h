@@ -48,7 +48,6 @@ typedef struct {
 } sched_task_t;
 
 typedef struct {
-  f32          exec_freq; // 时间戳更新频率
   u8           cpu_id;
   sched_type_e type;
 } sched_cfg_t;
@@ -127,7 +126,7 @@ static inline i32 sched_register_task(sched_t *sched, sched_task_cfg_t sched_tas
   lo->curr_ts                                  = ops->f_get_ts();
   lo->tasks[lo->tasks_num].cfg                 = sched_task_cfg;
   lo->tasks[lo->tasks_num].status.create_ts    = lo->curr_ts;
-  lo->tasks[lo->tasks_num].status.next_exec_ts = lo->curr_ts + HZ_TO_US(cfg->exec_freq);
+  lo->tasks[lo->tasks_num].status.next_exec_ts = lo->curr_ts + HZ_TO_US(sched_task_cfg.exec_freq);
 
   if (lo->tasks[lo->tasks_num].status.e_state == SCHED_TASK_STATE_READY)
     sched_insert_ready(lo, &lo->tasks[lo->tasks_num]);
@@ -197,7 +196,7 @@ static inline int sched_exec(sched_t *sched) {
   if (lo->curr_ts < task->status.next_exec_ts)
     return 0;
 
-  if (lo->curr_ts - task->status.create_ts < task->cfg.delay * HZ_TO_US(cfg->exec_freq))
+  if (lo->curr_ts - task->status.create_ts < task->cfg.delay)
     return 0;
 
   u64 begin_ts         = lo->curr_ts;
