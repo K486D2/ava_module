@@ -6,7 +6,7 @@
 
 logger_t logger;
 
-u8 LOGGER_TX_BUF[1024];
+u8 LOGGER_TX_BUF[128];
 u8 LOGGER_FIFO_BUF[1 * 1024];
 
 static inline void logger_stdout(void *fp, const u8 *data, size_t size) {
@@ -26,9 +26,17 @@ void *write_thread_func(void *arg) {
 
   while (true) {
 #ifdef _WIN32
-    logger_debug(&logger, "Thread %5u, cnt: %llu\n", (u32)GetCurrentThreadId(), cnt++);
+    logger_debug(&logger,
+                 "Thread %5u, cnt: %llu, fifo_free: %zu\n",
+                 (u32)GetCurrentThreadId(),
+                 cnt++,
+                 fifo_get_free(&logger.lo.fifo));
 #else
-    logger_debug(&logger, "Thread %u, cnt: %llu\n", (u32)pthread_self(), cnt++);
+    logger_debug(&logger,
+                 "Thread %u, cnt: %llu, fifo_free: %zu\n",
+                 (u32)pthread_self(),
+                 cnt++,
+                 fifo_get_free(&logger.lo.fifo));
 #endif
 
     delay_ms(1, YIELD);
@@ -36,7 +44,7 @@ void *write_thread_func(void *arg) {
   return NULL;
 }
 
-#define THREAD_COUNT 100
+#define THREAD_COUNT 500
 
 int main() {
   logger_cfg_t logger_cfg = {
