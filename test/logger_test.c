@@ -7,7 +7,7 @@
 logger_t logger;
 
 u8 LOGGER_TX_BUF[128];
-u8 LOGGER_FIFO_BUF[1 * 1024];
+u8 LOGGER_FIFO_BUF[1 * 256];
 
 static inline void logger_stdout(void *fp, const u8 *data, size_t size) {
   fwrite(data, size, 1, fp);
@@ -44,7 +44,7 @@ void *write_thread_func(void *arg) {
   return NULL;
 }
 
-#define THREAD_COUNT 500
+#define THREAD_COUNT 5000
 
 int main() {
   logger_cfg_t logger_cfg = {

@@ -21,6 +21,7 @@ constexpr auto memory_order_release = std::memory_order_release;
 constexpr auto memory_order_acq_rel = std::memory_order_acq_rel;
 #endif
 
+#include <pthread.h>
 #include <string.h>
 
 #include "../util/def.h"
@@ -63,6 +64,7 @@ typedef struct {
   atomic_t(size_t) in;    // 写入位置
   atomic_t(size_t) out;   // 读取位置
   atomic_t(size_t) com;   // 用于MP场景以防消费者读到未写完的数据
+  pthread_mutex_t lock;
 } fifo_t;
 
 static inline void fifo_reset(fifo_t *fifo) {
@@ -95,6 +97,7 @@ fifo_buf_init(fifo_t *fifo, size_t buf_size, fifo_mode_e e_mode, fifo_policy_e e
   fifo->e_mode   = e_mode;
   fifo->e_policy = e_policy;
   fifo->buf_size = buf_size;
+  pthread_mutex_init(&fifo->lock, NULL);
   atomic_store(&fifo->in, 0);
   atomic_store(&fifo->out, 0);
   atomic_store(&fifo->com, 0);
@@ -114,7 +117,6 @@ fifo_init(fifo_t *fifo, void *buf, size_t buf_size, fifo_mode_e e_mode, fifo_pol
 static inline size_t
 fifo_policy(fifo_t *fifo, size_t *data_size, size_t in, size_t out, size_t buf_size) {
   size_t free = buf_size - (in - out);
-
   if (*data_size <= free)
     return *data_size;
 
@@ -132,7 +134,6 @@ fifo_policy(fifo_t *fifo, size_t *data_size, size_t in, size_t out, size_t buf_s
     return 0;
   }
   }
-
   return 0;
 }
 
@@ -158,8 +159,8 @@ static inline size_t fifo_spsc_in(fifo_t *fifo, void *buf, const void *data, siz
 }
 
 static inline size_t fifo_spsc_out(fifo_t *fifo, void *buf, void *data, size_t data_size) {
-  size_t in  = atomic_load_explicit(&fifo->in, memory_order_acquire);
   size_t out = atomic_load_explicit(&fifo->out, memory_order_relaxed);
+  size_t in  = atomic_load_explicit(&fifo->in, memory_order_acquire);
 
   size_t avail = in - out;
   if (data_size > avail)
@@ -181,43 +182,15 @@ static inline size_t fifo_spsc_out(fifo_t *fifo, void *buf, void *data, size_t d
 /* -------------------------------------------------------------------------- */
 
 static inline size_t fifo_spmc_in(fifo_t *fifo, void *buf, const void *data, size_t data_size) {
-  size_t in  = atomic_load_explicit(&fifo->in, memory_order_relaxed);
-  size_t out = atomic_load_explicit(&fifo->out, memory_order_acquire);
-
-  data_size = fifo_policy(fifo, &data_size, in, out, fifo->buf_size);
-  if (data_size == 0)
-    return 0;
-
-  size_t offset = in & (fifo->buf_size - 1);
-  size_t size   = MIN(data_size, fifo->buf_size - offset);
-  memcpy((u8 *)buf + offset, data, size);
-  memcpy((u8 *)buf, (u8 *)data + size, data_size - size);
-
-  atomic_store_explicit(&fifo->in, in + data_size, memory_order_release);
-  atomic_store_explicit(&fifo->com, in + data_size, memory_order_release);
-  return data_size;
+  size_t size = fifo_spsc_in(fifo, buf, data, data_size);
+  return size;
 }
 
 static inline size_t fifo_spmc_out(fifo_t *fifo, void *buf, void *data, size_t data_size) {
-  while (true) {
-    size_t com = atomic_load_explicit(&fifo->com, memory_order_acquire);
-    size_t out = atomic_load_explicit(&fifo->out, memory_order_relaxed);
-
-    size_t avail = com - out;
-    if (avail == 0)
-      return 0;
-
-    size_t take = MIN(data_size, avail);
-    size_t next = out + take;
-    if (atomic_compare_exchange_weak_explicit(
-            &fifo->out, &out, next, memory_order_acq_rel, memory_order_relaxed)) {
-      size_t offset = out & (fifo->buf_size - 1);
-      size_t size   = MIN(take, fifo->buf_size - offset);
-      memcpy(data, (u8 *)buf + offset, size);
-      memcpy((u8 *)data + size, (u8 *)buf, take - size);
-      return take;
-    }
-  }
+  pthread_mutex_lock(&fifo->lock);
+  size_t size = fifo_spsc_out(fifo, buf, data, data_size);
+  pthread_mutex_unlock(&fifo->lock);
+  return size;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -225,43 +198,15 @@ static inline size_t fifo_spmc_out(fifo_t *fifo, void *buf, void *data, size_t d
 /* -------------------------------------------------------------------------- */
 
 static inline size_t fifo_mpsc_in(fifo_t *fifo, void *buf, const void *data, size_t data_size) {
-  while (true) {
-    size_t in  = atomic_load_explicit(&fifo->in, memory_order_relaxed);
-    size_t out = atomic_load_explicit(&fifo->out, memory_order_acquire);
-
-    data_size = fifo_policy(fifo, &data_size, in, out, fifo->buf_size);
-    if (data_size == 0)
-      return 0;
-
-    size_t pos = atomic_fetch_add_explicit(&fifo->in, data_size, memory_order_acq_rel);
-
-    size_t offset = pos & (fifo->buf_size - 1);
-    size_t first  = MIN(data_size, fifo->buf_size - offset);
-    memcpy((u8 *)buf + offset, data, first);
-    memcpy((u8 *)buf, (u8 *)data + first, data_size - first);
-
-    atomic_store_explicit(&fifo->com, pos + data_size, memory_order_release);
-    return data_size;
-  }
+  pthread_mutex_lock(&fifo->lock);
+  size_t size = fifo_spsc_in(fifo, buf, data, data_size);
+  pthread_mutex_unlock(&fifo->lock);
+  return size;
 }
 
 static inline size_t fifo_mpsc_out(fifo_t *fifo, void *buf, void *data, size_t data_size) {
-  size_t com = atomic_load_explicit(&fifo->com, memory_order_acquire);
-  size_t out = atomic_load_explicit(&fifo->out, memory_order_relaxed);
-
-  size_t avail = com - out;
-  if (avail == 0)
-    return 0;
-  if (data_size > avail)
-    data_size = avail;
-
-  size_t offset = out & (fifo->buf_size - 1);
-  size_t first  = MIN(data_size, fifo->buf_size - offset);
-  memcpy(data, (u8 *)buf + offset, first);
-  memcpy((u8 *)data + first, (u8 *)buf, data_size - first);
-
-  atomic_store_explicit(&fifo->out, out + data_size, memory_order_release);
-  return data_size;
+  size_t size = fifo_spsc_out(fifo, buf, data, data_size);
+  return size;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -269,47 +214,17 @@ static inline size_t fifo_mpsc_out(fifo_t *fifo, void *buf, void *data, size_t d
 /* -------------------------------------------------------------------------- */
 
 static inline size_t fifo_mpmc_in(fifo_t *fifo, void *buf, const void *data, size_t data_size) {
-  while (true) {
-    size_t in  = atomic_load_explicit(&fifo->in, memory_order_relaxed);
-    size_t out = atomic_load_explicit(&fifo->out, memory_order_acquire);
-
-    data_size = fifo_policy(fifo, &data_size, in, out, fifo->buf_size);
-    if (data_size == 0)
-      return 0;
-
-    size_t pos = atomic_fetch_add_explicit(&fifo->in, data_size, memory_order_acq_rel);
-
-    size_t offset = pos & (fifo->buf_size - 1);
-    size_t first  = MIN(data_size, fifo->buf_size - offset);
-    memcpy((u8 *)buf + offset, data, first);
-    memcpy((u8 *)buf, (u8 *)data + first, data_size - first);
-
-    atomic_store_explicit(&fifo->com, pos + data_size, memory_order_release);
-    return data_size;
-  }
+  pthread_mutex_lock(&fifo->lock);
+  size_t size = fifo_spsc_in(fifo, buf, data, data_size);
+  pthread_mutex_unlock(&fifo->lock);
+  return size;
 }
 
 static inline size_t fifo_mpmc_out(fifo_t *fifo, void *buf, void *data, size_t data_size) {
-  while (true) {
-    size_t com = atomic_load_explicit(&fifo->com, memory_order_acquire);
-    size_t out = atomic_load_explicit(&fifo->out, memory_order_relaxed);
-
-    size_t avail = com - out;
-    if (avail == 0)
-      return 0;
-
-    size_t take = MIN(data_size, avail);
-    size_t next = out + take;
-
-    if (atomic_compare_exchange_weak_explicit(
-            &fifo->out, &out, next, memory_order_acq_rel, memory_order_relaxed)) {
-      size_t offset = out & (fifo->buf_size - 1);
-      size_t first  = MIN(take, fifo->buf_size - offset);
-      memcpy(data, (u8 *)buf + offset, first);
-      memcpy((u8 *)data + first, (u8 *)buf, take - first);
-      return take;
-    }
-  }
+  pthread_mutex_lock(&fifo->lock);
+  size_t size = fifo_spsc_out(fifo, buf, data, data_size);
+  pthread_mutex_unlock(&fifo->lock);
+  return size;
 }
 
 static inline size_t fifo_in(fifo_t *fifo, const void *data, size_t data_size) {
