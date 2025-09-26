@@ -47,17 +47,17 @@ static inline void maf_init(maf_filter_t *maf, maf_cfg_t maf_cfg) {
   DECL_MAF_PTRS(maf);
 
   *cfg = maf_cfg;
-  fifo_init(&lo->fifo, cfg->fifo_buf, cfg->fifo_buf_size, FIFO_POLICY_REJECT);
+  fifo_init(&lo->fifo, cfg->fifo_buf, cfg->fifo_buf_size, FIFO_MODE_SPSC, FIFO_POLICY_REJECT);
 }
 
 static inline void maf_exec(maf_filter_t *maf) {
   DECL_MAF_PTRS(maf);
 
   f32 prev_x;
-  fifo_spsc_out(&lo->fifo, &prev_x, sizeof(prev_x));
+  fifo_out(&lo->fifo, &prev_x, sizeof(prev_x));
   lo->x_sum -= prev_x;
 
-  fifo_spsc_in(&lo->fifo, &in->x, sizeof(in->x));
+  fifo_in(&lo->fifo, &in->x, sizeof(in->x));
 
   lo->x_sum += in->x;
   lo->x_sum /= (f32)cfg->fifo_buf_size;

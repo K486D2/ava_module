@@ -5,7 +5,7 @@
 int main() {
   shm_t     shm     = {0};
   shm_cfg_t shm_cfg = {
-      .name   = "shm",
+      .name = "shm",
       // .access = PAGE_READWRITE,
   };
 
@@ -22,7 +22,7 @@ int main() {
 
   u32 cnt = 0;
   while (true) {
-    fifo_spsc_buf_out(fifo, buf, &cnt, sizeof(u32));
+    fifo_buf_out(fifo, buf, &cnt, sizeof(u32));
     printf("read cnt: %u, fifo in: %llu, fifo out: %llu, fifo len: %llu\n",
            cnt,
            atomic_load(&fifo->in),

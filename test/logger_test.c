@@ -7,7 +7,7 @@
 logger_t logger;
 
 u8 LOGGER_TX_BUF[1024];
-u8 LOGGER_FIFO_BUF[1024 * 1024];
+u8 LOGGER_FIFO_BUF[1 * 1024];
 
 static inline void logger_stdout(void *fp, const u8 *data, size_t size) {
   fwrite(data, size, 1, fp);
@@ -18,8 +18,6 @@ void *flush_thread_func(void *arg) {
   logger_t *logger = (logger_t *)arg;
   while (true)
     logger_flush(logger);
-
-  delay_ms(1, YIELD);
   return NULL;
 }
 
@@ -28,9 +26,9 @@ void *write_thread_func(void *arg) {
 
   while (true) {
 #ifdef _WIN32
-    logger_debug(&logger, "Thread %lu,\tcnt: %llu\n", (unsigned long)GetCurrentThreadId(), cnt++);
+    logger_debug(&logger, "Thread %5u, cnt: %llu\n", (u32)GetCurrentThreadId(), cnt++);
 #else
-    logger_debug(&logger, "Thread %lu,\tcnt: %llu\n", (unsigned long)pthread_self(), cnt++);
+    logger_debug(&logger, "Thread %u, cnt: %llu\n", (u32)pthread_self(), cnt++);
 #endif
 
     delay_ms(1, YIELD);
@@ -42,15 +40,16 @@ void *write_thread_func(void *arg) {
 
 int main() {
   logger_cfg_t logger_cfg = {
-      .e_mode        = LOGGER_SYNC_MPMC,
-      .e_policy      = FIFO_POLICY_REJECT,
-      .e_level       = LOGGER_LEVEL_DEBUG,
-      .end_sign      = '\n',
-      .fp            = stdout,
-      .fifo_buf      = LOGGER_FIFO_BUF,
-      .fifo_buf_size = sizeof(LOGGER_FIFO_BUF),
-      .tx_buf        = LOGGER_TX_BUF,
-      .tx_buf_size   = sizeof(LOGGER_TX_BUF),
+      .e_logger_mode  = LOGGER_SYNC,
+      .e_logger_level = LOGGER_LEVEL_DEBUG,
+      .e_fifo_mode    = FIFO_MODE_MPSC,
+      .e_fifo_policy  = FIFO_POLICY_REJECT,
+      .end_sign       = '\n',
+      .fp             = stdout,
+      .fifo_buf       = LOGGER_FIFO_BUF,
+      .fifo_buf_size  = sizeof(LOGGER_FIFO_BUF),
+      .tx_buf         = LOGGER_TX_BUF,
+      .tx_buf_size    = sizeof(LOGGER_TX_BUF),
   };
   logger.ops.f_tx     = logger_stdout;
   logger.ops.f_get_ts = get_mono_ts_us;

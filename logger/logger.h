@@ -16,16 +16,15 @@ typedef enum {
 } logger_level_e;
 
 typedef enum {
-  LOGGER_SYNC_SPSC,
-  LOGGER_ASYNC_SPSC,
-  LOGGER_SYNC_MPMC,
-  LOGGER_ASYNC_MPMC,
+  LOGGER_SYNC,
+  LOGGER_ASYNC,
 } logger_mode_e;
 
 typedef struct {
-  logger_mode_e  e_mode;
-  fifo_policy_e  e_policy;
-  logger_level_e e_level;
+  logger_mode_e  e_logger_mode;
+  logger_level_e e_logger_level;
+  fifo_mode_e    e_fifo_mode;
+  fifo_policy_e  e_fifo_policy;
   char           end_sign;
   const char    *prefix;
   void          *fp;
@@ -71,10 +70,10 @@ static inline void logger_init(logger_t *logger, logger_cfg_t logger_cfg) {
 
   *cfg = logger_cfg;
 
-  lo->fifo_buf = cfg->fifo_buf;
   lo->tx_buf   = cfg->tx_buf;
+  lo->fifo_buf = cfg->fifo_buf;
 
-  fifo_init(&lo->fifo, lo->fifo_buf, cfg->fifo_buf_size, cfg->e_policy);
+  fifo_init(&lo->fifo, lo->fifo_buf, cfg->fifo_buf_size, cfg->e_fifo_mode, cfg->e_fifo_policy);
 }
 
 static inline void logger_flush(logger_t *logger) {
@@ -82,15 +81,12 @@ static inline void logger_flush(logger_t *logger) {
 
   u32 size = 0;
   u8  c;
-  while (!lo->busy && ((cfg->e_mode == LOGGER_SYNC_SPSC || cfg->e_mode == LOGGER_ASYNC_SPSC)
-                           ? fifo_spsc_out(&lo->fifo, &c, sizeof(c))
-                           : fifo_mpmc_out(&lo->fifo, &c, sizeof(c))) != 0) {
+  while (!lo->busy && fifo_out(&lo->fifo, &c, sizeof(c)) != 0) {
     lo->tx_buf[size++] = c;
     if (c == cfg->end_sign || size == cfg->tx_buf_size) {
       ops->f_tx(cfg->fp, lo->tx_buf, size);
-      size = 0;
-      lo->busy =
-          (cfg->e_mode == LOGGER_ASYNC_SPSC || cfg->e_mode == LOGGER_ASYNC_MPMC) ? true : false;
+      size     = 0;
+      lo->busy = cfg->e_logger_mode == LOGGER_ASYNC ? true : false;
     }
   }
 }
@@ -114,15 +110,13 @@ static inline void logger_write(logger_t *logger, const char *fmt, va_list args)
   if ((size_t)(size + appended) > sizeof(buf))
     appended = sizeof(buf) - size;
 
-  (cfg->e_mode == LOGGER_SYNC_SPSC || cfg->e_mode == LOGGER_ASYNC_SPSC)
-      ? fifo_spsc_in(&lo->fifo, buf, size + appended)
-      : fifo_mpmc_in(&lo->fifo, buf, size + appended);
+  fifo_in(&lo->fifo, buf, size + appended);
 }
 
 static inline void logger_data(logger_t *logger, const char *fmt, ...) {
   DECL_LOGGER_PTRS(logger);
 
-  if (cfg->e_level > LOGGER_LEVEL_DATA)
+  if (cfg->e_logger_level > LOGGER_LEVEL_DATA)
     return;
 
   va_list args;
@@ -134,7 +128,7 @@ static inline void logger_data(logger_t *logger, const char *fmt, ...) {
 static inline void logger_debug(logger_t *logger, const char *fmt, ...) {
   DECL_LOGGER_PTRS(logger);
 
-  if (cfg->e_level > LOGGER_LEVEL_DEBUG)
+  if (cfg->e_logger_level > LOGGER_LEVEL_DEBUG)
     return;
 
   va_list args;
@@ -146,7 +140,7 @@ static inline void logger_debug(logger_t *logger, const char *fmt, ...) {
 static inline void logger_info(logger_t *logger, const char *fmt, ...) {
   DECL_LOGGER_PTRS(logger);
 
-  if (cfg->e_level > LOGGER_LEVEL_INFO)
+  if (cfg->e_logger_level > LOGGER_LEVEL_INFO)
     return;
 
   va_list args;
@@ -158,7 +152,7 @@ static inline void logger_info(logger_t *logger, const char *fmt, ...) {
 static inline void logger_warn(logger_t *logger, const char *fmt, ...) {
   DECL_LOGGER_PTRS(logger);
 
-  if (cfg->e_level > LOGGER_LEVEL_WARN)
+  if (cfg->e_logger_level > LOGGER_LEVEL_WARN)
     return;
 
   va_list args;
@@ -170,7 +164,7 @@ static inline void logger_warn(logger_t *logger, const char *fmt, ...) {
 static inline void logger_error(logger_t *logger, const char *fmt, ...) {
   DECL_LOGGER_PTRS(logger);
 
-  if (cfg->e_level > LOGGER_LEVEL_ERROR)
+  if (cfg->e_logger_level > LOGGER_LEVEL_ERROR)
     return;
 
   va_list args;

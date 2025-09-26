@@ -98,7 +98,7 @@ static inline void fft_init(fft_t *fft, fft_cfg_t fft_cfg) {
 
   *cfg = fft_cfg;
 
-  fifo_init(&lo->fifo, cfg->fifo_buf, cfg->point_num * sizeof(f32), FIFO_POLICY_REJECT);
+  fifo_init(&lo->fifo, cfg->fifo_buf, cfg->point_num * sizeof(f32), FIFO_MODE_SPSC, FIFO_POLICY_REJECT);
 
   in->buf      = cfg->in_buf;
   lo->buf      = cfg->out_buf;
@@ -153,7 +153,7 @@ static inline void fft_destroy(fft_t *fft) {
 static inline void fft_exec_in(fft_t *fft, f32 val) {
   DECL_FFT_PTRS(fft);
 
-  if (fifo_spsc_in(&lo->fifo, &val, sizeof(val)) == 0)
+  if (fifo_in(&lo->fifo, &val, sizeof(val)) == 0)
     lo->neet_exec = true;
 }
 
