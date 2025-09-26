@@ -42,8 +42,9 @@ static inline unsigned int clzll(unsigned long long x) {
 #define ROUNDUP_POW_OF_2(n) ((n) == 0 ? 1 : (1ULL << (sizeof(n) * 8 - clzll((n) - 1))))
 
 typedef enum {
-  FIFO_POLICY_DISCARD,
+  FIFO_POLICY_TRUNCATE,
   FIFO_POLICY_OVERWRITE,
+  FIFO_POLICY_REJECT,
 } fifo_policy_e;
 
 typedef struct {
@@ -97,6 +98,21 @@ static inline void fifo_buf_init(fifo_t *fifo, size_t buf_size, fifo_policy_e e_
   atomic_store(&fifo->out, 0);
 }
 
+static inline int fifo_policy(fifo_t *fifo, size_t out, size_t data_size, size_t free) {
+  switch (fifo->e_policy) {
+  case FIFO_POLICY_TRUNCATE: {
+    data_size = free;
+  } break;
+  case FIFO_POLICY_OVERWRITE: {
+    out += (data_size - free);
+    atomic_store_explicit(&fifo->out, out, memory_order_release);
+  } break;
+  case FIFO_POLICY_REJECT:
+    return -1;
+  }
+  return 0;
+}
+
 /* -------------------------------------------------------------------------- */
 /*                                    SPSC                                    */
 /* -------------------------------------------------------------------------- */
@@ -106,17 +122,9 @@ static inline size_t fifo_spsc_in(fifo_t *fifo, const void *data, size_t data_si
   size_t out  = atomic_load_explicit(&fifo->out, memory_order_acquire);
   size_t free = fifo->buf_size - (in - out);
 
-  if (data_size > free) {
-    switch (fifo->e_policy) {
-    case FIFO_POLICY_DISCARD:
-      data_size = free;
-      break;
-    case FIFO_POLICY_OVERWRITE:
-      out += (data_size - free);
-      atomic_store_explicit(&fifo->out, out, memory_order_release);
-      break;
-    }
-  }
+  if (data_size > free)
+    if (fifo_policy(fifo, out, data_size, free) != 0)
+      return 0;
 
   if (data_size == 0)
     return 0;
@@ -134,6 +142,7 @@ static inline size_t fifo_spsc_out(fifo_t *fifo, void *data, size_t data_size) {
   size_t in    = atomic_load_explicit(&fifo->in, memory_order_acquire);
   size_t out   = atomic_load_explicit(&fifo->out, memory_order_relaxed);
   size_t avail = in - out;
+
   if (data_size > avail)
     data_size = avail;
 
@@ -154,17 +163,9 @@ static inline size_t fifo_spsc_buf_in(fifo_t *fifo, void *buf, const void *data,
   size_t out  = atomic_load_explicit(&fifo->out, memory_order_acquire);
   size_t free = fifo->buf_size - (in - out);
 
-  if (data_size > free) {
-    switch (fifo->e_policy) {
-    case FIFO_POLICY_DISCARD:
-      data_size = free;
-      break;
-    case FIFO_POLICY_OVERWRITE:
-      out += (data_size - free);
-      atomic_store_explicit(&fifo->out, out, memory_order_release);
-      break;
-    }
-  }
+  if (data_size > free)
+    if (fifo_policy(fifo, out, data_size, free) != 0)
+      return 0;
 
   if (data_size == 0)
     return 0;
@@ -182,6 +183,7 @@ static inline size_t fifo_spsc_buf_out(fifo_t *fifo, void *buf, void *data, size
   size_t in    = atomic_load_explicit(&fifo->in, memory_order_acquire);
   size_t out   = atomic_load_explicit(&fifo->out, memory_order_relaxed);
   size_t avail = in - out;
+
   if (data_size > avail)
     data_size = avail;
 
@@ -206,12 +208,10 @@ static inline size_t fifo_mpmc_in(fifo_t *fifo, const void *data, size_t data_si
     size_t in   = atomic_load_explicit(&fifo->in, memory_order_relaxed);
     size_t out  = atomic_load_explicit(&fifo->out, memory_order_acquire);
     size_t free = fifo->buf_size - (in - out);
-    if (data_size > free) {
-      if (fifo->e_policy == FIFO_POLICY_DISCARD)
-        data_size = free;
-      else if (fifo->e_policy == FIFO_POLICY_OVERWRITE)
-        atomic_store_explicit(&fifo->out, out + (data_size - free), memory_order_release);
-    }
+
+    if (data_size > free)
+      if (fifo_policy(fifo, out, data_size, free) != 0)
+        return 0;
 
     if (data_size == 0)
       return 0;
@@ -232,6 +232,7 @@ static inline size_t fifo_mpmc_out(fifo_t *fifo, void *data, size_t data_size) {
   size_t com   = atomic_load_explicit(&fifo->committed, memory_order_acquire);
   size_t out   = atomic_load_explicit(&fifo->out, memory_order_relaxed);
   size_t avail = com - out;
+
   if (data_size > avail)
     data_size = avail;
 
@@ -252,12 +253,10 @@ static inline size_t fifo_mpmc_buf_in(fifo_t *fifo, void *buf, const void *data,
     size_t in   = atomic_load_explicit(&fifo->in, memory_order_relaxed);
     size_t out  = atomic_load_explicit(&fifo->out, memory_order_acquire);
     size_t free = fifo->buf_size - (in - out);
-    if (data_size > free) {
-      if (fifo->e_policy == FIFO_POLICY_DISCARD)
-        data_size = free;
-      else if (fifo->e_policy == FIFO_POLICY_OVERWRITE)
-        atomic_store_explicit(&fifo->out, out + (data_size - free), memory_order_release);
-    }
+
+    if (data_size > free)
+      if (fifo_policy(fifo, out, data_size, free) != 0)
+        return 0;
 
     if (data_size == 0)
       return 0;
@@ -278,6 +277,7 @@ static inline size_t fifo_mpmc_buf_out(fifo_t *fifo, void *buf, void *data, size
   size_t com   = atomic_load_explicit(&fifo->committed, memory_order_acquire);
   size_t out   = atomic_load_explicit(&fifo->out, memory_order_relaxed);
   size_t avail = com - out;
+
   if (data_size > avail)
     data_size = avail;
 

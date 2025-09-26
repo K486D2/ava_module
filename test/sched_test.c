@@ -50,13 +50,12 @@ static inline void task4_callback(void *arg) {
 }
 
 int main() {
-  sched_cfg_t sched_cfg = {.exec_freq = 1000, .cpu_id = 10};
+  sched_cfg_t sched_cfg = {.cpu_id = 10};
 
   sched.ops.f_get_ts = get_mono_ts_us;
   sched_init(&sched, sched_cfg);
 
   printf("=== SCHED TEST START ===\n");
-  printf("SCHED FREQ: %f Hz\n", sched_cfg.exec_freq);
   printf("BIND CPU: %u\n", sched_cfg.cpu_id);
   printf("TIMESTAMP FUNC: get_mono_ts_us\n\n");
 

@@ -6,7 +6,7 @@ int main() {
   shm_t     shm     = {0};
   shm_cfg_t shm_cfg = {
       .name   = "shm",
-      .access = PAGE_READWRITE,
+      // .access = PAGE_READWRITE,
   };
 
   int ret = shm_init(&shm, shm_cfg);
@@ -17,7 +17,7 @@ int main() {
 
   fifo_t *fifo = (fifo_t *)shm.lo.base;
   u8     *buf  = shm.lo.base + sizeof(*fifo);
-  fifo_buf_init(fifo, SHM_SIZE >> 1, FIFO_POLICY_DISCARD);
+  fifo_buf_init(fifo, SHM_SIZE >> 1, FIFO_POLICY_REJECT);
 
   printf("shm_addr: 0x%p, buf_addr: 0x%p\n", shm.lo.base, buf);
 

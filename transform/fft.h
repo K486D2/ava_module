@@ -98,7 +98,7 @@ static inline void fft_init(fft_t *fft, fft_cfg_t fft_cfg) {
 
   *cfg = fft_cfg;
 
-  fifo_init(&lo->fifo, cfg->fifo_buf, cfg->point_num * sizeof(f32), FIFO_POLICY_DISCARD);
+  fifo_init(&lo->fifo, cfg->fifo_buf, cfg->point_num * sizeof(f32), FIFO_POLICY_REJECT);
 
   in->buf      = cfg->in_buf;
   lo->buf      = cfg->out_buf;

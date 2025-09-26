@@ -87,7 +87,7 @@ static inline void spin(u32 us) {
 
 #ifdef __linux__
 static inline void yield(u32 ms) {
-  usleep(1000u * ms)
+  usleep(1000u * ms);
 }
 #elif defined(_WIN32)
 #include <windows.h>

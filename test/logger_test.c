@@ -42,7 +42,8 @@ void *write_thread_func(void *arg) {
 
 int main() {
   logger_cfg_t logger_cfg = {
-      .e_mode        = LOGGER_SYNC,
+      .e_mode        = LOGGER_SYNC_MPMC,
+      .e_policy      = FIFO_POLICY_REJECT,
       .e_level       = LOGGER_LEVEL_DEBUG,
       .end_sign      = '\n',
       .fp            = stdout,
@@ -51,7 +52,8 @@ int main() {
       .tx_buf        = LOGGER_TX_BUF,
       .tx_buf_size   = sizeof(LOGGER_TX_BUF),
   };
-  logger.ops.f_tx = logger_stdout;
+  logger.ops.f_tx     = logger_stdout;
+  logger.ops.f_get_ts = get_mono_ts_us;
   logger_init(&logger, logger_cfg);
 
   pthread_t flush_thread;
