@@ -8,7 +8,7 @@
 #include "../util/util.h"
 
 typedef struct {
-  i32_uvw_t i32_i_uvw, i32_v_uvw;
+  i32_uvw_t i32_i_uvw;
   i32       i32_v_bus;
 } adc_raw_t;
 
@@ -91,12 +91,12 @@ typedef struct {
 
 typedef struct {
   f32          exec_freq;
+  motor_cfg_t  motor_cfg;
+  periph_cfg_t periph_cfg;
   adc_raw_t    adc_offset;
   f32          theta_offset;
   f32          ref_theta_cali_id, ref_theta_cali_omega;
   f32          sensor_theta_comp_gain, theta_comp_gain;
-  motor_cfg_t  motor_cfg;
-  periph_cfg_t periph_cfg;
   pid_cfg_t    vel_cfg, pos_cfg, pd_cfg;
   u32          cur_div, vel_div, pos_div, pd_div;
 } foc_cfg_t;
