@@ -1,7 +1,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "../communicate/net.h"
+#include "module.h"
 
 net_t net;
 

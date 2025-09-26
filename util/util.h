@@ -36,6 +36,42 @@
 #define __must_be_array(a)   BUILD_BUG_ON_ZERO(__same_type((a), &(a)[0]))
 #define ARRAY_SIZE(arr)      (sizeof(arr) / sizeof(arr[0]) + __must_be_array(arr))
 
+#if defined(_MSC_VER)
+#include <intrin.h>
+#pragma intrinsic(_BitScanReverse64)
+static inline u32 clz64(u64 x) {
+  unsigned long index;
+  if (_BitScanReverse64(&index, x))
+    return 63 - index; // x != 0 时返回前导零数
+  return 64;           // x == 0 时返回 64
+}
+#elif defined(__GNUC__) || defined(__clang__)
+static inline u32 clz64(u64 x) {
+  if (x == 0)
+    return 64;
+  return __builtin_clzll(x);
+}
+#elif defined(__ARMCC_VERSION) || defined(__ARM_COMPILER)
+#include <arm_acle.h>
+static inline u32 clz64(u64 x) {
+  if (x == 0)
+    return 64;
+  return __clz(x >> 32) * (x >> 32 ? 1 : 0) + __clz(x & 0xFFFFFFFF);
+}
+#else
+static inline u32 clz64(u64 x) {
+  if (x == 0)
+    return 64;
+  u32 n = 0;
+  for (u8 i = 63; i >= 0; i--) {
+    if ((x >> i) & 1)
+      break;
+    n++;
+  }
+  return n;
+}
+#endif
+
 static inline void swap_byte_order(void *data, const u32 size) {
   u32 *p = (u32 *)data;
   for (u32 i = 0; i < size / 4; ++i) {

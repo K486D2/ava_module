@@ -1,13 +1,13 @@
 #ifdef __linux__
 #include <unistd.h>
 #elif defined(_WIN32)
+#include <winsock2.h>
 #include <windows.h>
 #endif
 
 #include <stdio.h>
 
-#include "../scheduler/scheduler.h"
-#include "../util/util.h"
+#include "module.h"
 
 sched_t sched;
 

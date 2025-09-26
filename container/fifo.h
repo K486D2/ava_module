@@ -26,22 +26,8 @@ constexpr auto memory_order_acq_rel = std::memory_order_acq_rel;
 
 #include "../util/def.h"
 
-#ifdef _MSC_VER
-#include <intrin.h>
-static inline u32 clzll(u64 x) {
-  u32 index;
-  if (_BitScanReverse64(&index, x))
-    return 63 - index;
-  return 64;
-}
-#else
-static inline u32 clzll(u64 x) {
-  return __builtin_clzll(x);
-}
-#endif
-
 #define IS_POWER_OF_2(n)    ((n) != 0 && (((n) & ((n) - 1)) == 0))
-#define ROUNDUP_POW_OF_2(n) ((n) == 0 ? 1 : (1ULL << (sizeof(n) * 8 - clzll((n) - 1))))
+#define ROUNDUP_POW_OF_2(n) ((n) == 0 ? 1 : (1ULL << (sizeof(n) * 8 - clz64((n) - 1))))
 
 typedef enum {
   FIFO_POLICY_TRUNCATE,
@@ -57,13 +43,13 @@ typedef enum {
 } fifo_mode_e;
 
 typedef struct {
-  fifo_policy_e e_policy;
   fifo_mode_e   e_mode;
+  fifo_policy_e e_policy;
   void         *buf;      // 缓冲区指针
   size_t        buf_size; // 缓冲区大小(2^n)
   atomic_t(size_t) in;    // 写入位置
   atomic_t(size_t) out;   // 读取位置
-  atomic_t(size_t) com;   // 用于MP场景以防消费者读到未写完的数据
+  atomic_t(size_t) com;
   pthread_mutex_t lock;
 } fifo_t;
 
@@ -94,10 +80,10 @@ fifo_buf_init(fifo_t *fifo, size_t buf_size, fifo_mode_e e_mode, fifo_policy_e e
   if (!IS_POWER_OF_2(buf_size))
     return -1;
 
+  pthread_mutex_init(&fifo->lock, NULL);
   fifo->e_mode   = e_mode;
   fifo->e_policy = e_policy;
   fifo->buf_size = buf_size;
-  pthread_mutex_init(&fifo->lock, NULL);
   atomic_store(&fifo->in, 0);
   atomic_store(&fifo->out, 0);
   atomic_store(&fifo->com, 0);
@@ -114,9 +100,8 @@ fifo_init(fifo_t *fifo, void *buf, size_t buf_size, fifo_mode_e e_mode, fifo_pol
   return 0;
 }
 
-static inline size_t
-fifo_policy(fifo_t *fifo, size_t *data_size, size_t in, size_t out, size_t buf_size) {
-  size_t free = buf_size - (in - out);
+static inline size_t fifo_policy(fifo_t *fifo, size_t *data_size, size_t in, size_t out) {
+  size_t free = fifo->buf_size - (in - out);
   if (*data_size <= free)
     return *data_size;
 
@@ -145,7 +130,7 @@ static inline size_t fifo_spsc_in(fifo_t *fifo, void *buf, const void *data, siz
   size_t in  = atomic_load_explicit(&fifo->in, memory_order_relaxed);
   size_t out = atomic_load_explicit(&fifo->out, memory_order_acquire);
 
-  data_size = fifo_policy(fifo, &data_size, in, out, fifo->buf_size);
+  data_size = fifo_policy(fifo, &data_size, in, out);
   if (data_size == 0)
     return 0;
 
@@ -226,6 +211,10 @@ static inline size_t fifo_mpmc_out(fifo_t *fifo, void *buf, void *data, size_t d
   pthread_mutex_unlock(&fifo->lock);
   return size;
 }
+
+/* -------------------------------------------------------------------------- */
+/*                                     API                                    */
+/* -------------------------------------------------------------------------- */
 
 static inline size_t fifo_in(fifo_t *fifo, const void *data, size_t data_size) {
   switch (fifo->e_mode) {

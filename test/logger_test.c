@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <unistd.h>
 
-#include "../logger/logger.h"
+#include "module.h"
 
 logger_t logger;
 

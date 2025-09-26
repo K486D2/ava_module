@@ -1,6 +1,6 @@
-#include "../shared_mem/shared_mem.h"
-
 #include <stdlib.h>
+
+#include "module.h"
 
 int main() {
   shm_t     shm     = {0};

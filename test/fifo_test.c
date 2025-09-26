@@ -64,24 +64,20 @@ int main() {
   pthread_t consumers[CONSUMER_NUM];
 
   // 启动生产者
-  for (int i = 0; i < PRODUCER_NUM; i++) {
+  for (int i = 0; i < PRODUCER_NUM; i++)
     pthread_create(&producers[i], NULL, producer, (void *)(uintptr_t)i);
-  }
 
   // 启动消费者
-  for (int i = 0; i < CONSUMER_NUM; i++) {
+  for (int i = 0; i < CONSUMER_NUM; i++)
     pthread_create(&consumers[i], NULL, consumer, NULL);
-  }
 
   // 等待生产者结束
-  for (int i = 0; i < PRODUCER_NUM; i++) {
+  for (int i = 0; i < PRODUCER_NUM; i++)
     pthread_join(producers[i], NULL);
-  }
 
   // 等待消费者结束
-  for (int i = 0; i < CONSUMER_NUM; i++) {
+  for (int i = 0; i < CONSUMER_NUM; i++)
     pthread_join(consumers[i], NULL);
-  }
 
   printf("MPMC FIFO test finished successfully. All %llu packets verified.\n",
          (unsigned long long)(PRODUCER_NUM * TEST_COUNT));

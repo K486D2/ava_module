@@ -98,7 +98,8 @@ static inline void fft_init(fft_t *fft, fft_cfg_t fft_cfg) {
 
   *cfg = fft_cfg;
 
-  fifo_init(&lo->fifo, cfg->fifo_buf, cfg->point_num * sizeof(f32), FIFO_MODE_SPSC, FIFO_POLICY_REJECT);
+  fifo_init(
+      &lo->fifo, cfg->fifo_buf, cfg->point_num * sizeof(f32), FIFO_MODE_SPSC, FIFO_POLICY_REJECT);
 
   in->buf      = cfg->in_buf;
   lo->buf      = cfg->out_buf;
@@ -125,7 +126,7 @@ static inline void fft_exec(fft_t *fft) {
 
 #if defined(__linux__) || defined(_WIN32)
   fftwf_execute(lo->p);
-  for (int i = 0; i < cfg->point_num / 2 + 1; i++)
+  for (size_t i = 0; i < cfg->point_num / 2 + 1; i++)
     out->mag_buf[i] = SQRT(lo->buf[i][0] * lo->buf[i][0] + lo->buf[i][1] * lo->buf[i][1]);
   find_max(&out->mag_buf[1], cfg->point_num >> 1, &out->max_mag, &out->out_idx);
 #elif defined(ARM_MATH)
