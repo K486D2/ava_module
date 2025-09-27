@@ -1,23 +1,30 @@
 #include <pthread.h>
 #include <stdatomic.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
-#include "module.h"
+#include "util/typedef.h"
+
+typedef struct {
+  u64 seq;
+  u64 seq2;
+  u64 seq3;
+} packet_t;
+
+#define FIFO_NODE_SIZE sizeof(packet_t)
+#include "container/fifo.h"
+#include "util/util.h"
 
 #define BUF_SIZE     1024
 #define TEST_COUNT   50000
 #define PRODUCER_NUM 10
 #define CONSUMER_NUM 10
 
-typedef struct {
-  u64 seq;
-} packet_t;
-
-static fifo_t      fifo;
-static fifo_node_t buf[BUF_SIZE];
+fifo_t      fifo;
+fifo_node_t buf[BUF_SIZE];
 
 void *producer(void *arg) {
   ARG_UNUSED(arg);
@@ -58,7 +65,7 @@ void *consumer(void *arg) {
     if (fifo_out(&fifo, &pkt, sizeof(pkt)) == sizeof(pkt)) {
       pthread_mutex_lock(&bitmap_lock);
       if (bitmap[pkt.seq]) {
-        printf("ERROR: duplicate seq=%llu\n", (u64)pkt.seq);
+        printf("ERROR: duplicate seq=%llu\n", pkt.seq);
         exit(1);
       }
       bitmap[pkt.seq] = 1;

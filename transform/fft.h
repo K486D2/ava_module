@@ -122,7 +122,7 @@ static inline void fft_exec(fft_t *fft) {
 
   u64 start = get_mono_ts_us();
 
-  memcpy(in->buf, lo->fifo.buf, lo->fifo.buf_size);
+  memcpy(in->buf, lo->fifo.buf, lo->fifo.cap);
 
 #if defined(__linux__) || defined(_WIN32)
   fftwf_execute(lo->p);

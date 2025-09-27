@@ -4,8 +4,8 @@
 #include <stdarg.h>
 #include <string.h>
 
-#include "../container/fifo.h"
-#include "../util/util.h"
+#include "container/fifo.h"
+#include "util/util.h"
 
 typedef enum {
   LOGGER_LEVEL_DATA,  // 数据
@@ -29,7 +29,7 @@ typedef struct {
   const char    *prefix;
   void          *fp;
   u8            *fifo_buf, *tx_buf;
-  size_t         fifo_buf_size, tx_buf_size;
+  size_t         fifo_buf_cap, tx_buf_cap;
 } logger_cfg_t;
 
 typedef struct {
@@ -73,29 +73,23 @@ static inline void logger_init(logger_t *logger, logger_cfg_t logger_cfg) {
   lo->tx_buf   = cfg->tx_buf;
   lo->fifo_buf = cfg->fifo_buf;
 
-  fifo_init(&lo->fifo, lo->fifo_buf, cfg->fifo_buf_size, cfg->e_fifo_mode, cfg->e_fifo_policy);
+  fifo_init(&lo->fifo, lo->fifo_buf, cfg->fifo_buf_cap, cfg->e_fifo_mode, cfg->e_fifo_policy);
 }
 
 static inline void logger_flush(logger_t *logger) {
   DECL_LOGGER_PTRS(logger);
 
-  u32 size = 0;
-  u8  c;
-  while (!lo->busy && fifo_out(&lo->fifo, &c, sizeof(c)) != 0) {
-    lo->tx_buf[size++] = c;
-    if (c == cfg->end_sign || size == cfg->tx_buf_size) {
-      ops->f_tx(cfg->fp, lo->tx_buf, size);
-      size     = 0;
-      lo->busy = cfg->e_logger_mode == LOGGER_ASYNC ? true : false;
-    }
+  while (!lo->busy) {
+    size_t size = fifo_out(&lo->fifo, lo->tx_buf, 0);
+    ops->f_tx(cfg->fp, lo->tx_buf, size);
+    lo->busy = cfg->e_logger_mode == LOGGER_ASYNC ? true : false;
   }
 }
 
 static inline void logger_write(logger_t *logger, const char *fmt, va_list args) {
   DECL_LOGGER_PTRS(logger);
 
-  u8 buf[128];
-
+  u8  buf[128];
   int size = snprintf((char *)buf, sizeof(buf), "[%llu] ", ops->f_get_ts());
   if (size < 0)
     return;

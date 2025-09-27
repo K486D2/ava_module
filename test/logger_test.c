@@ -2,16 +2,17 @@
 #include <stdio.h>
 #include <unistd.h>
 
-#include "module.h"
+#define FIFO_NODE_SIZE 128
+#include "container/fifo.h"
+#include "logger/logger.h"
 
 logger_t logger;
 
-fifo_node_t LOGGER_TX_BUF[128];
-fifo_node_t LOGGER_FIFO_BUF[1 * 256];
+u8          LOGGER_TX_BUF[128];
+fifo_node_t LOGGER_FIFO_BUF[1 * 1024];
 
 static inline void logger_stdout(void *fp, const u8 *data, size_t size) {
   fwrite(data, size, 1, fp);
-  fflush(fp);
 }
 
 void *flush_thread_func(void *arg) {
@@ -44,20 +45,20 @@ void *write_thread_func(void *arg) {
   return NULL;
 }
 
-#define THREAD_COUNT 50
+#define THREAD_COUNT 1000
 
 int main() {
   logger_cfg_t logger_cfg = {
       .e_logger_mode  = LOGGER_SYNC,
       .e_logger_level = LOGGER_LEVEL_DEBUG,
-      .e_fifo_mode    = FIFO_MODE_MPSC,
+      .e_fifo_mode    = FIFO_MODE_MPMC,
       .e_fifo_policy  = FIFO_POLICY_REJECT,
       .end_sign       = '\n',
       .fp             = stdout,
-      .fifo_buf       = LOGGER_FIFO_BUF,
-      .fifo_buf_size  = ARRAY_SIZE(LOGGER_FIFO_BUF),
-      .tx_buf         = LOGGER_TX_BUF,
-      .tx_buf_size    = ARRAY_SIZE(LOGGER_TX_BUF),
+      .fifo_buf       = (void *)LOGGER_FIFO_BUF,
+      .fifo_buf_cap   = ARRAY_SIZE(LOGGER_FIFO_BUF),
+      .tx_buf         = (void *)LOGGER_TX_BUF,
+      .tx_buf_cap     = sizeof(LOGGER_TX_BUF),
   };
   logger.ops.f_tx     = logger_stdout;
   logger.ops.f_get_ts = get_mono_ts_us;
