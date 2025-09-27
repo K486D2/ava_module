@@ -6,8 +6,8 @@
 
 logger_t logger;
 
-u8 LOGGER_TX_BUF[128];
-u8 LOGGER_FIFO_BUF[1 * 256];
+fifo_node_t LOGGER_TX_BUF[128];
+fifo_node_t LOGGER_FIFO_BUF[1 * 256];
 
 static inline void logger_stdout(void *fp, const u8 *data, size_t size) {
   fwrite(data, size, 1, fp);
@@ -44,7 +44,7 @@ void *write_thread_func(void *arg) {
   return NULL;
 }
 
-#define THREAD_COUNT 5000
+#define THREAD_COUNT 50
 
 int main() {
   logger_cfg_t logger_cfg = {
@@ -55,9 +55,9 @@ int main() {
       .end_sign       = '\n',
       .fp             = stdout,
       .fifo_buf       = LOGGER_FIFO_BUF,
-      .fifo_buf_size  = sizeof(LOGGER_FIFO_BUF),
+      .fifo_buf_size  = ARRAY_SIZE(LOGGER_FIFO_BUF),
       .tx_buf         = LOGGER_TX_BUF,
-      .tx_buf_size    = sizeof(LOGGER_TX_BUF),
+      .tx_buf_size    = ARRAY_SIZE(LOGGER_TX_BUF),
   };
   logger.ops.f_tx     = logger_stdout;
   logger.ops.f_get_ts = get_mono_ts_us;

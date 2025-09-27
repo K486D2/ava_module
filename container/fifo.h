@@ -21,26 +21,17 @@ typedef enum {
 } fifo_policy_e;
 
 typedef struct {
-  atomic_flag lock;
-} spinlock_t;
-
-static inline void spin_lock(spinlock_t *spinlock) {
-  while (atomic_flag_test_and_set_explicit(&spinlock->lock, memory_order_acquire))
-    ;
-}
-
-static inline void spin_unlock(spinlock_t *spinlock) {
-  atomic_flag_clear_explicit(&spinlock->lock, memory_order_release);
-}
+  atomic_t(size_t) seq;
+  u8 data;
+} fifo_node_t;
 
 typedef struct {
   fifo_mode_e   e_mode;   // FIFO模式
   fifo_policy_e e_policy; // 写入数据超过剩余空间时的处理策略
   atomic_t(size_t) in;    // 写入位置
   atomic_t(size_t) out;   // 读取位置
-  spinlock_t lock;
-  void      *buf;      // 缓冲区
-  size_t     buf_size; // 缓冲区大小(2^n)
+  void  *buf;             // 缓冲区
+  size_t buf_size;        // 缓冲区大小(2^n)
 } fifo_t;
 
 static inline void fifo_reset(fifo_t *fifo) {
@@ -74,6 +65,7 @@ fifo_init_buf(fifo_t *fifo, size_t buf_size, fifo_mode_e e_mode, fifo_policy_e e
   fifo->buf_size = buf_size;
   atomic_store(&fifo->in, 0);
   atomic_store(&fifo->out, 0);
+
   return 0;
 }
 
@@ -84,6 +76,10 @@ fifo_init(fifo_t *fifo, void *buf, size_t buf_size, fifo_mode_e e_mode, fifo_pol
 
   fifo->buf = buf;
   fifo_init_buf(fifo, buf_size, e_mode, e_policy);
+
+  for (size_t i = 0; i < buf_size; i++)
+    atomic_store(&((fifo_node_t *)buf)[i].seq, i);
+
   return 0;
 }
 
@@ -114,14 +110,15 @@ static inline size_t fifo_policy(fifo_t *fifo, size_t data_size, size_t in, size
 /* -------------------------------------------------------------------------- */
 
 static inline size_t fifo_spsc_in(fifo_t *fifo, void *buf, const void *data, size_t data_size) {
-  size_t in  = atomic_load_explicit(&fifo->in, memory_order_relaxed);
-  size_t out = atomic_load_explicit(&fifo->out, memory_order_acquire);
+  size_t mask = fifo->buf_size - 1;
+  size_t in   = atomic_load_explicit(&fifo->in, memory_order_relaxed);
+  size_t out  = atomic_load_explicit(&fifo->out, memory_order_acquire);
 
   data_size = fifo_policy(fifo, data_size, in, out);
   if (data_size == 0)
     return 0;
 
-  size_t offset = in & (fifo->buf_size - 1);
+  size_t offset = in & mask;
   size_t size   = MIN(data_size, fifo->buf_size - offset);
   memcpy((u8 *)buf + offset, data, size);
   memcpy((u8 *)buf, (u8 *)data + size, data_size - size);
@@ -131,8 +128,9 @@ static inline size_t fifo_spsc_in(fifo_t *fifo, void *buf, const void *data, siz
 }
 
 static inline size_t fifo_spsc_out(fifo_t *fifo, void *buf, void *data, size_t data_size) {
-  size_t out = atomic_load_explicit(&fifo->out, memory_order_relaxed);
-  size_t in  = atomic_load_explicit(&fifo->in, memory_order_acquire);
+  size_t mask = fifo->buf_size - 1;
+  size_t out  = atomic_load_explicit(&fifo->out, memory_order_relaxed);
+  size_t in   = atomic_load_explicit(&fifo->in, memory_order_acquire);
 
   size_t avail = in - out;
   if (data_size > avail)
@@ -140,7 +138,7 @@ static inline size_t fifo_spsc_out(fifo_t *fifo, void *buf, void *data, size_t d
   if (data_size == 0)
     return 0;
 
-  size_t offset = out & (fifo->buf_size - 1);
+  size_t offset = out & mask;
   size_t size   = MIN(data_size, fifo->buf_size - offset);
   memcpy(data, (u8 *)buf + offset, size);
   memcpy((u8 *)data + size, (u8 *)buf, data_size - size);
@@ -154,15 +152,27 @@ static inline size_t fifo_spsc_out(fifo_t *fifo, void *buf, void *data, size_t d
 /* -------------------------------------------------------------------------- */
 
 static inline size_t fifo_spmc_in(fifo_t *fifo, void *buf, const void *data, size_t data_size) {
-  size_t size = fifo_spsc_in(fifo, buf, data, data_size);
-  return size;
+  return fifo_spsc_in(fifo, buf, data, data_size);
 }
 
 static inline size_t fifo_spmc_out(fifo_t *fifo, void *buf, void *data, size_t data_size) {
-  spin_lock(&fifo->lock);
-  size_t size = fifo_spsc_out(fifo, buf, data, data_size);
-  spin_unlock(&fifo->lock);
-  return size;
+  size_t mask = fifo->buf_size - 1;
+  while (true) {
+    size_t       out  = atomic_load_explicit(&fifo->out, memory_order_relaxed);
+    fifo_node_t *node = &((fifo_node_t *)buf)[out & mask];
+    size_t       seq  = atomic_load_explicit(&node->seq, memory_order_acquire);
+    intptr_t     diff = (intptr_t)seq - (intptr_t)(out + 1);
+
+    if (diff == 0) {
+      if (atomic_compare_exchange_weak_explicit(
+              &fifo->out, &out, out + 1, memory_order_acq_rel, memory_order_relaxed)) {
+        memcpy(data, &node->data, data_size);
+        atomic_store_explicit(&node->seq, out + fifo->buf_size, memory_order_release);
+        return data_size;
+      }
+    } else if (diff < 0)
+      return 0;
+  }
 }
 
 /* -------------------------------------------------------------------------- */
@@ -170,15 +180,27 @@ static inline size_t fifo_spmc_out(fifo_t *fifo, void *buf, void *data, size_t d
 /* -------------------------------------------------------------------------- */
 
 static inline size_t fifo_mpsc_in(fifo_t *fifo, void *buf, const void *data, size_t data_size) {
-  spin_lock(&fifo->lock);
-  size_t size = fifo_spsc_in(fifo, buf, data, data_size);
-  spin_unlock(&fifo->lock);
-  return size;
+  size_t mask = fifo->buf_size - 1;
+  while (true) {
+    size_t       in   = atomic_load_explicit(&fifo->in, memory_order_relaxed);
+    fifo_node_t *node = &((fifo_node_t *)buf)[in & mask];
+    size_t       seq  = atomic_load_explicit(&node->seq, memory_order_acquire);
+    intptr_t     diff = (intptr_t)seq - (intptr_t)in;
+
+    if (diff == 0) {
+      if (atomic_compare_exchange_weak_explicit(
+              &fifo->in, &in, in + 1, memory_order_acq_rel, memory_order_relaxed)) {
+        memcpy(&node->data, data, data_size);
+        atomic_store_explicit(&node->seq, in + 1, memory_order_release);
+        return data_size;
+      }
+    } else if (diff < 0)
+      return 0;
+  }
 }
 
 static inline size_t fifo_mpsc_out(fifo_t *fifo, void *buf, void *data, size_t data_size) {
-  size_t size = fifo_spsc_out(fifo, buf, data, data_size);
-  return size;
+  return fifo_spsc_out(fifo, buf, data, data_size);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -186,17 +208,43 @@ static inline size_t fifo_mpsc_out(fifo_t *fifo, void *buf, void *data, size_t d
 /* -------------------------------------------------------------------------- */
 
 static inline size_t fifo_mpmc_in(fifo_t *fifo, void *buf, const void *data, size_t data_size) {
-  spin_lock(&fifo->lock);
-  size_t size = fifo_spsc_in(fifo, buf, data, data_size);
-  spin_unlock(&fifo->lock);
-  return size;
+  size_t mask = fifo->buf_size - 1;
+  while (true) {
+    size_t       in   = atomic_load_explicit(&fifo->in, memory_order_relaxed);
+    fifo_node_t *node = &((fifo_node_t *)buf)[in & mask];
+    size_t       seq  = atomic_load_explicit(&node->seq, memory_order_acquire);
+    intptr_t     diff = (intptr_t)seq - (intptr_t)in;
+
+    if (diff == 0) {
+      if (atomic_compare_exchange_weak_explicit(
+              &fifo->in, &in, in + 1, memory_order_acq_rel, memory_order_relaxed)) {
+        memcpy(&node->data, data, data_size);
+        atomic_store_explicit(&node->seq, in + 1, memory_order_release);
+        return data_size;
+      }
+    } else if (diff < 0)
+      return 0;
+  }
 }
 
 static inline size_t fifo_mpmc_out(fifo_t *fifo, void *buf, void *data, size_t data_size) {
-  spin_lock(&fifo->lock);
-  size_t size = fifo_spsc_out(fifo, buf, data, data_size);
-  spin_unlock(&fifo->lock);
-  return size;
+  size_t mask = fifo->buf_size - 1;
+  while (true) {
+    size_t       out  = atomic_load_explicit(&fifo->out, memory_order_relaxed);
+    fifo_node_t *node = &((fifo_node_t *)buf)[out & mask];
+    size_t       seq  = atomic_load_explicit(&node->seq, memory_order_acquire);
+    intptr_t     diff = (intptr_t)seq - (intptr_t)(out + 1);
+
+    if (diff == 0) {
+      if (atomic_compare_exchange_weak_explicit(
+              &fifo->out, &out, out + 1, memory_order_acq_rel, memory_order_relaxed)) {
+        memcpy(data, &node->data, data_size);
+        atomic_store_explicit(&node->seq, out + fifo->buf_size, memory_order_release);
+        return data_size;
+      }
+    } else if (diff < 0)
+      return 0;
+  }
 }
 
 /* -------------------------------------------------------------------------- */
