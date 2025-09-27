@@ -21,13 +21,26 @@ typedef enum {
 } fifo_policy_e;
 
 typedef struct {
-  fifo_mode_e   e_mode;     // FIFO模式
-  fifo_policy_e e_policy;   // 写入数据超过剩余空间时的处理策略
-  atomic_t(size_t) in;      // 写入位置
-  atomic_t(size_t) out;     // 读取位置
-  void           *buf;      // 缓冲区
-  size_t          buf_size; // 缓冲区大小(2^n)
-  pthread_mutex_t lock;     // 互斥锁
+  atomic_flag lock;
+} spinlock_t;
+
+static inline void spin_lock(spinlock_t *spinlock) {
+  while (atomic_flag_test_and_set_explicit(&spinlock->lock, memory_order_acquire))
+    ;
+}
+
+static inline void spin_unlock(spinlock_t *spinlock) {
+  atomic_flag_clear_explicit(&spinlock->lock, memory_order_release);
+}
+
+typedef struct {
+  fifo_mode_e   e_mode;   // FIFO模式
+  fifo_policy_e e_policy; // 写入数据超过剩余空间时的处理策略
+  atomic_t(size_t) in;    // 写入位置
+  atomic_t(size_t) out;   // 读取位置
+  spinlock_t lock;
+  void      *buf;      // 缓冲区
+  size_t     buf_size; // 缓冲区大小(2^n)
 } fifo_t;
 
 static inline void fifo_reset(fifo_t *fifo) {
@@ -56,7 +69,6 @@ fifo_init_buf(fifo_t *fifo, size_t buf_size, fifo_mode_e e_mode, fifo_policy_e e
   if (!IS_POWER_OF_2(buf_size))
     return -1;
 
-  pthread_mutex_init(&fifo->lock, NULL);
   fifo->e_mode   = e_mode;
   fifo->e_policy = e_policy;
   fifo->buf_size = buf_size;
@@ -147,9 +159,9 @@ static inline size_t fifo_spmc_in(fifo_t *fifo, void *buf, const void *data, siz
 }
 
 static inline size_t fifo_spmc_out(fifo_t *fifo, void *buf, void *data, size_t data_size) {
-  pthread_mutex_lock(&fifo->lock);
+  spin_lock(&fifo->lock);
   size_t size = fifo_spsc_out(fifo, buf, data, data_size);
-  pthread_mutex_unlock(&fifo->lock);
+  spin_unlock(&fifo->lock);
   return size;
 }
 
@@ -158,9 +170,9 @@ static inline size_t fifo_spmc_out(fifo_t *fifo, void *buf, void *data, size_t d
 /* -------------------------------------------------------------------------- */
 
 static inline size_t fifo_mpsc_in(fifo_t *fifo, void *buf, const void *data, size_t data_size) {
-  pthread_mutex_lock(&fifo->lock);
+  spin_lock(&fifo->lock);
   size_t size = fifo_spsc_in(fifo, buf, data, data_size);
-  pthread_mutex_unlock(&fifo->lock);
+  spin_unlock(&fifo->lock);
   return size;
 }
 
@@ -174,16 +186,16 @@ static inline size_t fifo_mpsc_out(fifo_t *fifo, void *buf, void *data, size_t d
 /* -------------------------------------------------------------------------- */
 
 static inline size_t fifo_mpmc_in(fifo_t *fifo, void *buf, const void *data, size_t data_size) {
-  pthread_mutex_lock(&fifo->lock);
+  spin_lock(&fifo->lock);
   size_t size = fifo_spsc_in(fifo, buf, data, data_size);
-  pthread_mutex_unlock(&fifo->lock);
+  spin_unlock(&fifo->lock);
   return size;
 }
 
 static inline size_t fifo_mpmc_out(fifo_t *fifo, void *buf, void *data, size_t data_size) {
-  pthread_mutex_lock(&fifo->lock);
+  spin_lock(&fifo->lock);
   size_t size = fifo_spsc_out(fifo, buf, data, data_size);
-  pthread_mutex_unlock(&fifo->lock);
+  spin_unlock(&fifo->lock);
   return size;
 }
 
