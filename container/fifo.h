@@ -1,82 +1,58 @@
 #ifndef FIFO_H
 #define FIFO_H
 
-#include <stddef.h>
-#ifndef __cplusplus
-#include <stdatomic.h>
-#define atomic_t(x) _Atomic x
-#else
-#include <atomic>
-#define atomic_t(x)                    std::atomic<x>
-#define atomic_store(a, v)             std::atomic_store(a, v)
-#define atomic_load(a)                 std::atomic_load(a)
-#define atomic_load_explicit(a, m)     std::atomic_load_explicit(a, m)
-#define atomic_store_explicit(a, v, m) std::atomic_store_explicit(a, v, m)
-#define atomic_compare_exchange_weak_explicit(a, o, n, s, f)                                       \
-  std::atomic_compare_exchange_weak_explicit(a, o, n, s, f)
-
-constexpr auto memory_order_relaxed = std::memory_order_relaxed;
-constexpr auto memory_order_acquire = std::memory_order_acquire;
-constexpr auto memory_order_release = std::memory_order_release;
-constexpr auto memory_order_acq_rel = std::memory_order_acq_rel;
-#endif
-
 #include <pthread.h>
 #include <string.h>
 
 #include "../util/def.h"
 
-#define IS_POWER_OF_2(n)    ((n) != 0 && (((n) & ((n) - 1)) == 0))
-#define ROUNDUP_POW_OF_2(n) ((n) == 0 ? 1 : (1ULL << (sizeof(n) * 8 - clz64((n) - 1))))
-
 typedef enum {
-  FIFO_POLICY_TRUNCATE,
-  FIFO_POLICY_OVERWRITE,
-  FIFO_POLICY_REJECT,
-} fifo_policy_e;
-
-typedef enum {
-  FIFO_MODE_SPSC,
-  FIFO_MODE_SPMC,
-  FIFO_MODE_MPSC,
-  FIFO_MODE_MPMC,
+  FIFO_MODE_SPSC, // 单生产者单消费者
+  FIFO_MODE_SPMC, // 单生产者多消费者
+  FIFO_MODE_MPSC, // 多生产者单消费者
+  FIFO_MODE_MPMC, // 多生产者多消费者
 } fifo_mode_e;
 
+/* 写入数据超过剩余空间时的处理策略 */
+typedef enum {
+  FIFO_POLICY_TRUNCATE,  // 截断
+  FIFO_POLICY_OVERWRITE, // 覆盖
+  FIFO_POLICY_REJECT,    // 拒绝
+} fifo_policy_e;
+
 typedef struct {
-  fifo_mode_e   e_mode;
-  fifo_policy_e e_policy;
-  void         *buf;      // 缓冲区指针
-  size_t        buf_size; // 缓冲区大小(2^n)
-  atomic_t(size_t) in;    // 写入位置
-  atomic_t(size_t) out;   // 读取位置
-  atomic_t(size_t) com;
-  pthread_mutex_t lock;
+  fifo_mode_e   e_mode;     // FIFO模式
+  fifo_policy_e e_policy;   // 写入数据超过剩余空间时的处理策略
+  atomic_t(size_t) in;      // 写入位置
+  atomic_t(size_t) out;     // 读取位置
+  void           *buf;      // 缓冲区
+  size_t          buf_size; // 缓冲区大小(2^n)
+  pthread_mutex_t lock;     // 互斥锁
 } fifo_t;
 
 static inline void fifo_reset(fifo_t *fifo) {
   atomic_store(&fifo->in, 0);
   atomic_store(&fifo->out, 0);
-  atomic_store(&fifo->com, 0);
 }
 
-static inline size_t fifo_get_avail(fifo_t *fifo) {
+static inline size_t fifo_avail(fifo_t *fifo) {
   return atomic_load(&fifo->in) - atomic_load(&fifo->out);
 }
 
-static inline size_t fifo_get_free(fifo_t *fifo) {
-  return fifo->buf_size - fifo_get_avail(fifo);
+static inline size_t fifo_free(fifo_t *fifo) {
+  return fifo->buf_size - fifo_avail(fifo);
 }
 
-static inline bool fifo_is_empty(fifo_t *fifo) {
-  return fifo_get_avail(fifo) == 0;
+static inline bool fifo_empty(fifo_t *fifo) {
+  return fifo_avail(fifo) == 0;
 }
 
-static inline bool fifo_is_full(fifo_t *fifo) {
-  return fifo_get_free(fifo) == 0;
+static inline bool fifo_full(fifo_t *fifo) {
+  return fifo_free(fifo) == 0;
 }
 
 static inline int
-fifo_buf_init(fifo_t *fifo, size_t buf_size, fifo_mode_e e_mode, fifo_policy_e e_policy) {
+fifo_init_buf(fifo_t *fifo, size_t buf_size, fifo_mode_e e_mode, fifo_policy_e e_policy) {
   if (!IS_POWER_OF_2(buf_size))
     return -1;
 
@@ -86,7 +62,6 @@ fifo_buf_init(fifo_t *fifo, size_t buf_size, fifo_mode_e e_mode, fifo_policy_e e
   fifo->buf_size = buf_size;
   atomic_store(&fifo->in, 0);
   atomic_store(&fifo->out, 0);
-  atomic_store(&fifo->com, 0);
   return 0;
 }
 
@@ -96,24 +71,24 @@ fifo_init(fifo_t *fifo, void *buf, size_t buf_size, fifo_mode_e e_mode, fifo_pol
     return -1;
 
   fifo->buf = buf;
-  fifo_buf_init(fifo, buf_size, e_mode, e_policy);
+  fifo_init_buf(fifo, buf_size, e_mode, e_policy);
   return 0;
 }
 
-static inline size_t fifo_policy(fifo_t *fifo, size_t *data_size, size_t in, size_t out) {
+static inline size_t fifo_policy(fifo_t *fifo, size_t data_size, size_t in, size_t out) {
   size_t free = fifo->buf_size - (in - out);
-  if (*data_size <= free)
-    return *data_size;
+  if (data_size <= free)
+    return data_size;
 
   switch (fifo->e_policy) {
   case FIFO_POLICY_TRUNCATE: {
-    *data_size = free;
-    return *data_size;
+    data_size = free;
+    return data_size;
   }
   case FIFO_POLICY_OVERWRITE: {
-    size_t delta = *data_size - free;
+    size_t delta = data_size - free;
     atomic_fetch_add_explicit(&fifo->out, delta, memory_order_acq_rel);
-    return *data_size;
+    return data_size;
   }
   case FIFO_POLICY_REJECT: {
     return 0;
@@ -130,7 +105,7 @@ static inline size_t fifo_spsc_in(fifo_t *fifo, void *buf, const void *data, siz
   size_t in  = atomic_load_explicit(&fifo->in, memory_order_relaxed);
   size_t out = atomic_load_explicit(&fifo->out, memory_order_acquire);
 
-  data_size = fifo_policy(fifo, &data_size, in, out);
+  data_size = fifo_policy(fifo, data_size, in, out);
   if (data_size == 0)
     return 0;
 
@@ -216,76 +191,41 @@ static inline size_t fifo_mpmc_out(fifo_t *fifo, void *buf, void *data, size_t d
 /*                                     API                                    */
 /* -------------------------------------------------------------------------- */
 
-static inline size_t fifo_in(fifo_t *fifo, const void *data, size_t data_size) {
+static inline size_t fifo_in_buf(fifo_t *fifo, void *buf, const void *data, size_t data_size) {
   switch (fifo->e_mode) {
-  case FIFO_MODE_SPSC: {
-    return fifo_spsc_in(fifo, fifo->buf, data, data_size);
-  }
-  case FIFO_MODE_SPMC: {
-    return fifo_spmc_in(fifo, fifo->buf, data, data_size);
-  }
-  case FIFO_MODE_MPSC: {
-    return fifo_mpsc_in(fifo, fifo->buf, data, data_size);
-  }
-  case FIFO_MODE_MPMC: {
-    return fifo_mpmc_in(fifo, fifo->buf, data, data_size);
-  }
+  case FIFO_MODE_SPSC:
+    return fifo_spsc_in(fifo, buf, data, data_size);
+  case FIFO_MODE_SPMC:
+    return fifo_spmc_in(fifo, buf, data, data_size);
+  case FIFO_MODE_MPSC:
+    return fifo_mpsc_in(fifo, buf, data, data_size);
+
+  case FIFO_MODE_MPMC:
+    return fifo_mpmc_in(fifo, buf, data, data_size);
   }
   return 0;
+}
+
+static inline size_t fifo_out_buf(fifo_t *fifo, void *buf, void *data, size_t data_size) {
+  switch (fifo->e_mode) {
+  case FIFO_MODE_SPSC:
+    return fifo_spsc_out(fifo, buf, data, data_size);
+  case FIFO_MODE_SPMC:
+    return fifo_spmc_out(fifo, buf, data, data_size);
+  case FIFO_MODE_MPSC:
+    return fifo_mpsc_out(fifo, buf, data, data_size);
+  case FIFO_MODE_MPMC:
+    return fifo_mpmc_out(fifo, buf, data, data_size);
+  }
+  return 0;
+}
+
+static inline size_t fifo_in(fifo_t *fifo, const void *data, size_t data_size) {
+  return fifo_in_buf(fifo, fifo->buf, data, data_size);
 }
 
 static inline size_t fifo_out(fifo_t *fifo, void *data, size_t data_size) {
-  switch (fifo->e_mode) {
-  case FIFO_MODE_SPSC: {
-    return fifo_spsc_out(fifo, fifo->buf, data, data_size);
-  }
-  case FIFO_MODE_SPMC: {
-    return fifo_spmc_out(fifo, fifo->buf, data, data_size);
-  }
-  case FIFO_MODE_MPSC: {
-    return fifo_mpsc_out(fifo, fifo->buf, data, data_size);
-  }
-  case FIFO_MODE_MPMC: {
-    return fifo_mpmc_out(fifo, fifo->buf, data, data_size);
-  }
-  }
-  return 0;
-}
-
-static inline size_t fifo_buf_in(fifo_t *fifo, void *buf, const void *data, size_t data_size) {
-  switch (fifo->e_mode) {
-  case FIFO_MODE_SPSC: {
-    return fifo_spsc_in(fifo, buf, data, data_size);
-  }
-  case FIFO_MODE_SPMC: {
-    return fifo_spmc_in(fifo, buf, data, data_size);
-  }
-  case FIFO_MODE_MPSC: {
-    return fifo_mpsc_in(fifo, buf, data, data_size);
-  }
-  case FIFO_MODE_MPMC: {
-    return fifo_mpmc_in(fifo, buf, data, data_size);
-  }
-  }
-  return 0;
-}
-
-static inline size_t fifo_buf_out(fifo_t *fifo, void *buf, void *data, size_t data_size) {
-  switch (fifo->e_mode) {
-  case FIFO_MODE_SPSC: {
-    return fifo_spsc_out(fifo, buf, data, data_size);
-  }
-  case FIFO_MODE_SPMC: {
-    return fifo_spmc_out(fifo, buf, data, data_size);
-  }
-  case FIFO_MODE_MPSC: {
-    return fifo_mpsc_out(fifo, buf, data, data_size);
-  }
-  case FIFO_MODE_MPMC: {
-    return fifo_mpmc_out(fifo, buf, data, data_size);
-  }
-  }
-  return 0;
+  return fifo_out_buf(fifo, fifo->buf, data, data_size);
 }
 
 #endif // !FIFO_H

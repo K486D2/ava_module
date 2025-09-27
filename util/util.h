@@ -36,6 +36,25 @@
 #define __must_be_array(a)   BUILD_BUG_ON_ZERO(__same_type((a), &(a)[0]))
 #define ARRAY_SIZE(arr)      (sizeof(arr) / sizeof(arr[0]) + __must_be_array(arr))
 
+#ifndef __cplusplus
+#include <stdatomic.h>
+#define atomic_t(x) _Atomic x
+#else
+#include <atomic>
+#define atomic_t(x)                    std::atomic<x>
+#define atomic_store(a, v)             std::atomic_store(a, v)
+#define atomic_load(a)                 std::atomic_load(a)
+#define atomic_load_explicit(a, m)     std::atomic_load_explicit(a, m)
+#define atomic_store_explicit(a, v, m) std::atomic_store_explicit(a, v, m)
+#define atomic_compare_exchange_weak_explicit(a, o, n, s, f)                                       \
+  std::atomic_compare_exchange_weak_explicit(a, o, n, s, f)
+
+constexpr auto    memory_order_relaxed = std::memory_order_relaxed;
+constexpr auto    memory_order_acquire = std::memory_order_acquire;
+constexpr auto    memory_order_release = std::memory_order_release;
+constexpr auto    memory_order_acq_rel = std::memory_order_acq_rel;
+#endif
+
 #if defined(_MSC_VER)
 #include <intrin.h>
 #pragma intrinsic(_BitScanReverse64)

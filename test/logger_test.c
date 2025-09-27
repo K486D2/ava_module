@@ -30,13 +30,13 @@ void *write_thread_func(void *arg) {
                  "Thread %5u, cnt: %llu, fifo_free: %zu\n",
                  (u32)GetCurrentThreadId(),
                  cnt++,
-                 fifo_get_free(&logger.lo.fifo));
+                 fifo_free(&logger.lo.fifo));
 #else
     logger_debug(&logger,
                  "Thread %u, cnt: %llu, fifo_free: %zu\n",
                  (u32)pthread_self(),
                  cnt++,
-                 fifo_get_free(&logger.lo.fifo));
+                 fifo_free(&logger.lo.fifo));
 #endif
 
     delay_ms(1, YIELD);

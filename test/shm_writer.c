@@ -17,19 +17,19 @@ int main() {
 
   fifo_t *fifo = (fifo_t *)shm.lo.base;
   u8     *buf  = shm.lo.base + sizeof(*fifo);
-  fifo_buf_init(fifo, SHM_SIZE >> 1, FIFO_MODE_SPSC, FIFO_POLICY_REJECT);
+  fifo_init_buf(fifo, SHM_SIZE >> 1, FIFO_MODE_SPSC, FIFO_POLICY_REJECT);
 
   printf("shm_addr: 0x%p, buf_addr: 0x%p\n", shm.lo.base, buf);
 
   u32 cnt = 0;
   while (true) {
     cnt++;
-    fifo_buf_in(fifo, buf, &cnt, sizeof(u32));
-    printf("write cnt: %u, fifo in: %llu, fifo out: %llu, fifo len: %llu\n",
+    fifo_in_buf(fifo, buf, &cnt, sizeof(u32));
+    printf("write cnt: %u, fifo in: %zu, fifo out: %zu, fifo len: %zu\n",
            cnt,
            atomic_load(&fifo->in),
            atomic_load(&fifo->out),
-           fifo_get_avail(fifo));
+           fifo_avail(fifo));
   }
 
   return 0;
