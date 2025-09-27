@@ -7,20 +7,21 @@
 
 #include "module.h"
 
-#define BUF_SIZE     1024    // 必须是 2 的幂
-#define TEST_COUNT   5000000 // 每个生产者生产数量
-#define PRODUCER_NUM 1
-#define CONSUMER_NUM 1
+#define BUF_SIZE     1024
+#define TEST_COUNT   50000
+#define PRODUCER_NUM 10
+#define CONSUMER_NUM 10
 
 typedef struct {
   u64 seq;
 } packet_t;
 
-static fifo_t        fifo;
-static unsigned char buffer[BUF_SIZE];
+static fifo_t fifo;
+static u8     buf[BUF_SIZE];
 
-// ------------------------- 生产者线程 -------------------------
 void *producer(void *arg) {
+  ARG_UNUSED(arg);
+
   u64 base = (u64)(uintptr_t)arg * TEST_COUNT;
   for (u64 i = 0; i < TEST_COUNT; i++) {
     packet_t pkt = {.seq = base + i};
@@ -30,32 +31,47 @@ void *producer(void *arg) {
   return NULL;
 }
 
-// ------------------------- 消费者线程 -------------------------
 void *consumer(void *arg) {
   ARG_UNUSED(arg);
-  static atomic_ullong last_seq = 0;
-  packet_t             pkt;
-  for (;;) {
-    if (fifo_out(&fifo, &pkt, sizeof(pkt)) == sizeof(pkt)) {
-      // 检查 seq 唯一性和递增性
-      u64 expected = atomic_fetch_add_explicit(&last_seq, 1, memory_order_relaxed);
-      if (pkt.seq != expected) {
-        printf("ERROR: expected=%llu, got=%llu\n",
-               (unsigned long long)expected,
-               (unsigned long long)pkt.seq);
+
+  static atomic_size_t total_consumed = 0;
+
+  static unsigned char  *bitmap      = NULL;
+  static pthread_mutex_t bitmap_lock = PTHREAD_MUTEX_INITIALIZER;
+
+  size_t total = PRODUCER_NUM * TEST_COUNT;
+
+  if (bitmap == NULL) {
+    pthread_mutex_lock(&bitmap_lock);
+    if (bitmap == NULL) {
+      bitmap = calloc(total, 1);
+      if (!bitmap) {
+        perror("calloc");
         exit(1);
       }
-    } else {
-      // 检查是否所有生产者已完成
-      if (atomic_load_explicit(&last_seq, memory_order_relaxed) >= PRODUCER_NUM * TEST_COUNT)
-        break;
+    }
+    pthread_mutex_unlock(&bitmap_lock);
+  }
+
+  packet_t pkt;
+  while (atomic_load_explicit(&total_consumed, memory_order_relaxed) < total) {
+    if (fifo_out(&fifo, &pkt, sizeof(pkt)) == sizeof(pkt)) {
+      pthread_mutex_lock(&bitmap_lock);
+      if (bitmap[pkt.seq]) {
+        printf("ERROR: duplicate seq=%llu\n", (u64)pkt.seq);
+        exit(1);
+      }
+      bitmap[pkt.seq] = 1;
+      pthread_mutex_unlock(&bitmap_lock);
+
+      atomic_fetch_add_explicit(&total_consumed, 1, memory_order_relaxed);
     }
   }
   return NULL;
 }
 
 int main() {
-  if (fifo_init(&fifo, buffer, BUF_SIZE, FIFO_MODE_MPSC, FIFO_POLICY_REJECT) != 0) {
+  if (fifo_init(&fifo, buf, BUF_SIZE, FIFO_MODE_MPMC, FIFO_POLICY_REJECT) != 0) {
     printf("fifo_init failed\n");
     return -1;
   }
@@ -80,6 +96,6 @@ int main() {
     pthread_join(consumers[i], NULL);
 
   printf("MPMC FIFO test finished successfully. All %llu packets verified.\n",
-         (unsigned long long)(PRODUCER_NUM * TEST_COUNT));
+         (u64)(PRODUCER_NUM * TEST_COUNT));
   return 0;
 }
