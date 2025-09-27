@@ -10,7 +10,7 @@
 #define BUF_SIZE     1024
 #define TEST_COUNT   50000
 #define PRODUCER_NUM 10
-#define CONSUMER_NUM 1
+#define CONSUMER_NUM 10
 
 typedef struct {
   u64 seq;
@@ -71,7 +71,7 @@ void *consumer(void *arg) {
 }
 
 int main() {
-  if (fifo_init(&fifo, buf, BUF_SIZE, FIFO_MODE_SPSC, FIFO_POLICY_REJECT) != 0) {
+  if (fifo_init(&fifo, buf, BUF_SIZE, FIFO_MODE_MPMC, FIFO_POLICY_REJECT) != 0) {
     printf("fifo_init failed\n");
     return -1;
   }
