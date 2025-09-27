@@ -211,7 +211,6 @@ static inline size_t fifo_in_buf(fifo_t *fifo, void *buf, const void *data, size
     return fifo_spmc_in(fifo, buf, data, data_size);
   case FIFO_MODE_MPSC:
     return fifo_mpsc_in(fifo, buf, data, data_size);
-
   case FIFO_MODE_MPMC:
     return fifo_mpmc_in(fifo, buf, data, data_size);
   }
