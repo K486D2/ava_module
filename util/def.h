@@ -3,7 +3,6 @@
 
 #include "errdef.h"
 #include "mathdef.h"
-#include "timedef.h"
 #include "typedef.h"
 
 #endif // !DEF_H

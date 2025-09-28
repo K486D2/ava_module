@@ -3,7 +3,8 @@
 
 #include "benchmark.h"
 #include "def.h"
-#include "printutil.h"
+#include "printops.h"
+#include "timeops.h"
 
 #define AT(addr) __attribute__((section(addr)))
 

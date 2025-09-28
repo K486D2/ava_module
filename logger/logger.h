@@ -80,7 +80,7 @@ static inline void logger_flush(logger_t *logger) {
   DECL_LOGGER_PTRS(logger);
 
   while (!lo->busy) {
-    size_t size = fifo_out(&lo->fifo, lo->tx_buf, 0);
+    size_t size = fifo_read(&lo->fifo, lo->tx_buf, 0);
     ops->f_tx(cfg->fp, lo->tx_buf, size);
     lo->busy = cfg->e_logger_mode == LOGGER_ASYNC ? true : false;
   }
@@ -104,7 +104,7 @@ static inline void logger_write(logger_t *logger, const char *fmt, va_list args)
   if ((size_t)(size + appended) > sizeof(buf))
     appended = sizeof(buf) - size;
 
-  fifo_in(&lo->fifo, buf, size + appended);
+  fifo_write(&lo->fifo, buf, size + appended);
 }
 
 static inline void logger_data(logger_t *logger, const char *fmt, ...) {

@@ -24,11 +24,11 @@ int main() {
   u32 cnt = 0;
   while (true) {
     cnt++;
-    fifo_in_buf(fifo, buf, &cnt, sizeof(u32));
+    fifo_write_buf(fifo, buf, &cnt, sizeof(u32));
     printf("write cnt: %u, fifo in: %zu, fifo out: %zu, fifo len: %zu\n",
            cnt,
-           atomic_load(&fifo->in),
-           atomic_load(&fifo->out),
+           atomic_load(&fifo->tail),
+           atomic_load(&fifo->head),
            fifo_avail(fifo));
   }
 

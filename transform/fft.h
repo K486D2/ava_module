@@ -154,7 +154,7 @@ static inline void fft_destroy(fft_t *fft) {
 static inline void fft_exec_in(fft_t *fft, f32 val) {
   DECL_FFT_PTRS(fft);
 
-  if (fifo_in(&lo->fifo, &val, sizeof(val)) == 0)
+  if (fifo_write(&lo->fifo, &val, sizeof(val)) == 0)
     lo->neet_exec = true;
 }
 

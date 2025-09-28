@@ -22,11 +22,11 @@ int main() {
 
   u32 cnt = 0;
   while (true) {
-    fifo_out_buf(fifo, buf, &cnt, sizeof(u32));
+    fifo_read_buf(fifo, buf, &cnt, sizeof(u32));
     printf("read cnt: %u, fifo in: %zu, fifo out: %zu, fifo len: %zu\n",
            cnt,
-           atomic_load(&fifo->in),
-           atomic_load(&fifo->out),
+           atomic_load(&fifo->tail),
+           atomic_load(&fifo->head),
            fifo_avail(fifo));
   }
 

@@ -32,7 +32,7 @@ void *producer(void *arg) {
   u64 base = (u64)(uintptr_t)arg * TEST_COUNT;
   for (u64 i = 0; i < TEST_COUNT; i++) {
     packet_t pkt = {.seq = base + i};
-    while (fifo_in(&fifo, &pkt, sizeof(pkt)) != sizeof(pkt))
+    while (fifo_write(&fifo, &pkt, sizeof(pkt)) != sizeof(pkt))
       ;
   }
   return NULL;
@@ -62,7 +62,7 @@ void *consumer(void *arg) {
 
   packet_t pkt;
   while (atomic_load_explicit(&total_consumed, memory_order_relaxed) < total) {
-    if (fifo_out(&fifo, &pkt, sizeof(pkt)) == sizeof(pkt)) {
+    if (fifo_read(&fifo, &pkt, sizeof(pkt)) == sizeof(pkt)) {
       pthread_mutex_lock(&bitmap_lock);
       if (bitmap[pkt.seq]) {
         printf("ERROR: duplicate seq=%llu\n", pkt.seq);
