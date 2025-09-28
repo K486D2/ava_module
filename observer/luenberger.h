@@ -1,8 +1,8 @@
 #ifndef LUENBERGER_H
 #define LUENBERGER_H
 
-#include "../filter/pll.h"
-#include "../util/util.h"
+#include "filter/pll.h"
+#include "util/util.h"
 
 typedef struct {
   f32         fs;

@@ -10,9 +10,9 @@
 
 #include <string.h>
 
-#include "../container/fifo.h"
-#include "../util/mathdef.h"
-#include "../util/util.h"
+#include "container/fifo.h"
+#include "util/mathdef.h"
+#include "util/util.h"
 
 typedef enum {
   FFT_POINT_32      = 32,
@@ -98,8 +98,7 @@ static inline void fft_init(fft_t *fft, fft_cfg_t fft_cfg) {
 
   *cfg = fft_cfg;
 
-  fifo_init(
-      &lo->fifo, cfg->fifo_buf, cfg->point_num * sizeof(f32), FIFO_MODE_SPSC, FIFO_POLICY_REJECT);
+  fifo_init(&lo->fifo, cfg->fifo_buf, cfg->point_num * sizeof(f32), FIFO_POLICY_REJECT);
 
   in->buf      = cfg->in_buf;
   lo->buf      = cfg->out_buf;

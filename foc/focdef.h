@@ -1,11 +1,11 @@
 #ifndef FOCDEF_H
 #define FOCDEF_H
 
-#include "../controller/controller.h"
-#include "../filter/filter.h"
-#include "../observer/observer.h"
-#include "../transform/transform.h"
-#include "../util/util.h"
+#include "controller/controller.h"
+#include "filter/filter.h"
+#include "observer/observer.h"
+#include "transform/transform.h"
+#include "util/util.h"
 
 typedef struct {
   i32_uvw_t i32_i_uvw;

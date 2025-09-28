@@ -1,7 +1,7 @@
 #ifndef CLARKEPARK_H
 #define CLARKEPARK_H
 
-#include "../util/def.h"
+#include "util/def.h"
 
 // clang-format off
 /**

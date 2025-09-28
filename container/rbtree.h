@@ -3,7 +3,7 @@
 
 #include <stddef.h>
 
-#include "../util/typedef.h"
+#include "util/typedef.h"
 
 typedef enum {
   RB_RED   = 0,

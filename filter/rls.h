@@ -1,7 +1,7 @@
 #ifndef RLS_H
 #define RLS_H
 
-#include "../util/util.h"
+#include "util/util.h"
 
 #define MAX_ORDER 8
 

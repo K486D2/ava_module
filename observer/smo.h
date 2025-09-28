@@ -1,8 +1,8 @@
 #ifndef SMO_H
 #define SMO_H
 
-#include "../filter/pll.h"
-#include "../util/util.h"
+#include "filter/pll.h"
+#include "util/util.h"
 
 typedef struct {
   f32         fs;

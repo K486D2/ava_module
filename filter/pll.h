@@ -1,8 +1,8 @@
 #ifndef PLL_H
 #define PLL_H
 
-#include "../util/mathdef.h"
-#include "../util/util.h"
+#include "util/mathdef.h"
+#include "util/util.h"
 
 typedef struct {
   f32 fs;

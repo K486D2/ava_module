@@ -1,11 +1,11 @@
 #ifndef HFI_H
 #define HFI_H
 
-#include "../filter/iir.h"
-#include "../filter/pll.h"
-#include "../transform/clarkepark.h"
-#include "../util/def.h"
-#include "../util/util.h"
+#include "filter/iir.h"
+#include "filter/pll.h"
+#include "transform/clarkepark.h"
+#include "util/def.h"
+#include "util/util.h"
 
 typedef struct {
   f32 fs;

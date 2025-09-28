@@ -10,8 +10,8 @@
 #include <windows.h>
 #endif
 
-#include "../container/fifo.h"
-#include "../util/util.h"
+#include "container/fifo.h"
+#include "util/util.h"
 
 #define SHM_SIZE 1024
 

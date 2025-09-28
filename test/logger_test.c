@@ -8,8 +8,8 @@
 
 logger_t logger;
 
-u8           LOGGER_TX_BUF[128];
-fifo_block_t LOGGER_FIFO_BUF[FIFO_MAX_BLOCKS];
+u8 LOGGER_TX_BUF[128];
+u8 LOGGER_FIFO_BUF[1 * 1024];
 
 static inline void logger_stdout(void *fp, const u8 *data, size_t size) {
   fwrite(data, size, 1, fp);
@@ -51,7 +51,6 @@ int main() {
   logger_cfg_t logger_cfg = {
       .e_logger_mode  = LOGGER_SYNC,
       .e_logger_level = LOGGER_LEVEL_DEBUG,
-      .e_fifo_mode    = FIFO_MODE_MPMC,
       .e_fifo_policy  = FIFO_POLICY_REJECT,
       .end_sign       = '\n',
       .fp             = stdout,

@@ -23,7 +23,6 @@ typedef enum {
 typedef struct {
   logger_mode_e  e_logger_mode;
   logger_level_e e_logger_level;
-  fifo_mode_e    e_fifo_mode;
   fifo_policy_e  e_fifo_policy;
   char           end_sign;
   const char    *prefix;
@@ -73,7 +72,7 @@ static inline void logger_init(logger_t *logger, logger_cfg_t logger_cfg) {
   lo->tx_buf   = cfg->tx_buf;
   lo->fifo_buf = cfg->fifo_buf;
 
-  fifo_init(&lo->fifo, lo->fifo_buf, cfg->fifo_buf_cap, cfg->e_fifo_mode, cfg->e_fifo_policy);
+  fifo_init(&lo->fifo, lo->fifo_buf, cfg->fifo_buf_cap, cfg->e_fifo_policy);
 }
 
 static inline void logger_flush(logger_t *logger) {

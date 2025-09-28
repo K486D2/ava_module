@@ -171,16 +171,16 @@ cleanup:
   return ret;
 }
 
-static inline int net_send(net_ch_t *ch, void *txbuf, u32 size) {
+static inline int net_send(net_ch_t *ch, void *tx_buf, u32 size) {
 #ifdef __linux__
-  int ret = send(ch->sock, txbuf, size, 0);
+  int ret = send(ch->sock, tx_buf, size, 0);
 #elif defined(_WIN32)
-  int ret = send(ch->sock, (const char *)txbuf, size, 0);
+  int ret = send(ch->sock, (const char *)tx_buf, size, 0);
 #endif
   return ret;
 }
 
-static inline int net_recv_yield(net_ch_t *ch, void *rxbuf, u32 size, u32 timeout_ms) {
+static inline int net_recv_yield(net_ch_t *ch, void *rx_buf, u32 size, u32 timeout_ms) {
   struct timeval tv = {
       .tv_sec  = (i32)timeout_ms / 1000,                      // 秒
       .tv_usec = (i32)(timeout_ms - tv.tv_sec * 1000) * 1000, // 微秒
@@ -188,22 +188,22 @@ static inline int net_recv_yield(net_ch_t *ch, void *rxbuf, u32 size, u32 timeou
 
 #ifdef __linux__
   setsockopt(ch->sock, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
-  int ret = recv(ch->sock, rxbuf, size, 0);
+  int ret = recv(ch->sock, rx_buf, size, 0);
 #elif defined(_WIN32)
   setsockopt(ch->sock, SOL_SOCKET, SO_RCVTIMEO, (const char *)&tv, sizeof(tv));
-  int ret = recv(ch->sock, (char *)rxbuf, size, 0);
+  int ret = recv(ch->sock, (char *)rx_buf, size, 0);
 #endif
   return ret;
 }
 
-static inline int net_recv_spin(net_ch_t *ch, void *rxbuf, u32 size, u32 timeout_ms) {
+static inline int net_recv_spin(net_ch_t *ch, void *rx_buf, u32 size, u32 timeout_ms) {
   u64 start_ts_ns = get_mono_ts_ns();
   u64 curr_ts_ns  = 0;
   while (curr_ts_ns < start_ts_ns + (u64)(timeout_ms * 1e6)) {
 #ifdef __linux__
-    int ret = recv(ch->sock, rxbuf, size, 0);
+    int ret = recv(ch->sock, rx_buf, size, 0);
 #elif defined(_WIN32)
-    int ret = recv(ch->sock, (char *)rxbuf, size, 0);
+    int ret = recv(ch->sock, (char *)rx_buf, size, 0);
 #endif
     if (ret > 0)
       return ret;
@@ -212,14 +212,14 @@ static inline int net_recv_spin(net_ch_t *ch, void *rxbuf, u32 size, u32 timeout
   return -METIMEOUT;
 }
 
-static inline int net_recv(net_ch_t *ch, void *rxbuf, u32 size, u32 timeout_ms) {
+static inline int net_recv(net_ch_t *ch, void *rx_buf, u32 size, u32 timeout_ms) {
   int ret;
   switch (ch->recv_mode) {
   case NET_RECV_YIELD:
-    ret = net_recv_yield(ch, rxbuf, size, timeout_ms);
+    ret = net_recv_yield(ch, rx_buf, size, timeout_ms);
     break;
   case NET_RECV_SPIN:
-    ret = net_recv_spin(ch, rxbuf, size, timeout_ms);
+    ret = net_recv_spin(ch, rx_buf, size, timeout_ms);
     break;
   default:
     return -MEINVAL;
@@ -228,14 +228,14 @@ static inline int net_recv(net_ch_t *ch, void *rxbuf, u32 size, u32 timeout_ms) 
 }
 
 static inline int
-net_send_recv(net_ch_t *ch, void *txbuf, u32 tx_size, void *rxbuf, u32 rx_size, u32 timeout_ms) {
+net_send_recv(net_ch_t *ch, void *tx_buf, u32 tx_size, void *rx_buf, u32 rx_size, u32 timeout_ms) {
   int ret;
 
-  ret = net_send(ch, txbuf, tx_size);
+  ret = net_send(ch, tx_buf, tx_size);
   if (ret <= 0)
     return ret;
 
-  ret = net_recv(ch, rxbuf, rx_size, timeout_ms);
+  ret = net_recv(ch, rx_buf, rx_size, timeout_ms);
   return ret;
 }
 
@@ -246,7 +246,7 @@ typedef struct {
 
 // static inline int net_broadcast(const char      *remote_ip,
 //                                 u16              remote_port,
-//                                 const u8        *txbuf,
+//                                 const u8        *tx_buf,
 //                                 u32              size,
 //                                 net_broadcast_t *resp,
 //                                 u32              timeout_ms) {

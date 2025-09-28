@@ -1,7 +1,7 @@
 #ifndef PID_H
 #define PID_H
 
-#include "../util/util.h"
+#include "util/util.h"
 
 typedef struct {
   f32 fs;

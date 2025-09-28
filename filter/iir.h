@@ -1,8 +1,8 @@
 #ifndef IIR_H
 #define IIR_H
 
-#include "../util/errdef.h"
-#include "../util/util.h"
+#include "util/errdef.h"
+#include "util/util.h"
 
 typedef enum {
   IIR_1 = 1,

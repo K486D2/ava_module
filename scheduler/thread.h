@@ -3,7 +3,7 @@
 
 #include <stdio.h>
 
-#include "../util/typedef.h"
+#include "util/typedef.h"
 
 struct sched;
 static inline i32 sched_exec(struct sched *sched);

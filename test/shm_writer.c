@@ -17,7 +17,7 @@ int main() {
 
   fifo_t *fifo = (fifo_t *)shm.lo.base;
   u8     *buf  = shm.lo.base + sizeof(*fifo);
-  fifo_init_buf(fifo, SHM_SIZE >> 1, FIFO_MODE_SPSC, FIFO_POLICY_REJECT);
+  fifo_init_buf(fifo, SHM_SIZE >> 1, FIFO_POLICY_REJECT);
 
   printf("shm_addr: 0x%p, buf_addr: 0x%p\n", shm.lo.base, buf);
 
@@ -25,11 +25,11 @@ int main() {
   while (true) {
     cnt++;
     fifo_write_buf(fifo, buf, &cnt, sizeof(u32));
-    printf("write cnt: %u, fifo in: %zu, fifo out: %zu, fifo len: %zu\n",
+    printf("write cnt: %u, fifo wp: %zu, fifo rp: %zu, fifo free: %zu\n",
            cnt,
-           atomic_load(&fifo->tail),
-           atomic_load(&fifo->head),
-           fifo_avail(fifo));
+           atomic_load(&fifo->wp),
+           atomic_load(&fifo->rp),
+           fifo_free(fifo));
   }
 
   return 0;

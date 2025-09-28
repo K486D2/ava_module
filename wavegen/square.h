@@ -1,8 +1,8 @@
 #ifndef SQUARE_H
 #define SQUARE_H
 
-#include "../util/def.h"
-#include "../util/util.h"
+#include "util/def.h"
+#include "util/util.h"
 
 typedef struct {
   f32 fs;

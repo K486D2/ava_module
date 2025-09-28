@@ -3,8 +3,8 @@
 
 #include "thread.h"
 
-#include "../container/rbtree.h"
-#include "../util/util.h"
+#include "container/rbtree.h"
+#include "util/util.h"
 
 #ifndef SCHED_TASK_MAX
 #define SCHED_TASK_MAX 16
