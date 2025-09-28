@@ -1,7 +1,7 @@
 #ifndef LIST_H
 #define LIST_H
 
-#include "../util/typedef.h"
+#include "util/typedef.h"
 
 #define LIST_POISON1 NULL
 #define LIST_POISON2 NULL
