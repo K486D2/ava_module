@@ -8,7 +8,7 @@
 typedef enum {
   RB_RED   = 0,
   RB_BLACK = 1,
-} rb_color_t;
+} rb_color_e;
 
 typedef struct rb_node {
   u64             __rb_parent_color;
@@ -36,11 +36,11 @@ static inline void rb_set_parent(rb_node_t *rb, rb_node_t *p) {
   rb->__rb_parent_color = (u64)p | (rb->__rb_parent_color & 3);
 }
 
-static inline rb_color_t rb_color(const rb_node_t *rb) {
-  return (rb_color_t)(rb->__rb_parent_color & 1);
+static inline rb_color_e rb_color(const rb_node_t *rb) {
+  return (rb_color_e)(rb->__rb_parent_color & 1);
 }
 
-static inline void rb_set_color(rb_node_t *rb, rb_color_t color) {
+static inline void rb_set_color(rb_node_t *rb, rb_color_e color) {
   rb->__rb_parent_color = (rb->__rb_parent_color & ~1) | color;
 }
 
@@ -242,7 +242,7 @@ static inline void __rb_erase_color(rb_node_t *node, rb_node_t *parent, rb_root_
 
 static inline void rb_erase(rb_node_t *node, rb_root_t *root) {
   rb_node_t *child, *parent;
-  rb_color_t color;
+  rb_color_e color;
 
   if (!node->rb_left) {
     child = node->rb_right;
