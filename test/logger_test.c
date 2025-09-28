@@ -34,7 +34,7 @@ void *write_thread_func(void *arg) {
                  fifo_free(&logger.lo.fifo));
 #else
     logger_debug(&logger,
-                 "Thread %u, cnt: %llu, fifo_free: %zu\n",
+                 "Thread %10u, cnt: %llu, fifo_free: %zu\n",
                  (u32)pthread_self(),
                  cnt++,
                  fifo_free(&logger.lo.fifo));
