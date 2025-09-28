@@ -27,13 +27,14 @@ typedef struct {
   char           end_sign;
   const char    *prefix;
   void          *fp;
-  u8            *fifo_buf, *tx_buf;
+  void          *fifo_buf;
+  u8            *tx_buf;
   size_t         fifo_buf_cap, tx_buf_cap;
 } logger_cfg_t;
 
 typedef struct {
   fifo_t fifo;
-  u8    *fifo_buf;
+  void  *fifo_buf;
   u8    *tx_buf;
   bool   busy;
 } logger_lo_t;
@@ -69,8 +70,8 @@ static inline void logger_init(logger_t *logger, logger_cfg_t logger_cfg) {
 
   *cfg = logger_cfg;
 
-  lo->tx_buf   = cfg->tx_buf;
   lo->fifo_buf = cfg->fifo_buf;
+  lo->tx_buf   = cfg->tx_buf;
 
   fifo_init(&lo->fifo, lo->fifo_buf, cfg->fifo_buf_cap, cfg->e_fifo_policy);
 }

@@ -15,10 +15,10 @@ typedef enum {
 
 typedef struct {
   fifo_policy_e e_policy; // 写入数据超过剩余空间时的处理策略
-  void  *buf;             // 缓冲区
-  size_t cap;             // 缓冲区容量(2^n)
-  atomic_t(size_t) rp;  // 读取位置
-  atomic_t(size_t) wp;  // 写入位置
+  void         *buf;      // 缓冲区
+  size_t        cap;      // 缓冲区容量(2^n)
+  atomic_t(size_t) rp;    // 读取位置
+  atomic_t(size_t) wp;    // 写入位置
 } fifo_t;
 
 static inline int    fifo_init(fifo_t *fifo, void *buf, size_t cap, fifo_policy_e e_policy);
@@ -109,7 +109,6 @@ static inline size_t fifo_read(fifo_t *fifo, void *data, size_t size) {
 }
 
 static inline size_t fifo_write_buf(fifo_t *fifo, void *buf, const void *data, size_t size) {
-  size_t mask = fifo->cap - 1;
   size_t wp = atomic_load_explicit(&fifo->wp, memory_order_relaxed);
   size_t rp = atomic_load_explicit(&fifo->rp, memory_order_acquire);
 
@@ -117,6 +116,7 @@ static inline size_t fifo_write_buf(fifo_t *fifo, void *buf, const void *data, s
   if (size == 0)
     return 0;
 
+  size_t mask   = fifo->cap - 1;
   size_t offset = wp & mask;
   size_t first  = MIN(size, fifo->cap - offset);
   memcpy((u8 *)buf + offset, data, first);
@@ -127,7 +127,6 @@ static inline size_t fifo_write_buf(fifo_t *fifo, void *buf, const void *data, s
 }
 
 static inline size_t fifo_read_buf(fifo_t *fifo, void *buf, void *data, size_t size) {
-  size_t mask = fifo->cap - 1;
   size_t rp = atomic_load_explicit(&fifo->rp, memory_order_relaxed);
   size_t wp = atomic_load_explicit(&fifo->wp, memory_order_acquire);
 
@@ -137,6 +136,7 @@ static inline size_t fifo_read_buf(fifo_t *fifo, void *buf, void *data, size_t s
   if (size == 0)
     return 0;
 
+  size_t mask   = fifo->cap - 1;
   size_t offset = rp & mask;
   size_t first  = MIN(size, fifo->cap - offset);
   memcpy(data, (u8 *)buf + offset, first);
