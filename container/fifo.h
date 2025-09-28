@@ -3,8 +3,9 @@
 
 #include <string.h>
 
-#include "../util/mathdef.h"
-#include "../util/typedef.h"
+#include "container/list.h"
+#include "util/mathdef.h"
+#include "util/typedef.h"
 
 typedef enum {
   FIFO_MODE_SPSC, // 单生产者单消费者
@@ -21,48 +22,53 @@ typedef enum {
 } fifo_policy_e;
 
 /* only MP/MC */
-#ifndef FIFO_NODE_SIZE
-#define FIFO_NODE_SIZE 1024
-#endif
+#define FIFO_MAX_BLOCKS 10   // 最多10个块
+#define FIFO_BLOCK_SIZE 1024 // 每个块的大小
+
 typedef struct {
-  atomic_t(size_t) seq;
-  u8 data[FIFO_NODE_SIZE];
-  atomic_t(size_t) size;
-} fifo_node_t;
+  list_head_t node;                  // 链表节点
+  size_t      head;                  // 当前块的读取指针
+  size_t      tail;                  // 当前块的写入指针
+  u8          data[FIFO_BLOCK_SIZE]; // 数据区
+} fifo_block_t;
 
 typedef struct {
   fifo_mode_e   e_mode;   // 模式
   fifo_policy_e e_policy; // 写入数据超过剩余空间时的处理策略
-  void         *buf;      // 缓冲区
-  size_t        cap;      // 缓冲区容量(2^n)
-  atomic_t(size_t) tail;  // 写入位置
   atomic_t(size_t) head;  // 读取位置
+  atomic_t(size_t) tail;  // 写入位置
+  void       *buf;        // 缓冲区
+  size_t      cap;        // 缓冲区容量(2^n)
+  list_head_t block_list; // 块链表
+  bool        block_free[FIFO_MAX_BLOCKS];
 } fifo_t;
 
 static inline int
 fifo_init(fifo_t *fifo, void *buf, size_t cap, fifo_mode_e e_mode, fifo_policy_e e_policy);
 static inline int
 fifo_init_buf(fifo_t *fifo, size_t cap, fifo_mode_e e_mode, fifo_policy_e e_policy);
-static inline void   fifo_reset(fifo_t *fifo);
-static inline bool   fifo_empty(fifo_t *fifo);
-static inline bool   fifo_full(fifo_t *fifo);
-static inline size_t fifo_avail(fifo_t *fifo);
-static inline size_t fifo_free(fifo_t *fifo);
-static inline size_t fifo_policy(fifo_t *fifo, size_t tail, size_t head, size_t data_size);
+static inline void          fifo_reset(fifo_t *fifo);
+static inline bool          fifo_empty(fifo_t *fifo);
+static inline bool          fifo_full(fifo_t *fifo);
+static inline size_t        fifo_avail(fifo_t *fifo);
+static inline size_t        fifo_free(fifo_t *fifo);
+static inline fifo_block_t *fifo_get_block(fifo_t *fifo);
+static inline void          fifo_release_block(fifo_t *fifo, fifo_block_t *block);
+static inline size_t        fifo_policy(fifo_t *fifo, size_t tail, size_t head, size_t data_size);
 
 static inline size_t fifo_write(fifo_t *fifo, const void *data, size_t data_size);
 static inline size_t fifo_read(fifo_t *fifo, void *data, size_t data_size);
 static inline size_t fifo_write_buf(fifo_t *fifo, void *buf, const void *data, size_t data_size);
 static inline size_t fifo_read_buf(fifo_t *fifo, void *buf, void *data, size_t data_size);
 
-static inline size_t fifo_spsc_read(fifo_t *fifo, void *buf, const void *data, size_t data_size);
-static inline size_t fifo_spsc_write(fifo_t *fifo, void *buf, void *data, size_t data_size);
-static inline size_t fifo_mpsc_read(fifo_t *fifo, void *buf, const void *data, size_t data_size);
-static inline size_t fifo_mpsc_write(fifo_t *fifo, void *buf, void *data);
-static inline size_t fifo_spmc_read(fifo_t *fifo, void *buf, const void *data, size_t data_size);
-static inline size_t fifo_spmc_write(fifo_t *fifo, void *buf, void *data);
-static inline size_t fifo_mpmc_read(fifo_t *fifo, void *buf, const void *data, size_t data_size);
-static inline size_t fifo_mpmc_write(fifo_t *fifo, void *buf, void *data);
+static inline size_t fifo_spsc_write(fifo_t *fifo, void *buf, const void *data, size_t data_size);
+static inline size_t fifo_spsc_read(fifo_t *fifo, void *buf, void *data, size_t data_size);
+static inline size_t fifo_mpsc_write(fifo_t *fifo, void *buf, const void *data, size_t data_size);
+static inline size_t fifo_mpsc_read(fifo_t *fifo, void *buf, void *data);
+static inline size_t fifo_spmc_write(fifo_t *fifo, void *buf, const void *data, size_t data_size);
+static inline size_t fifo_spmc_read(fifo_t *fifo, void *buf, void *data);
+static inline size_t fifo_mpmc_write(fifo_t *fifo, void *buf, const void *data, size_t data_size);
+static inline size_t fifo_mpmc_read(fifo_t *fifo, void *buf, void *data, size_t data_size);
 
 /* -------------------------------------------------------------------------- */
 /*                                     API                                    */
@@ -75,22 +81,29 @@ fifo_init(fifo_t *fifo, void *buf, size_t cap, fifo_mode_e e_mode, fifo_policy_e
     return ret;
 
   fifo->buf = buf;
-  for (size_t i = 0; i < cap; i++)
-    atomic_store(&((fifo_node_t *)buf)[i].seq, i);
+
+  fifo_block_t *first_block = fifo_get_block(fifo);
+  if (!first_block)
+    return -1;
+  list_init(&fifo->block_list);
+  list_add(&first_block->node, &fifo->block_list);
 
   return 0;
 }
 
 static inline int
 fifo_init_buf(fifo_t *fifo, size_t cap, fifo_mode_e e_mode, fifo_policy_e e_policy) {
-  if (!IS_POWER_OF_2(cap))
-    return -1;
+  // if (!IS_POWER_OF_2(cap))
+  //   return -1;
 
   fifo->e_mode   = e_mode;
   fifo->e_policy = e_policy;
   fifo->cap      = cap;
   atomic_store(&fifo->tail, 0);
   atomic_store(&fifo->head, 0);
+
+  for (size_t i = 0; i < cap; i++)
+    fifo->block_free[i] = true;
 
   return 0;
 }
@@ -114,6 +127,22 @@ static inline size_t fifo_avail(fifo_t *fifo) {
 
 static inline size_t fifo_free(fifo_t *fifo) {
   return fifo->cap - fifo_avail(fifo);
+}
+
+static inline fifo_block_t *fifo_get_block(fifo_t *fifo) {
+  for (size_t i = 0; i < fifo->cap; ++i) {
+    if (fifo->block_free[i]) {
+      fifo->block_free[i] = false;
+      return &((fifo_block_t *)fifo->buf)[i];
+    }
+  }
+  return NULL;
+}
+
+static inline void fifo_release_block(fifo_t *fifo, fifo_block_t *block) {
+  size_t idx = block - (fifo_block_t *)fifo->buf;
+  if (idx < fifo->cap)
+    fifo->block_free[idx] = true;
 }
 
 static inline size_t fifo_policy(fifo_t *fifo, size_t tail, size_t head, size_t data_size) {
@@ -148,13 +177,13 @@ static inline size_t fifo_read(fifo_t *fifo, void *data, size_t data_size) {
 static inline size_t fifo_write_buf(fifo_t *fifo, void *buf, const void *data, size_t data_size) {
   switch (fifo->e_mode) {
   case FIFO_MODE_SPSC:
-    return fifo_spsc_read(fifo, buf, data, data_size);
+    return fifo_spsc_write(fifo, buf, data, data_size);
   case FIFO_MODE_SPMC:
-    return fifo_spmc_read(fifo, buf, data, data_size);
+    return fifo_spmc_write(fifo, buf, data, data_size);
   case FIFO_MODE_MPSC:
-    return fifo_mpsc_read(fifo, buf, data, data_size);
+    return fifo_mpsc_write(fifo, buf, data, data_size);
   case FIFO_MODE_MPMC:
-    return fifo_mpmc_read(fifo, buf, data, data_size);
+    return fifo_mpmc_write(fifo, buf, data, data_size);
   }
   return 0;
 }
@@ -162,13 +191,13 @@ static inline size_t fifo_write_buf(fifo_t *fifo, void *buf, const void *data, s
 static inline size_t fifo_read_buf(fifo_t *fifo, void *buf, void *data, size_t data_size) {
   switch (fifo->e_mode) {
   case FIFO_MODE_SPSC:
-    return fifo_spsc_write(fifo, buf, data, data_size);
+    return fifo_spsc_read(fifo, buf, data, data_size);
   case FIFO_MODE_SPMC:
-    return fifo_spmc_write(fifo, buf, data);
+    return fifo_spmc_read(fifo, buf, data);
   case FIFO_MODE_MPSC:
-    return fifo_mpsc_write(fifo, buf, data);
+    return fifo_mpsc_read(fifo, buf, data);
   case FIFO_MODE_MPMC:
-    return fifo_mpmc_write(fifo, buf, data);
+    return fifo_mpmc_read(fifo, buf, data, data_size);
   }
   return 0;
 }
@@ -177,7 +206,7 @@ static inline size_t fifo_read_buf(fifo_t *fifo, void *buf, void *data, size_t d
 /*                                    SPSC                                    */
 /* -------------------------------------------------------------------------- */
 
-static inline size_t fifo_spsc_read(fifo_t *fifo, void *buf, const void *data, size_t data_size) {
+static inline size_t fifo_spsc_write(fifo_t *fifo, void *buf, const void *data, size_t data_size) {
   size_t mask = fifo->cap - 1;
   size_t tail = atomic_load_explicit(&fifo->tail, memory_order_relaxed);
   size_t head = atomic_load_explicit(&fifo->head, memory_order_acquire);
@@ -195,7 +224,7 @@ static inline size_t fifo_spsc_read(fifo_t *fifo, void *buf, const void *data, s
   return data_size;
 }
 
-static inline size_t fifo_spsc_write(fifo_t *fifo, void *buf, void *data, size_t data_size) {
+static inline size_t fifo_spsc_read(fifo_t *fifo, void *buf, void *data, size_t data_size) {
   size_t mask = fifo->cap - 1;
   size_t head = atomic_load_explicit(&fifo->head, memory_order_relaxed);
   size_t tail = atomic_load_explicit(&fifo->tail, memory_order_acquire);
@@ -219,139 +248,85 @@ static inline size_t fifo_spsc_write(fifo_t *fifo, void *buf, void *data, size_t
 /*                                    SPMC                                    */
 /* -------------------------------------------------------------------------- */
 
-static inline size_t fifo_spmc_read(fifo_t *fifo, void *buf, const void *data, size_t data_size) {
-  size_t       mask = fifo->cap - 1;
-  size_t       tail = atomic_load_explicit(&fifo->tail, memory_order_relaxed);
-  fifo_node_t *node = &((fifo_node_t *)buf)[tail & mask];
-  size_t       seq  = atomic_load_explicit(&node->seq, memory_order_acquire);
-  intptr_t     diff = (intptr_t)seq - (intptr_t)tail;
-
-  if (diff != 0)
-    return 0;
-
-  memcpy(node->data, data, data_size);
-  atomic_store_explicit(&node->size, data_size, memory_order_release);
-
-  atomic_store_explicit(&node->seq, tail + 1, memory_order_release);
-  atomic_store_explicit(&fifo->tail, tail + 1, memory_order_release);
-  return data_size;
+static inline size_t fifo_spmc_write(fifo_t *fifo, void *buf, const void *data, size_t data_size) {
 }
 
-static inline size_t fifo_spmc_write(fifo_t *fifo, void *buf, void *data) {
-  size_t mask = fifo->cap - 1;
-  while (true) {
-    size_t       head = atomic_load_explicit(&fifo->head, memory_order_relaxed);
-    fifo_node_t *node = &((fifo_node_t *)buf)[head & mask];
-    size_t       seq  = atomic_load_explicit(&node->seq, memory_order_acquire);
-    intptr_t     diff = (intptr_t)seq - (intptr_t)(head + 1);
-
-    if (diff < 0)
-      return 0;
-    if (diff > 0)
-      continue;
-
-    if (atomic_compare_exchange_weak_explicit(
-            &fifo->head, &head, head + 1, memory_order_acq_rel, memory_order_relaxed)) {
-      size_t copy_size = atomic_load_explicit(&node->size, memory_order_acquire);
-      memcpy(data, node->data, copy_size);
-      atomic_store_explicit(&node->seq, head + fifo->cap, memory_order_release);
-      return copy_size;
-    }
-  }
+static inline size_t fifo_spmc_read(fifo_t *fifo, void *buf, void *data) {
 }
 
 /* -------------------------------------------------------------------------- */
 /*                                    MPSC                                    */
 /* -------------------------------------------------------------------------- */
 
-static inline size_t fifo_mpsc_read(fifo_t *fifo, void *buf, const void *data, size_t data_size) {
-  size_t mask = fifo->cap - 1;
-  while (true) {
-    size_t       tail = atomic_load_explicit(&fifo->tail, memory_order_relaxed);
-    fifo_node_t *node = &((fifo_node_t *)buf)[tail & mask];
-    size_t       seq  = atomic_load_explicit(&node->seq, memory_order_acquire);
-    intptr_t     diff = (intptr_t)seq - (intptr_t)tail;
-
-    if (diff < 0)
-      return 0;
-    if (diff > 0)
-      continue;
-
-    if (atomic_compare_exchange_weak_explicit(
-            &fifo->tail, &tail, tail + 1, memory_order_acq_rel, memory_order_relaxed)) {
-      memcpy(node->data, data, data_size);
-      atomic_store_explicit(&node->size, data_size, memory_order_release);
-      atomic_store_explicit(&node->seq, tail + 1, memory_order_release);
-      return data_size;
-    }
-  }
+static inline size_t fifo_mpsc_write(fifo_t *fifo, void *buf, const void *data, size_t data_size) {
 }
 
-static inline size_t fifo_mpsc_write(fifo_t *fifo, void *buf, void *data) {
-  size_t       mask = fifo->cap - 1;
-  size_t       head = atomic_load_explicit(&fifo->head, memory_order_relaxed);
-  fifo_node_t *node = &((fifo_node_t *)buf)[head & mask];
-  size_t       seq  = atomic_load_explicit(&node->seq, memory_order_acquire);
-  intptr_t     diff = (intptr_t)seq - (intptr_t)(head + 1);
-
-  if (diff != 0)
-    return 0;
-
-  ssize_t copy_size = atomic_load_explicit(&node->size, memory_order_acquire);
-  memcpy(data, node->data, copy_size);
-  atomic_store_explicit(&node->seq, head + fifo->cap, memory_order_release);
-  atomic_store_explicit(&fifo->head, head + 1, memory_order_release);
-  return copy_size;
+static inline size_t fifo_mpsc_read(fifo_t *fifo, void *buf, void *data) {
 }
 
 /* -------------------------------------------------------------------------- */
 /*                                    MPMC                                    */
 /* -------------------------------------------------------------------------- */
 
-static inline size_t fifo_mpmc_read(fifo_t *fifo, void *buf, const void *data, size_t data_size) {
-  size_t mask = fifo->cap - 1;
-  while (true) {
-    size_t       tail = atomic_load_explicit(&fifo->tail, memory_order_relaxed);
-    fifo_node_t *node = &((fifo_node_t *)buf)[tail & mask];
-    size_t       seq  = atomic_load_explicit(&node->seq, memory_order_acquire);
-    intptr_t     diff = (intptr_t)seq - (intptr_t)tail;
+static inline size_t fifo_mpmc_write(fifo_t *fifo, void *buf, const void *data, size_t data_size) {
+  size_t written = 0;
 
-    if (diff < 0)
-      return 0;
-    if (diff > 0)
-      continue;
+  // 获取队列中的第一个块
+  fifo_block_t *block = list_first_entry(&fifo->block_list, fifo_block_t, node);
 
-    if (atomic_compare_exchange_weak_explicit(
-            &fifo->tail, &tail, tail + 1, memory_order_acq_rel, memory_order_relaxed)) {
-      memcpy(node->data, data, data_size);
-      atomic_store_explicit(&node->size, data_size, memory_order_release);
-      atomic_store_explicit(&node->seq, tail + 1, memory_order_release);
-      return data_size;
+  while (data_size > 0) {
+    size_t avail    = sizeof(block->data) - block->tail;
+    size_t to_write = MIN(avail, data_size);
+
+    // 写入数据
+    memcpy(block->data + block->tail, data + written, to_write);
+    block->tail += to_write;
+    written += to_write;
+    data_size -= to_write;
+
+    // 如果块写满了，分配一个新块
+    if (block->tail == sizeof(block->data)) {
+      fifo_block_t *new_block = fifo_get_block(fifo);
+      if (!new_block)
+        return written; // 如果没有空闲块，则返回已写入的数据量
+
+      list_add_tail(&new_block->node, &fifo->block_list);
+      block = new_block; // 更新为新块
     }
   }
+
+  return written;
 }
 
-static inline size_t fifo_mpmc_write(fifo_t *fifo, void *buf, void *data) {
-  size_t mask = fifo->cap - 1;
-  while (true) {
-    size_t       head = atomic_load_explicit(&fifo->head, memory_order_relaxed);
-    fifo_node_t *node = &((fifo_node_t *)buf)[head & mask];
-    size_t       seq  = atomic_load_explicit(&node->seq, memory_order_acquire);
-    intptr_t     diff = (intptr_t)seq - (intptr_t)(head + 1);
+static inline size_t fifo_mpmc_read(fifo_t *fifo, void *buf, void *data, size_t data_size) {
+  size_t read = 0;
 
-    if (diff < 0)
-      return 0;
-    if (diff > 0)
-      continue;
+  // 获取队列中的第一个块
+  fifo_block_t *block = list_first_entry(&fifo->block_list, fifo_block_t, node);
 
-    if (atomic_compare_exchange_weak_explicit(
-            &fifo->head, &head, head + 1, memory_order_acq_rel, memory_order_relaxed)) {
-      size_t copy_size = atomic_load_explicit(&node->size, memory_order_acquire);
-      memcpy(data, node->data, copy_size);
-      atomic_store_explicit(&node->seq, head + fifo->cap, memory_order_release);
-      return copy_size;
+  while (data_size > 0) {
+    size_t avail   = block->tail - block->head;
+    size_t to_read = MIN(avail, data_size);
+
+    // 读取数据
+    memcpy(data + read, block->data + block->head, to_read);
+    block->head += to_read;
+    read += to_read;
+    data_size -= to_read;
+
+    // 如果当前块已经读取完，移除该块并继续读取下一个块
+    if (block->head == block->tail) {
+      list_del(&block->node);
+      fifo_release_block(fifo, block);
+      if (!list_empty(&fifo->block_list)) {
+        block = list_first_entry(&fifo->block_list, fifo_block_t, node);
+      } else {
+        break; // 队列为空
+      }
     }
   }
+
+  return read;
 }
 
 #endif // !FIFO_H

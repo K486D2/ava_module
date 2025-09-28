@@ -23,8 +23,8 @@ typedef struct {
 #define PRODUCER_NUM 10
 #define CONSUMER_NUM 10
 
-fifo_t      fifo;
-fifo_node_t buf[BUF_SIZE];
+fifo_t       fifo;
+fifo_block_t buf[FIFO_MAX_BLOCKS];
 
 void *producer(void *arg) {
   ARG_UNUSED(arg);
@@ -78,7 +78,7 @@ void *consumer(void *arg) {
 }
 
 int main() {
-  if (fifo_init(&fifo, buf, BUF_SIZE, FIFO_MODE_MPMC, FIFO_POLICY_REJECT) != 0) {
+  if (fifo_init(&fifo, buf, FIFO_MAX_BLOCKS, FIFO_MODE_MPMC, FIFO_POLICY_REJECT) != 0) {
     printf("fifo_init failed\n");
     return -1;
   }

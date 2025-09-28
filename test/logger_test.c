@@ -8,8 +8,8 @@
 
 logger_t logger;
 
-u8          LOGGER_TX_BUF[128];
-fifo_node_t LOGGER_FIFO_BUF[1 * 1024];
+u8           LOGGER_TX_BUF[128];
+fifo_block_t LOGGER_FIFO_BUF[FIFO_MAX_BLOCKS];
 
 static inline void logger_stdout(void *fp, const u8 *data, size_t size) {
   fwrite(data, size, 1, fp);
