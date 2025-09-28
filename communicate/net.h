@@ -9,11 +9,6 @@
 #include <unistd.h>
 typedef int socket_t;
 #define CLOSE_SOCKET close
-#elif defined(__ZEPHYR__)
-#include <zephyr/kernel.h>
-#include <zephyr/net/socket.h>
-typedef int socket_t;
-#define CLOSE_SOCKET close
 #elif defined(_WIN32)
 #include <io.h>
 #include <winsock2.h>
@@ -24,8 +19,8 @@ typedef SOCKET socket_t;
 
 #include <stdio.h>
 
-#include "../container/list.h"
-#include "../util/util.h"
+#include "container/list.h"
+#include "util/util.h"
 
 #define MAX_IP_SIZE       16
 #define MAX_RESP_BUF_SIZE 1024

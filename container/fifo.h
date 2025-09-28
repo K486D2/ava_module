@@ -48,7 +48,7 @@ static inline bool   fifo_empty(fifo_t *fifo);
 static inline bool   fifo_full(fifo_t *fifo);
 static inline size_t fifo_avail(fifo_t *fifo);
 static inline size_t fifo_free(fifo_t *fifo);
-static inline size_t fifo_policy(fifo_t *fifo, size_t cap, size_t tail, size_t head);
+static inline size_t fifo_policy(fifo_t *fifo, size_t tail, size_t head, size_t data_size);
 
 static inline size_t fifo_write(fifo_t *fifo, const void *data, size_t data_size);
 static inline size_t fifo_read(fifo_t *fifo, void *data, size_t data_size);
@@ -116,7 +116,7 @@ static inline size_t fifo_free(fifo_t *fifo) {
   return fifo->cap - fifo_avail(fifo);
 }
 
-static inline size_t fifo_policy(fifo_t *fifo, size_t data_size, size_t tail, size_t head) {
+static inline size_t fifo_policy(fifo_t *fifo, size_t tail, size_t head, size_t data_size) {
   size_t free = fifo->cap - (tail - head);
   if (data_size <= free)
     return data_size;
@@ -182,7 +182,7 @@ static inline size_t fifo_spsc_read(fifo_t *fifo, void *buf, const void *data, s
   size_t tail = atomic_load_explicit(&fifo->tail, memory_order_relaxed);
   size_t head = atomic_load_explicit(&fifo->head, memory_order_acquire);
 
-  data_size = fifo_policy(fifo, data_size, tail, head);
+  data_size = fifo_policy(fifo, tail, head, data_size);
   if (data_size == 0)
     return 0;
 
