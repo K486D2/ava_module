@@ -13,8 +13,8 @@
 #include "util/typedef.h"
 #include "util/util.h"
 
-#define LOGGER_META_BUF_SIZE 1024
-#define LOGGER_DATA_BUF_SIZE 1024
+#define LOGGER_META_BUF_SIZE 8192
+#define LOGGER_DATA_BUF_SIZE 8192
 
 typedef struct {
   atomic_t(size_t) wp;
