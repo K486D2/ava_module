@@ -17,8 +17,8 @@ typedef struct {
   fifo_policy_e e_policy; // 写入数据超过剩余空间时的处理策略
   void         *buf;      // 缓冲区
   size_t        cap;      // 缓冲区容量(2^n)
-  atomic_t(size_t) rp;    // 读取位置
   atomic_t(size_t) wp;    // 写入位置
+  atomic_t(size_t) rp;    // 读取位置
 } fifo_t;
 
 static inline int    fifo_init(fifo_t *fifo, void *buf, size_t cap, fifo_policy_e e_policy);
@@ -30,10 +30,10 @@ static inline size_t fifo_avail(fifo_t *fifo);
 static inline size_t fifo_free(fifo_t *fifo);
 static inline size_t fifo_policy(fifo_t *fifo, size_t wp, size_t rp, size_t size);
 
-static inline size_t fifo_write(fifo_t *fifo, const void *data, size_t size);
-static inline size_t fifo_read(fifo_t *fifo, void *data, size_t size);
-static inline size_t fifo_write_buf(fifo_t *fifo, void *buf, const void *data, size_t size);
-static inline size_t fifo_read_buf(fifo_t *fifo, void *buf, void *data, size_t size);
+static inline size_t fifo_push(fifo_t *fifo, const void *data, size_t size);
+static inline size_t fifo_pop(fifo_t *fifo, void *data, size_t size);
+static inline size_t fifo_push_buf(fifo_t *fifo, void *buf, const void *data, size_t size);
+static inline size_t fifo_pop_buf(fifo_t *fifo, void *buf, void *data, size_t size);
 
 /* -------------------------------------------------------------------------- */
 /*                                     API                                    */
@@ -100,15 +100,15 @@ static inline size_t fifo_policy(fifo_t *fifo, size_t wp, size_t rp, size_t size
   return 0;
 }
 
-static inline size_t fifo_write(fifo_t *fifo, const void *data, size_t size) {
-  return fifo_write_buf(fifo, fifo->buf, data, size);
+static inline size_t fifo_push(fifo_t *fifo, const void *data, size_t size) {
+  return fifo_push_buf(fifo, fifo->buf, data, size);
 }
 
-static inline size_t fifo_read(fifo_t *fifo, void *data, size_t size) {
-  return fifo_read_buf(fifo, fifo->buf, data, size);
+static inline size_t fifo_pop(fifo_t *fifo, void *data, size_t size) {
+  return fifo_pop_buf(fifo, fifo->buf, data, size);
 }
 
-static inline size_t fifo_write_buf(fifo_t *fifo, void *buf, const void *data, size_t size) {
+static inline size_t fifo_push_buf(fifo_t *fifo, void *buf, const void *data, size_t size) {
   size_t wp = atomic_load_explicit(&fifo->wp, memory_order_relaxed);
   size_t rp = atomic_load_explicit(&fifo->rp, memory_order_acquire);
 
@@ -126,7 +126,7 @@ static inline size_t fifo_write_buf(fifo_t *fifo, void *buf, const void *data, s
   return size;
 }
 
-static inline size_t fifo_read_buf(fifo_t *fifo, void *buf, void *data, size_t size) {
+static inline size_t fifo_pop_buf(fifo_t *fifo, void *buf, void *data, size_t size) {
   size_t rp = atomic_load_explicit(&fifo->rp, memory_order_relaxed);
   size_t wp = atomic_load_explicit(&fifo->wp, memory_order_acquire);
 

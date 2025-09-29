@@ -22,7 +22,7 @@ int main() {
 
   u32 cnt = 0;
   while (true) {
-    fifo_read_buf(fifo, buf, &cnt, sizeof(u32));
+    fifo_pop_buf(fifo, buf, &cnt, sizeof(u32));
     printf("read cnt: %u, fifo wp: %zu, fifo rp: %zu, fifo free: %zu\n",
            cnt,
            atomic_load(&fifo->wp),
