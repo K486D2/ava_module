@@ -49,6 +49,21 @@ constexpr auto memory_order_release = std::memory_order_release;
 constexpr auto memory_order_acq_rel = std::memory_order_acq_rel;
 #endif
 
+#define SPINLOCK_BACKOFF_MIN 4
+#define SPINLOCK_BACKOFF_MAX 128
+#if defined(__x86_64__)
+#define SPINLOCK_BACKOFF_HOOK __asm volatile("pause" ::: "memory")
+#else
+#define SPINLOCK_BACKOFF_HOOK
+#endif
+#define SPINLOCK_BACKOFF(count)                                                                    \
+  do {                                                                                             \
+    for (int __i = (count); __i != 0; __i--)                                                       \
+      SPINLOCK_BACKOFF_HOOK;                                                                       \
+    if ((count) < SPINLOCK_BACKOFF_MAX)                                                            \
+      (count) += (count);                                                                          \
+  } while (0);
+
 typedef struct {
   u32 u;
   u32 v;
