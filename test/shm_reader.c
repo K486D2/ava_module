@@ -15,19 +15,19 @@ int main() {
     exit(-1);
   }
 
-  fifo_t *fifo = (fifo_t *)shm.lo.base;
-  u8     *buf  = shm.lo.base + sizeof(*fifo);
+  spsc_t *spsc = (spsc_t *)shm.lo.base;
+  u8     *buf  = shm.lo.base + sizeof(*spsc);
 
   printf("shm_addr: 0x%p, buf_addr: 0x%p\n", shm.lo.base, buf);
 
   u32 cnt = 0;
   while (true) {
-    fifo_pop_buf(fifo, buf, &cnt, sizeof(u32));
-    printf("read cnt: %u, fifo wp: %zu, fifo rp: %zu, fifo free: %zu\n",
+    spsc_pop_buf(spsc, buf, &cnt, sizeof(u32));
+    printf("read cnt: %u, spsc wp: %zu, spsc rp: %zu, spsc free: %zu\n",
            cnt,
-           atomic_load(&fifo->wp),
-           atomic_load(&fifo->rp),
-           fifo_free(fifo));
+           atomic_load(&spsc->wp),
+           atomic_load(&spsc->rp),
+           spsc_free(spsc));
   }
 
   return 0;

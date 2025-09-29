@@ -2,8 +2,6 @@
 #include <stdio.h>
 #include <unistd.h>
 
-#define FIFO_NODE_SIZE 128
-#include "container/fifo.h"
 #include "logger/logger.h"
 
 logger_t logger;
@@ -43,7 +41,7 @@ int main() {
   logger_cfg_t logger_cfg = {
       .e_mode        = LOGGER_SYNC,
       .e_level       = LOGGER_LEVEL_DEBUG,
-      .e_policy      = FIFO_POLICY_REJECT,
+      // .e_policy      = SPSC_POLICY_REJECT,
       .end_sign      = '\n',
       .fp            = stdout,
       .buf           = &LOGGER_BUF,

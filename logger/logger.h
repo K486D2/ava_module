@@ -9,7 +9,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "container/fifo.h"
+#include "container/spsc.h"
 #include "util/typedef.h"
 #include "util/util.h"
 
@@ -50,7 +50,7 @@ typedef enum {
 typedef struct {
   logger_mode_e  e_mode;
   logger_level_e e_level;
-  fifo_policy_e  e_policy;
+  spsc_policy_e  e_policy;
   char           end_sign;
   const char    *prefix;
   void          *fp;
@@ -145,9 +145,9 @@ static inline size_t logger_policy(logger_cfg_t *cfg, logger_buf_t *buf, size_t 
     return want;
 
   switch (cfg->e_policy) {
-  case FIFO_POLICY_TRUNCATE:
+  case SPSC_POLICY_TRUNCATE:
     return free;
-  case FIFO_POLICY_OVERWRITE: {
+  case SPSC_POLICY_OVERWRITE: {
     size_t need     = want - free;
     size_t head_idx = atomic_load_explicit(&buf->meta.rp, memory_order_acquire);
     size_t tail_idx = atomic_load_explicit(&buf->meta.wp, memory_order_acquire);
@@ -171,7 +171,7 @@ static inline size_t logger_policy(logger_cfg_t *cfg, logger_buf_t *buf, size_t 
       return want;
     return free_after;
   }
-  case FIFO_POLICY_REJECT:
+  case SPSC_POLICY_REJECT:
     return 0;
   }
   return 0;

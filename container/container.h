@@ -1,7 +1,7 @@
 #ifndef CONTAINER_H
 #define CONTAINER_H
 
-#include "fifo.h"
+#include "spsc.h"
 #include "list.h"
 #include "rbtree.h"
 

@@ -17,9 +17,15 @@ typedef signed long long   i64;
 typedef float  f32;
 typedef double f64;
 
-#ifndef __cplusplus
-#define bool  u8
-#define true  1
+#ifndef bool
+#define bool u8
+#endif
+
+#ifndef true
+#define true 1
+#endif
+
+#ifndef false
 #define false 0
 #endif
 

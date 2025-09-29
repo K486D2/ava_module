@@ -1,12 +1,12 @@
 #ifndef MAF_H
 #define MAF_H
 
-#include "container/fifo.h"
+#include "container/spsc.h"
 #include "util/util.h"
 
 typedef struct {
-  f32 *fifo_buf;
-  u32  fifo_buf_size;
+  f32 *buf;
+  u32  cap;
 } maf_cfg_t;
 
 typedef struct {
@@ -18,7 +18,7 @@ typedef struct {
 } maf_out_t;
 
 typedef struct {
-  fifo_t fifo;
+  spsc_t spsc;
   f64    x_sum;
 } maf_lo_t;
 
@@ -47,20 +47,20 @@ static inline void maf_init(maf_filter_t *maf, maf_cfg_t maf_cfg) {
   DECL_MAF_PTRS(maf);
 
   *cfg = maf_cfg;
-  fifo_init(&lo->fifo, cfg->fifo_buf, cfg->fifo_buf_size, FIFO_POLICY_REJECT);
+  spsc_init(&lo->spsc, cfg->buf, cfg->cap, SPSC_POLICY_REJECT);
 }
 
 static inline void maf_exec(maf_filter_t *maf) {
   DECL_MAF_PTRS(maf);
 
   f32 prev_x;
-  fifo_pop(&lo->fifo, &prev_x, sizeof(prev_x));
+  spsc_pop(&lo->spsc, &prev_x, sizeof(prev_x));
   lo->x_sum -= prev_x;
 
-  fifo_push(&lo->fifo, &in->x, sizeof(in->x));
+  spsc_push(&lo->spsc, &in->x, sizeof(in->x));
 
   lo->x_sum += in->x;
-  lo->x_sum /= (f32)cfg->fifo_buf_size;
+  lo->x_sum /= (f32)cfg->cap;
 }
 
 static inline void maf_exec_in(maf_filter_t *maf, f32 x) {

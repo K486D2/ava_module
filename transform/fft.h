@@ -10,7 +10,7 @@
 
 #include <string.h>
 
-#include "container/fifo.h"
+#include "container/spsc.h"
 #include "util/mathdef.h"
 #include "util/util.h"
 
@@ -37,7 +37,7 @@ typedef struct {
   f32    fs;
   u8     flag;
   size_t point_num;
-  f32   *fifo_buf;
+  f32   *buf;
   f32   *in_buf;
 #if defined(__linux__) || defined(_WIN32)
   fftwf_complex *out_buf;
@@ -61,7 +61,7 @@ typedef struct {
 
 typedef struct {
   u32    elapsed_us;
-  fifo_t fifo;
+  spsc_t spsc;
   bool   neet_exec;
 #if defined(__linux__) || defined(_WIN32)
   fftwf_plan     p;
@@ -98,7 +98,7 @@ static inline void fft_init(fft_t *fft, fft_cfg_t fft_cfg) {
 
   *cfg = fft_cfg;
 
-  fifo_init(&lo->fifo, cfg->fifo_buf, cfg->point_num * sizeof(f32), FIFO_POLICY_REJECT);
+  spsc_init(&lo->spsc, cfg->buf, cfg->point_num * sizeof(f32), SPSC_POLICY_REJECT);
 
   in->buf      = cfg->in_buf;
   lo->buf      = cfg->out_buf;
@@ -121,7 +121,7 @@ static inline void fft_exec(fft_t *fft) {
 
   u64 start = get_mono_ts_us();
 
-  memcpy(in->buf, lo->fifo.buf, lo->fifo.cap);
+  memcpy(in->buf, lo->spsc.buf, lo->spsc.cap);
 
 #if defined(__linux__) || defined(_WIN32)
   fftwf_execute(lo->p);
@@ -153,7 +153,7 @@ static inline void fft_destroy(fft_t *fft) {
 static inline void fft_exec_in(fft_t *fft, f32 val) {
   DECL_FFT_PTRS(fft);
 
-  if (fifo_push(&lo->fifo, &val, sizeof(val)) == 0)
+  if (spsc_push(&lo->spsc, &val, sizeof(val)) == 0)
     lo->neet_exec = true;
 }
 
