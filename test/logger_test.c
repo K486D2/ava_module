@@ -8,7 +8,7 @@
 
 logger_t logger;
 
-u8           LOGGER_TX_BUF[128];
+u8           LOGGER_FLUSH_BUF[128];
 logger_buf_t LOGGER_BUF;
 
 static inline void logger_stdout(void *fp, const u8 *data, size_t size) {
@@ -41,14 +41,14 @@ void *write_thread_func(void *arg) {
 
 int main() {
   logger_cfg_t logger_cfg = {
-      .e_mode     = LOGGER_SYNC,
-      .e_level    = LOGGER_LEVEL_DEBUG,
-      .e_policy   = FIFO_POLICY_REJECT,
-      .end_sign   = '\n',
-      .fp         = stdout,
-      .buf        = &LOGGER_BUF,
-      .tx_buf     = LOGGER_TX_BUF,
-      .tx_buf_cap = sizeof(LOGGER_TX_BUF),
+      .e_mode        = LOGGER_SYNC,
+      .e_level       = LOGGER_LEVEL_DEBUG,
+      .e_policy      = FIFO_POLICY_REJECT,
+      .end_sign      = '\n',
+      .fp            = stdout,
+      .buf           = &LOGGER_BUF,
+      .flush_buf     = LOGGER_FLUSH_BUF,
+      .flush_buf_cap = sizeof(LOGGER_FLUSH_BUF),
   };
   logger.ops.f_flush  = logger_stdout;
   logger.ops.f_get_ts = get_mono_ts_us;

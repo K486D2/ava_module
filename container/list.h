@@ -85,7 +85,7 @@ static inline void list_move_tail(list_head_t *node, list_head_t *head) {
   list_add_tail(node, head);
 }
 
-#define container_of(ptr, type, member)     ((type *)((char *)(ptr) - offsetof(type, member)))
+#define container_of(ptr, type, member)     ((type *)((u8 *)(ptr) - offsetof(type, member)))
 
 #define list_entry(ptr, type, member)       container_of(ptr, type, member)
 

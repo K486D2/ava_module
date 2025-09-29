@@ -55,8 +55,8 @@ typedef struct {
   const char    *prefix;
   void          *fp;
   logger_buf_t  *buf;
-  u8            *tx_buf;
-  size_t         tx_buf_cap;
+  u8            *flush_buf;
+  size_t         flush_buf_cap;
 } logger_cfg_t;
 
 typedef struct {
@@ -89,19 +89,19 @@ typedef struct {
   logger_t *name = (logger);                                                                       \
   ARG_UNUSED(name);
 
-static inline size_t logger_used_bytes(logger_buf_t *buf) {
+static inline size_t logger_used(logger_buf_t *buf) {
   size_t tail_ptr = atomic_load_explicit(&buf->data.ptr, memory_order_acquire);
   size_t head_idx = atomic_load_explicit(&buf->meta.rp, memory_order_acquire);
-  if (head_idx == atomic_load_explicit(&buf->meta.wp, memory_order_relaxed)) {
+  if (head_idx == atomic_load_explicit(&buf->meta.wp, memory_order_relaxed))
     return 0;
-  }
-  size_t oldest_index  = head_idx % LOGGER_META_BUF_SIZE;
-  size_t oldest_offset = buf->meta.offset[oldest_index];
+
+  size_t oldest_idx    = head_idx % LOGGER_META_BUF_SIZE;
+  size_t oldest_offset = buf->meta.offset[oldest_idx];
   return tail_ptr - oldest_offset;
 }
 
-static inline size_t logger_free_bytes(logger_buf_t *buf) {
-  size_t used = logger_used_bytes(buf);
+static inline size_t logger_free(logger_buf_t *buf) {
+  size_t used = logger_used(buf);
   if (used >= LOGGER_DATA_BUF_SIZE)
     return 0;
   return LOGGER_DATA_BUF_SIZE - used;
@@ -140,19 +140,15 @@ static inline size_t logger_push_data(logger_data_t *buf, const u8 *data, size_t
 }
 
 static inline size_t logger_policy(logger_cfg_t *cfg, logger_buf_t *buf, size_t want) {
-  size_t free_bytes = logger_free_bytes(buf);
-  if (want <= free_bytes)
+  size_t free = logger_free(buf);
+  if (want <= free)
     return want;
 
   switch (cfg->e_policy) {
   case FIFO_POLICY_TRUNCATE:
-    return free_bytes;
-
-  case FIFO_POLICY_REJECT:
-    return 0;
-
+    return free;
   case FIFO_POLICY_OVERWRITE: {
-    size_t need     = want - free_bytes;
+    size_t need     = want - free;
     size_t head_idx = atomic_load_explicit(&buf->meta.rp, memory_order_acquire);
     size_t tail_idx = atomic_load_explicit(&buf->meta.wp, memory_order_acquire);
 
@@ -170,11 +166,13 @@ static inline size_t logger_policy(logger_cfg_t *cfg, logger_buf_t *buf, size_t 
     }
     atomic_store_explicit(&buf->meta.rp, head_idx, memory_order_release);
 
-    size_t free_after = logger_free_bytes(buf);
+    size_t free_after = logger_free(buf);
     if (want <= free_after)
       return want;
     return free_after;
   }
+  case FIFO_POLICY_REJECT:
+    return 0;
   }
   return 0;
 }
@@ -198,9 +196,8 @@ static inline size_t logger_push(logger_buf_t *buf, const u8 *data, size_t n, lo
 static inline ssize_t logger_get_idx(logger_buf_t *buf, size_t *out_offset) {
   logger_meta_t *meta = &buf->meta;
   size_t         t    = atomic_load_explicit(&meta->wp, memory_order_acquire);
-  if (t == meta->head) {
+  if (t == meta->head)
     return 0;
-  }
 
   if ((t - meta->head) >= LOGGER_META_BUF_SIZE) {
     size_t idx = meta->head % LOGGER_META_BUF_SIZE;
@@ -239,9 +236,8 @@ static inline ssize_t logger_pop(logger_buf_t *buf, u8 *output, size_t n) {
   logger_data_t *data = &buf->data;
 
   size_t ptr_before = atomic_load_explicit(&data->ptr, memory_order_acquire);
-  if (queue_offset + (size_t)LOGGER_DATA_BUF_SIZE < ptr_before) {
+  if (queue_offset + (size_t)LOGGER_DATA_BUF_SIZE < ptr_before)
     return -1;
-  }
 
   size_t offset = queue_offset % LOGGER_DATA_BUF_SIZE;
   if (offset + size <= LOGGER_DATA_BUF_SIZE) {
@@ -254,26 +250,10 @@ static inline ssize_t logger_pop(logger_buf_t *buf, u8 *output, size_t n) {
   }
 
   size_t ptr_after = atomic_load_explicit(&data->ptr, memory_order_acquire);
-  if (queue_offset + (size_t)LOGGER_DATA_BUF_SIZE < ptr_after) {
+  if (queue_offset + (size_t)LOGGER_DATA_BUF_SIZE < ptr_after)
     return -1;
-  }
 
   return (ssize_t)size;
-}
-
-static inline void logger_flush(logger_t *logger) {
-  DECL_LOGGER_PTRS(logger);
-
-  while (true) {
-    ssize_t r = logger_pop(cfg->buf, cfg->tx_buf, cfg->tx_buf_cap ? cfg->tx_buf_cap : 128);
-    if (r == 0)
-      break;
-    if (r < 0)
-      continue;
-    ops->f_flush(cfg->fp, cfg->tx_buf, (size_t)r);
-    lo->busy = (cfg->e_mode == LOGGER_ASYNC);
-  }
-  lo->busy = false;
 }
 
 static inline void logger_write(logger_t *logger, const char *fmt, va_list args) {
@@ -293,6 +273,21 @@ static inline void logger_write(logger_t *logger, const char *fmt, va_list args)
     appended = (int)sizeof(tmp) - n;
 
   logger_push(cfg->buf, tmp, (size_t)(n + appended), cfg);
+}
+
+static inline void logger_flush(logger_t *logger) {
+  DECL_LOGGER_PTRS(logger);
+
+  while (true) {
+    ssize_t r = logger_pop(cfg->buf, cfg->flush_buf, cfg->flush_buf_cap ? cfg->flush_buf_cap : 128);
+    if (r == 0)
+      break;
+    if (r < 0)
+      continue;
+    ops->f_flush(cfg->fp, cfg->flush_buf, (size_t)r);
+    lo->busy = (cfg->e_mode == LOGGER_ASYNC);
+  }
+  lo->busy = false;
 }
 
 static inline void logger_data(logger_t *logger, const char *fmt, ...) {
