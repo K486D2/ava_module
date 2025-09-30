@@ -1,8 +1,6 @@
 #ifndef LOGGER_H
 #define LOGGER_H
 
-#include <pthread.h>
-
 #include <stdarg.h>
 #include <stdatomic.h>
 #include <stdbool.h>
@@ -35,12 +33,12 @@ typedef struct {
   char        end_sign;
   const char *prefix;
   void       *fp;
-  void       *logger_buf;
-  size_t      logger_buf_cap;
+  void       *buf;
+  size_t      cap;
   mpsc_p_t   *producers;
   size_t      nproducers;
   u8         *flush_buf;
-  size_t      flush_buf_cap;
+  size_t      flush_cap;
 } logger_cfg_t;
 
 typedef struct {
@@ -78,13 +76,13 @@ static inline void logger_init(logger_t *logger, logger_cfg_t logger_cfg) {
   DECL_LOGGER_PTRS(logger);
 
   *cfg = logger_cfg;
-  mpsc_init(&lo->mpsc, cfg->logger_buf, cfg->logger_buf_cap, cfg->producers, cfg->nproducers);
+  mpsc_init(&lo->mpsc, cfg->buf, cfg->cap, cfg->producers, cfg->nproducers);
 }
 
 static inline void logger_write(logger_t *logger, usz id, const char *fmt, va_list args) {
   DECL_LOGGER_PTRS(logger);
 
-  u8  tmp[1024];
+  u8  tmp[128];
   int nbytes = vsnprintf((char *)tmp, sizeof(tmp), fmt, args);
   if (nbytes < 0)
     return;
@@ -97,8 +95,14 @@ static inline void logger_write(logger_t *logger, usz id, const char *fmt, va_li
 static inline void logger_flush(logger_t *logger) {
   DECL_LOGGER_PTRS(logger);
 
-  usz nbytes = mpsc_read(&lo->mpsc, cfg->flush_buf, cfg->flush_buf_cap);
-  ops->f_flush(cfg->fp, cfg->flush_buf, nbytes);
+  while (!lo->busy) {
+    usz nbytes = mpsc_read(&lo->mpsc, cfg->flush_buf, cfg->flush_cap);
+    if (nbytes == 0)
+      break;
+
+    ops->f_flush(cfg->fp, cfg->flush_buf, nbytes);
+    lo->busy = (cfg->e_mode == LOGGER_ASYNC);
+  }
 }
 
 static inline void logger_data(logger_t *logger, usz id, const char *fmt, ...) {

@@ -57,9 +57,10 @@ static inline void mpsc_unreg(mpsc_p_t *p) {
 
 static inline usz mpsc_get_wp(mpsc_t *mpsc) {
   u32 cnt = SPINLOCK_BACKOFF_MIN;
+  usz wp;
 
 retry:
-  usz wp = atomic_load_explicit(&mpsc->wp, memory_order_acquire);
+  wp = atomic_load_explicit(&mpsc->wp, memory_order_acquire);
   if (wp & MPSC_WRAP_LOCK_BIT) {
     SPINLOCK_BACKOFF(cnt);
     goto retry;
@@ -69,9 +70,10 @@ retry:
 
 static inline usz mpsc_get_reserve_pos(mpsc_p_t *p) {
   u32 cnt = SPINLOCK_BACKOFF_MIN;
+  usz reserve_pos;
 
 retry:
-  usz reserve_pos = atomic_load_explicit(&p->reserve_pos, memory_order_acquire);
+  reserve_pos = atomic_load_explicit(&p->reserve_pos, memory_order_acquire);
   if (reserve_pos & MPSC_WRAP_LOCK_BIT) {
     SPINLOCK_BACKOFF(cnt);
     goto retry;
@@ -139,9 +141,10 @@ static inline void mpsc_push(mpsc_p_t *p) {
 
 static inline usz mpsc_pop(mpsc_t *mpsc, usz *off) {
   usz rp = atomic_load_explicit(&mpsc->rp, memory_order_relaxed);
+  usz wp;
 
 retry:
-  usz wp = mpsc_get_wp(mpsc) & MPSC_OFF_MASK;
+  wp = mpsc_get_wp(mpsc) & MPSC_OFF_MASK;
   if (rp == wp)
     return 0;
 

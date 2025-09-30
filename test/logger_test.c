@@ -43,14 +43,14 @@ int main() {
       .e_mode  = LOGGER_SYNC,
       .e_level = LOGGER_LEVEL_DEBUG,
       // .e_policy      = SPSC_POLICY_REJECT,
-      .end_sign       = '\n',
-      .fp             = stdout,
-      .logger_buf     = &LOGGER_BUF,
-      .logger_buf_cap = sizeof(LOGGER_BUF),
-      .producers      = &PRODUCERS,
-      .nproducers     = ARRAY_SIZE(PRODUCERS),
-      .flush_buf      = LOGGER_FLUSH_BUF,
-      .flush_buf_cap  = sizeof(LOGGER_FLUSH_BUF),
+      .end_sign   = '\n',
+      .fp         = stdout,
+      .buf        = &LOGGER_BUF,
+      .cap        = sizeof(LOGGER_BUF),
+      .producers  = &PRODUCERS,
+      .nproducers = ARRAY_SIZE(PRODUCERS),
+      .flush_buf  = LOGGER_FLUSH_BUF,
+      .flush_cap  = sizeof(LOGGER_FLUSH_BUF),
   };
   logger.ops.f_flush  = logger_stdout;
   logger.ops.f_get_ts = get_mono_ts_us;

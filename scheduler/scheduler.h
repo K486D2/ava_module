@@ -7,7 +7,7 @@
 #include "util/util.h"
 
 #ifndef SCHED_TASK_MAX
-#define SCHED_TASK_MAX 16
+#define SCHED_TASK_MAX 8
 #endif
 
 typedef void (*sched_cb_f)(void *arg);
