@@ -24,8 +24,8 @@ int main() {
   u32 cnt = 0;
   while (true) {
     cnt++;
-    spsc_push_buf(spsc, buf, &cnt, sizeof(u32));
-    printf("write cnt: %u, spsc wp: %zu, spsc rp: %zu, spsc free: %zu\n",
+    spsc_write_buf(spsc, buf, &cnt, sizeof(u32));
+    printf("write cnt: %u, spsc wp: %llu, spsc rp: %llu, spsc free: %llu\n",
            cnt,
            atomic_load(&spsc->wp),
            atomic_load(&spsc->rp),

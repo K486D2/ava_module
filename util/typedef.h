@@ -17,6 +17,14 @@ typedef signed long long   i64;
 typedef float  f32;
 typedef double f64;
 
+#ifdef MCU
+typedef u32 usz;
+typedef i32 isz;
+#else
+typedef u64 usz;
+typedef i64 isz;
+#endif
+
 #ifndef bool
 #define bool u8
 #endif

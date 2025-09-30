@@ -16,30 +16,30 @@ typedef enum {
 typedef struct {
   spsc_policy_e e_policy; // 写入数据超过剩余空间时的处理策略
   void         *buf;      // 缓冲区
-  size_t        cap;      // 缓冲区容量(2^n)
-  atomic_t(size_t) wp;    // 写入位置
-  atomic_t(size_t) rp;    // 读取位置
+  usz           cap;      // 缓冲区容量(2^n)
+  atomic_t(usz) wp;       // 写入位置
+  atomic_t(usz) rp;       // 读取位置
 } spsc_t;
 
-static inline int    spsc_init(spsc_t *spsc, void *buf, size_t cap, spsc_policy_e e_policy);
-static inline int    spsc_init_buf(spsc_t *spsc, size_t cap, spsc_policy_e e_policy);
-static inline void   spsc_reset(spsc_t *spsc);
-static inline bool   spsc_empty(spsc_t *spsc);
-static inline bool   spsc_full(spsc_t *spsc);
-static inline size_t spsc_avail(spsc_t *spsc);
-static inline size_t spsc_free(spsc_t *spsc);
-static inline size_t spsc_policy(spsc_t *spsc, size_t wp, size_t rp, size_t size);
+static inline int  spsc_init(spsc_t *spsc, void *buf, usz cap, spsc_policy_e e_policy);
+static inline int  spsc_init_buf(spsc_t *spsc, usz cap, spsc_policy_e e_policy);
+static inline void spsc_reset(spsc_t *spsc);
+static inline bool spsc_empty(spsc_t *spsc);
+static inline bool spsc_full(spsc_t *spsc);
+static inline usz  spsc_avail(spsc_t *spsc);
+static inline usz  spsc_free(spsc_t *spsc);
+static inline usz  spsc_policy(spsc_t *spsc, usz wp, usz rp, usz nbytes);
 
-static inline size_t spsc_push(spsc_t *spsc, const void *data, size_t size);
-static inline size_t spsc_pop(spsc_t *spsc, void *data, size_t size);
-static inline size_t spsc_push_buf(spsc_t *spsc, void *buf, const void *data, size_t size);
-static inline size_t spsc_pop_buf(spsc_t *spsc, void *buf, void *data, size_t size);
+static inline usz spsc_write(spsc_t *spsc, const void *src, usz nbytes);
+static inline usz spsc_read(spsc_t *spsc, void *dst, usz nbytes);
+static inline usz spsc_write_buf(spsc_t *spsc, void *buf, const void *src, usz nbytes);
+static inline usz spsc_read_buf(spsc_t *spsc, void *buf, void *dst, usz nbytes);
 
 /* -------------------------------------------------------------------------- */
 /*                                     API                                    */
 /* -------------------------------------------------------------------------- */
 
-static inline int spsc_init(spsc_t *spsc, void *buf, size_t cap, spsc_policy_e e_policy) {
+static inline int spsc_init(spsc_t *spsc, void *buf, usz cap, spsc_policy_e e_policy) {
   int ret = spsc_init_buf(spsc, cap, e_policy);
   if (ret != 0)
     return ret;
@@ -48,7 +48,7 @@ static inline int spsc_init(spsc_t *spsc, void *buf, size_t cap, spsc_policy_e e
   return 0;
 }
 
-static inline int spsc_init_buf(spsc_t *spsc, size_t cap, spsc_policy_e e_policy) {
+static inline int spsc_init_buf(spsc_t *spsc, usz cap, spsc_policy_e e_policy) {
   if (!IS_POWER_OF_2(cap))
     return -1;
 
@@ -72,27 +72,27 @@ static inline bool spsc_full(spsc_t *spsc) {
   return spsc_free(spsc) == 0;
 }
 
-static inline size_t spsc_avail(spsc_t *spsc) {
+static inline usz spsc_avail(spsc_t *spsc) {
   return atomic_load(&spsc->wp) - atomic_load(&spsc->rp);
 }
 
-static inline size_t spsc_free(spsc_t *spsc) {
+static inline usz spsc_free(spsc_t *spsc) {
   return spsc->cap - spsc_avail(spsc);
 }
 
-static inline size_t spsc_policy(spsc_t *spsc, size_t wp, size_t rp, size_t size) {
-  size_t free = spsc->cap - (wp - rp);
-  if (size <= free)
-    return size;
+static inline usz spsc_policy(spsc_t *spsc, usz wp, usz rp, usz nbytes) {
+  usz free = spsc->cap - (wp - rp);
+  if (nbytes <= free)
+    return nbytes;
 
   switch (spsc->e_policy) {
   case SPSC_POLICY_TRUNCATE: {
-    size = free;
-    return size;
+    nbytes = free;
+    return nbytes;
   }
   case SPSC_POLICY_OVERWRITE: {
-    atomic_fetch_add_explicit(&spsc->rp, size - free, memory_order_acq_rel);
-    return size;
+    atomic_fetch_add_explicit(&spsc->rp, nbytes - free, memory_order_acq_rel);
+    return nbytes;
   }
   case SPSC_POLICY_REJECT:
     return 0;
@@ -100,50 +100,50 @@ static inline size_t spsc_policy(spsc_t *spsc, size_t wp, size_t rp, size_t size
   return 0;
 }
 
-static inline size_t spsc_push(spsc_t *spsc, const void *data, size_t size) {
-  return spsc_push_buf(spsc, spsc->buf, data, size);
+static inline usz spsc_write(spsc_t *spsc, const void *src, usz nbytes) {
+  return spsc_write_buf(spsc, spsc->buf, src, nbytes);
 }
 
-static inline size_t spsc_pop(spsc_t *spsc, void *data, size_t size) {
-  return spsc_pop_buf(spsc, spsc->buf, data, size);
+static inline usz spsc_read(spsc_t *spsc, void *dst, usz nbytes) {
+  return spsc_read_buf(spsc, spsc->buf, dst, nbytes);
 }
 
-static inline size_t spsc_push_buf(spsc_t *spsc, void *buf, const void *data, size_t size) {
-  size_t wp = atomic_load_explicit(&spsc->wp, memory_order_relaxed);
-  size_t rp = atomic_load_explicit(&spsc->rp, memory_order_acquire);
+static inline usz spsc_write_buf(spsc_t *spsc, void *buf, const void *src, usz nbytes) {
+  usz wp = atomic_load_explicit(&spsc->wp, memory_order_relaxed);
+  usz rp = atomic_load_explicit(&spsc->rp, memory_order_acquire);
 
-  size = spsc_policy(spsc, wp, rp, size);
-  if (size == 0)
+  nbytes = spsc_policy(spsc, wp, rp, nbytes);
+  if (nbytes == 0)
     return 0;
 
-  size_t mask   = spsc->cap - 1;
-  size_t offset = wp & mask;
-  size_t first  = MIN(size, spsc->cap - offset);
-  memcpy((u8 *)buf + offset, data, first);
-  memcpy((u8 *)buf, (u8 *)data + first, size - first);
+  usz mask  = spsc->cap - 1;
+  usz off   = wp & mask;
+  usz first = MIN(nbytes, spsc->cap - off);
+  memcpy((u8 *)buf + off, src, first);
+  memcpy((u8 *)buf, (u8 *)src + first, nbytes - first);
 
-  atomic_store_explicit(&spsc->wp, wp + size, memory_order_release);
-  return size;
+  atomic_store_explicit(&spsc->wp, wp + nbytes, memory_order_release);
+  return nbytes;
 }
 
-static inline size_t spsc_pop_buf(spsc_t *spsc, void *buf, void *data, size_t size) {
-  size_t rp = atomic_load_explicit(&spsc->rp, memory_order_relaxed);
-  size_t wp = atomic_load_explicit(&spsc->wp, memory_order_acquire);
+static inline usz spsc_read_buf(spsc_t *spsc, void *buf, void *dst, usz nbytes) {
+  usz rp = atomic_load_explicit(&spsc->rp, memory_order_relaxed);
+  usz wp = atomic_load_explicit(&spsc->wp, memory_order_acquire);
 
-  size_t avail = wp - rp;
-  if (size > avail)
-    size = avail;
-  if (size == 0)
+  usz avail = wp - rp;
+  if (nbytes > avail)
+    nbytes = avail;
+  if (nbytes == 0)
     return 0;
 
-  size_t mask   = spsc->cap - 1;
-  size_t offset = rp & mask;
-  size_t first  = MIN(size, spsc->cap - offset);
-  memcpy(data, (u8 *)buf + offset, first);
-  memcpy((u8 *)data + first, (u8 *)buf, size - first);
+  usz mask  = spsc->cap - 1;
+  usz off   = rp & mask;
+  usz first = MIN(nbytes, spsc->cap - off);
+  memcpy(dst, (u8 *)buf + off, first);
+  memcpy((u8 *)dst + first, (u8 *)buf, nbytes - first);
 
-  atomic_store_explicit(&spsc->rp, rp + size, memory_order_release);
-  return size;
+  atomic_store_explicit(&spsc->rp, rp + nbytes, memory_order_release);
+  return nbytes;
 }
 
 #endif // !SPSC_H

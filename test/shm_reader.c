@@ -22,8 +22,8 @@ int main() {
 
   u32 cnt = 0;
   while (true) {
-    spsc_pop_buf(spsc, buf, &cnt, sizeof(u32));
-    printf("read cnt: %u, spsc wp: %zu, spsc rp: %zu, spsc free: %zu\n",
+    spsc_read_buf(spsc, buf, &cnt, sizeof(u32));
+    printf("read cnt: %u, spsc wp: %llu, spsc rp: %llu, spsc free: %llu\n",
            cnt,
            atomic_load(&spsc->wp),
            atomic_load(&spsc->rp),

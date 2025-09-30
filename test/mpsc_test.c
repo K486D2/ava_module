@@ -7,36 +7,27 @@
 #include "container/mpsc.h"
 
 #define CAP      4096
-#define NPROD    4
-#define NMSG     1000
-#define MSG_SIZE 32
+#define NPROD    40
+#define NMSG     100000000
+#define MSG_SIZE 40
 
-static mpsc_t          mpsc;
-static mpsc_producer_t producers[NPROD];
-static char            buffer[CAP];
+static mpsc_t   mpsc;
+static mpsc_p_t producers[NPROD];
+static char     buffer[CAP];
 
 void *producer_thread(void *arg) {
-  size_t           id = (size_t)arg;
-  mpsc_producer_t *p  = mpsc_register(&mpsc, id);
+  size_t    id = (size_t)arg;
+  mpsc_p_t *p  = mpsc_reg(&mpsc, id);
 
   for (int i = 0; i < NMSG; i++) {
     char msg[MSG_SIZE];
-    snprintf(msg, sizeof(msg), "P%zu-msg%d", id, i);
+    int  n = snprintf(msg, sizeof(msg), "P%3zu-msg-abcdefghijklmnopqrstuvwxyz-%d", id, i);
 
-    ssize_t off;
-    do {
-      off = mpsc_acquire(&mpsc, p, MSG_SIZE);
-      if (off < 0) {
-        usleep(100);
-      }
-    } while (off < 0);
-
-    memcpy(buffer + off, msg, MSG_SIZE);
-    mpsc_produce(&mpsc, p);
+    mpsc_write(&mpsc, p, msg, MSG_SIZE);
   }
 
   // producer 完成后注销，避免 consumer 卡死
-  mpsc_unregister(&mpsc, p);
+  mpsc_unreg(p);
   return NULL;
 }
 
@@ -46,24 +37,10 @@ void *consumer_thread(void *arg) {
   const size_t expected = NPROD * NMSG;
 
   while (total < expected) {
-    size_t off, n;
-    n = mpsc_consume(&mpsc, &off);
-    if (n == 0) {
-      usleep(1000);
-      continue;
-    }
-
-    size_t used = 0;
-    while (used + MSG_SIZE <= n) {
-      char tmp[MSG_SIZE + 1];
-      memcpy(tmp, buffer + off + used, MSG_SIZE);
-      tmp[MSG_SIZE] = '\0';
-      printf("consumer got: \"%s\"\n", tmp);
-      used += MSG_SIZE;
-      total++;
-    }
-
-    mpsc_release(&mpsc, used);
+    u8  tmp[MSG_SIZE];
+    usz n = mpsc_read(&mpsc, tmp, MSG_SIZE);
+    if (n > 0)
+      printf("Consumer got: %.*s\n", (int)n, tmp);
   }
 
   printf("Consumer done: got %zu messages\n", total);
@@ -71,7 +48,7 @@ void *consumer_thread(void *arg) {
 }
 
 int main(void) {
-  mpsc_init(&mpsc, CAP, producers, NPROD);
+  mpsc_init(&mpsc, buffer, CAP, producers, NPROD);
 
   pthread_t prod[NPROD], cons;
   pthread_create(&cons, NULL, consumer_thread, NULL);

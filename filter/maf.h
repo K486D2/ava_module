@@ -54,10 +54,10 @@ static inline void maf_exec(maf_filter_t *maf) {
   DECL_MAF_PTRS(maf);
 
   f32 prev_x;
-  spsc_pop(&lo->spsc, &prev_x, sizeof(prev_x));
+  spsc_read(&lo->spsc, &prev_x, sizeof(prev_x));
   lo->x_sum -= prev_x;
 
-  spsc_push(&lo->spsc, &in->x, sizeof(in->x));
+  spsc_write(&lo->spsc, &in->x, sizeof(in->x));
 
   lo->x_sum += in->x;
   lo->x_sum /= (f32)cfg->cap;
