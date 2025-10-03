@@ -195,12 +195,11 @@ static inline isz mpsc_write(mpsc_t *mpsc, mpsc_p_t *p, const void *src, usz nby
   if (off < 0)
     return -1;
 
-  usz uoff = (usz)off;
-  if (uoff + nbytes <= mpsc->cap)
-    memcpy((u8 *)mpsc->buf + uoff, src, nbytes);
+  if ((usz)off + nbytes <= mpsc->cap)
+    memcpy((u8 *)mpsc->buf + (usz)off, src, nbytes);
   else {
-    usz first = mpsc->cap - uoff;
-    memcpy((u8 *)mpsc->buf + uoff, src, first);
+    usz first = mpsc->cap - (usz)off;
+    memcpy((u8 *)mpsc->buf + (usz)off, src, first);
     memcpy((u8 *)mpsc->buf, (u8 *)src + first, nbytes - first);
   }
 

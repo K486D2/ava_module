@@ -35,10 +35,10 @@ typedef struct {
   void       *fp;
   void       *buf;
   size_t      cap;
-  mpsc_p_t   *producers;
-  size_t      nproducers;
   u8         *flush_buf;
   size_t      flush_cap;
+  mpsc_p_t   *producers;
+  size_t      nproducers;
 } logger_cfg_t;
 
 typedef struct {
