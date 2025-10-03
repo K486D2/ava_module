@@ -180,14 +180,14 @@ retry:
   } else
     ready = (ready < wp) ? ready : wp;
 
-  usz nwritten = ready - rp;
-  *off         = rp;
-  return nwritten;
+  usz write_nbytes = ready - rp;
+  *off             = rp;
+  return write_nbytes;
 }
 
 static inline void mpsc_release(mpsc_t *mpsc, usz nbytes) {
-  usz nwritten = mpsc->rp + nbytes;
-  mpsc->rp     = (nwritten == mpsc->cap) ? 0 : nwritten;
+  usz write_nbytes = mpsc->rp + nbytes;
+  mpsc->rp         = (write_nbytes == mpsc->cap) ? 0 : write_nbytes;
 }
 
 static inline isz mpsc_write(mpsc_t *mpsc, mpsc_p_t *p, const void *src, usz nbytes) {
@@ -209,22 +209,22 @@ static inline isz mpsc_write(mpsc_t *mpsc, mpsc_p_t *p, const void *src, usz nby
 }
 
 static inline usz mpsc_read(mpsc_t *mpsc, void *dst, usz nbytes) {
-  usz off, avail = mpsc_pop(mpsc, &off);
-  if (avail == 0)
+  usz off, avail_nbytes = mpsc_pop(mpsc, &off);
+  if (avail_nbytes == 0)
     return 0;
 
-  usz toread = (avail < nbytes) ? avail : nbytes;
+  usz read_nbytes = (avail_nbytes < nbytes) ? avail_nbytes : nbytes;
 
-  if (off + toread <= mpsc->cap)
-    memcpy(dst, (u8 *)mpsc->buf + off, toread);
+  if (off + read_nbytes <= mpsc->cap)
+    memcpy(dst, (u8 *)mpsc->buf + off, read_nbytes);
   else {
     usz first = mpsc->cap - off;
     memcpy(dst, (u8 *)mpsc->buf + off, first);
-    memcpy((u8 *)dst + first, (u8 *)mpsc->buf, toread - first);
+    memcpy((u8 *)dst + first, (u8 *)mpsc->buf, read_nbytes - first);
   }
 
-  mpsc_release(mpsc, toread);
-  return toread;
+  mpsc_release(mpsc, read_nbytes);
+  return read_nbytes;
 }
 
 #endif // !MPSC_H

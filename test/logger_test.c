@@ -6,7 +6,7 @@
 
 logger_t logger;
 
-#define THREAD_COUNT 10000
+#define THREAD_COUNT 1000
 
 u8       LOGGER_FLUSH_BUF[128];
 u8       LOGGER_BUF[1024];
