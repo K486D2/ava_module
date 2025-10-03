@@ -64,12 +64,12 @@ constexpr auto memory_order_acq_rel = std::memory_order_acq_rel;
 #else
 #define SPINLOCK_BACKOFF_HOOK
 #endif
-#define SPINLOCK_BACKOFF(count)                                                                    \
+#define SPINLOCK_BACKOFF(cnt)                                                                    \
   do {                                                                                             \
-    for (int __i = (count); __i != 0; __i--)                                                       \
+    for (int __i = (cnt); __i != 0; __i--)                                                       \
       SPINLOCK_BACKOFF_HOOK;                                                                       \
-    if ((count) < SPINLOCK_BACKOFF_MAX)                                                            \
-      (count) += (count);                                                                          \
+    if ((cnt) < SPINLOCK_BACKOFF_MAX)                                                            \
+      (cnt) += (cnt);                                                                          \
   } while (0);
 
 typedef struct {

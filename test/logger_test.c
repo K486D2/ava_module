@@ -47,7 +47,7 @@ int main() {
       .fp         = stdout,
       .buf        = &LOGGER_BUF,
       .cap        = sizeof(LOGGER_BUF),
-      .producers  = &PRODUCERS,
+      .producers  = (mpsc_p_t *)&PRODUCERS,
       .nproducers = ARRAY_SIZE(PRODUCERS),
       .flush_buf  = LOGGER_FLUSH_BUF,
       .flush_cap  = sizeof(LOGGER_FLUSH_BUF),
