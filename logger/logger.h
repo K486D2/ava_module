@@ -82,25 +82,50 @@ static inline void logger_init(logger_t *logger, logger_cfg_t logger_cfg) {
 static inline void logger_write(logger_t *logger, usz id, const char *fmt, va_list args) {
   DECL_LOGGER_PTRS(logger);
 
-  u8  tmp[128];
-  int nbytes = vsnprintf((char *)tmp, sizeof(tmp), fmt, args);
-  if (nbytes < 0)
+  // 计算不含终结符的实际写入长度
+  va_list args_nbytes;
+  va_copy(args_nbytes, args);
+  int nbytes = vsnprintf(NULL, 0, fmt, args_nbytes);
+  va_end(args_nbytes);
+  if (nbytes <= 0)
     return;
-  if (nbytes > (int)sizeof(tmp))
-    nbytes = sizeof(tmp);
 
-  mpsc_write(&lo->mpsc, mpsc_reg(&lo->mpsc, id), tmp, (usz)nbytes);
+  // 实际写入长度 + 终结符
+  usz reserve_nbytes = (usz)nbytes + 1;
+  if (reserve_nbytes > lo->mpsc.cap)
+    return;
+
+  // 申请写入空间
+  mpsc_p_t *p   = mpsc_reg(&lo->mpsc, id);
+  isz       off = mpsc_acquire(&lo->mpsc, p, reserve_nbytes);
+  if (off < 0)
+    return;
+
+  // 实际写入长度
+  u8     *dst = (u8 *)lo->mpsc.buf + (usz)off;
+  va_list args_fmt;
+  va_copy(args_fmt, args);
+  int write_nbytes = vsnprintf((char *)dst, reserve_nbytes, fmt, args_fmt);
+  va_end(args_fmt);
+
+  // 如果写入失败或者写入长度不符
+  if (write_nbytes < 0 || (usz)write_nbytes != (usz)nbytes) {
+    mpsc_push(p);
+    return;
+  }
+
+  mpsc_push(p);
 }
 
 static inline void logger_flush(logger_t *logger) {
   DECL_LOGGER_PTRS(logger);
 
   while (!lo->busy) {
-    usz nbytes = mpsc_read(&lo->mpsc, cfg->flush_buf, cfg->flush_cap);
-    if (nbytes == 0)
+    usz read_nbytes = mpsc_read(&lo->mpsc, cfg->flush_buf, cfg->flush_cap);
+    if (read_nbytes == 0)
       break;
 
-    ops->f_flush(cfg->fp, cfg->flush_buf, nbytes);
+    ops->f_flush(cfg->fp, cfg->flush_buf, read_nbytes);
     lo->busy = (cfg->e_mode == LOGGER_ASYNC);
   }
 }

@@ -9,7 +9,7 @@ logger_t logger;
 #define THREAD_COUNT 1000
 
 u8       LOGGER_FLUSH_BUF[128];
-u8       LOGGER_BUF[1024];
+u8       LOGGER_BUF[1024 * 1024];
 mpsc_p_t PRODUCERS[THREAD_COUNT];
 
 static inline void logger_stdout(void *fp, const u8 *src, size_t nbytes) {
@@ -28,9 +28,9 @@ void *write_thread_func(void *arg) {
 
   while (true) {
 #ifdef _WIN32
-    logger_debug(&logger, "Thread %5u, cnt: %llu\n", (u32)GetCurrentThreadId(), cnt);
+    logger_debug(&logger, "Thread %5u, cnt: %5llu\n", (u32)GetCurrentThreadId(), cnt);
 #else
-    logger_debug(&logger, cnt, "Thread %10u, cnt: %llu\n", (u32)pthread_self(), cnt);
+    logger_debug(&logger, cnt, "Thread %10u, cnt: %5llu\n", (u32)pthread_self(), cnt);
 #endif
 
     delay_ms(1, YIELD);
@@ -45,12 +45,12 @@ int main() {
       // .e_policy      = SPSC_POLICY_REJECT,
       .end_sign   = '\n',
       .fp         = stdout,
-      .buf        = &LOGGER_BUF,
+      .buf        = (void *)LOGGER_BUF,
       .cap        = sizeof(LOGGER_BUF),
-      .producers  = (mpsc_p_t *)&PRODUCERS,
-      .nproducers = ARRAY_SIZE(PRODUCERS),
       .flush_buf  = LOGGER_FLUSH_BUF,
       .flush_cap  = sizeof(LOGGER_FLUSH_BUF),
+      .producers  = (mpsc_p_t *)&PRODUCERS,
+      .nproducers = ARRAY_SIZE(PRODUCERS),
   };
   logger.ops.f_flush  = logger_stdout;
   logger.ops.f_get_ts = get_mono_ts_us;
