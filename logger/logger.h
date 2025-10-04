@@ -93,22 +93,21 @@ static inline void logger_write(logger_t *logger, usz id, const char *fmt, va_li
   DECL_LOGGER_PTRS(logger);
 
   // 获取当前时间戳
-  u64 ts = ops->f_get_ts();
-
+  u64 ts            = ops->f_get_ts();
   int prefix_nbytes = snprintf(NULL, 0, "[%llu][%zu]", ts, id);
   if (prefix_nbytes < 0)
     return;
 
   // 计算原始日志内容长度
-  va_list args_copy;
-  va_copy(args_copy, args);
-  int message_nbytes = vsnprintf(NULL, 0, fmt, args_copy);
-  va_end(args_copy);
-  if (message_nbytes < 0)
+  va_list args_fmt;
+  va_copy(args_fmt, args);
+  int fmt_nbytes = vsnprintf(NULL, 0, fmt, args_fmt);
+  va_end(args_fmt);
+  if (fmt_nbytes < 0)
     return;
 
-  int total_message_nbytes = prefix_nbytes + message_nbytes;
-  usz reserve_nbytes       = (usz)total_message_nbytes + 1;
+  int msg_nbytes     = prefix_nbytes + fmt_nbytes;
+  usz reserve_nbytes = (usz)msg_nbytes + 1;
   if (reserve_nbytes > lo->mpsc.cap)
     return;
 
@@ -118,22 +117,21 @@ static inline void logger_write(logger_t *logger, usz id, const char *fmt, va_li
   if (off < 0)
     return;
 
-  u8 *dst = (u8 *)lo->mpsc.buf + (usz)off;
-
   // 写入前缀
-  int written_prefix = snprintf((char *)dst, reserve_nbytes, "[%llu][%zu]", ts, id);
-  if (written_prefix != prefix_nbytes) {
+  u8 *dst                 = (u8 *)lo->mpsc.buf + (usz)off;
+  int write_prefix_nbytes = snprintf((char *)dst, reserve_nbytes, "[%llu][%zu]", ts, id);
+  if (write_prefix_nbytes != prefix_nbytes) {
     mpsc_push(p);
     return;
   }
 
   // 写入原始日志消息
-  va_list args_copy2;
-  va_copy(args_copy2, args);
-  int written_message =
-      vsnprintf((char *)dst + prefix_nbytes, reserve_nbytes - prefix_nbytes, fmt, args_copy2);
-  va_end(args_copy2);
-  if (written_message < 0 || written_message != message_nbytes) {
+  va_list args_write_fmt;
+  va_copy(args_write_fmt, args);
+  int write_fmt_nbytes =
+      vsnprintf((char *)dst + prefix_nbytes, reserve_nbytes - prefix_nbytes, fmt, args_write_fmt);
+  va_end(args_write_fmt);
+  if (write_fmt_nbytes < 0 || write_fmt_nbytes != fmt_nbytes) {
     mpsc_push(p);
     return;
   }
