@@ -29,18 +29,11 @@ void *write_thread_func(void *arg) {
 
   while (true) {
 #ifdef _WIN32
-    logger_debug(&logger,
-                 "Thread %5u, id: %5llu, cnt: %llu\n",
-                 (u32)GetCurrentThreadId(),
-                 id,
-                 PRODUCERS_CNTS[id]++);
+    logger_debug(
+        &logger, "Thread %5u, cnt: %llu\n", (u32)GetCurrentThreadId(), PRODUCERS_CNTS[id]++);
 #else
-    logger_debug(&logger,
-                 id,
-                 "Thread %10u, id: %5llu, cnt: %llu\n",
-                 (u32)pthread_self(),
-                 id,
-                 PRODUCERS_CNTS[id]++);
+    logger_debug(
+        &logger, id, "Thread %10u, cnt: %llu\n", (u32)pthread_self(), PRODUCERS_CNTS[id]++);
 #endif
 
     delay_ms(1, YIELD);

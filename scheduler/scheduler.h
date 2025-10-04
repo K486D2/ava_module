@@ -24,21 +24,21 @@ typedef enum {
 } sched_task_state_e;
 
 typedef struct {
-  u32        id;           // 任务ID
+  usz        id;           // 任务ID
   u32        priority;     // 任务优先级, 数值越小优先级越高
-  u32        exec_freq;    // 执行频率
-  u32        exec_cnt_max; // 最多执行次数
-  u32        delay;        // 初始延时
+  usz        exec_freq;    // 执行频率
+  usz        exec_cnt_max; // 最多执行次数
+  usz        delay;        // 初始延时
   sched_cb_f f_cb;         // 回调函数
   void      *arg;          // 回调参数
 } sched_task_cfg_t;
 
 typedef struct {
   sched_task_state_e e_state;
-  u32                exec_cnt;
-  u32                elapsed;
-  u32                create_ts;
-  u32                next_exec_ts;
+  usz                exec_cnt;
+  usz                elapsed;
+  usz                create_ts;
+  usz                next_exec_ts;
 } sched_task_status_t;
 
 typedef struct {
@@ -55,8 +55,8 @@ typedef struct {
 typedef struct {
   f32          elapsed_us;
   sched_task_t tasks[SCHED_TASK_MAX];
-  u32          tasks_num;
-  u32          curr_ts;
+  usz          tasks_num;
+  usz          curr_ts;
   rb_root_t    ready_tree;
 } sched_lo_t;
 

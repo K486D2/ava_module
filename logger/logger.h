@@ -92,16 +92,23 @@ static inline void logger_init(logger_t *logger, logger_cfg_t logger_cfg) {
 static inline void logger_write(logger_t *logger, usz id, const char *fmt, va_list args) {
   DECL_LOGGER_PTRS(logger);
 
-  // 计算不含终结符的实际写入长度
-  va_list args_nbytes;
-  va_copy(args_nbytes, args);
-  int nbytes = vsnprintf(NULL, 0, fmt, args_nbytes);
-  va_end(args_nbytes);
-  if (nbytes <= 0)
+  // 获取当前时间戳
+  u64 ts = ops->f_get_ts();
+
+  int prefix_nbytes = snprintf(NULL, 0, "[%llu][%zu]", ts, id);
+  if (prefix_nbytes < 0)
     return;
 
-  // 实际写入长度 + 终结符
-  usz reserve_nbytes = (usz)nbytes + 1;
+  // 计算原始日志内容长度
+  va_list args_copy;
+  va_copy(args_copy, args);
+  int message_nbytes = vsnprintf(NULL, 0, fmt, args_copy);
+  va_end(args_copy);
+  if (message_nbytes < 0)
+    return;
+
+  int total_message_nbytes = prefix_nbytes + message_nbytes;
+  usz reserve_nbytes       = (usz)total_message_nbytes + 1;
   if (reserve_nbytes > lo->mpsc.cap)
     return;
 
@@ -111,15 +118,22 @@ static inline void logger_write(logger_t *logger, usz id, const char *fmt, va_li
   if (off < 0)
     return;
 
-  // 实际写入长度
-  u8     *dst = (u8 *)lo->mpsc.buf + (usz)off;
-  va_list args_fmt;
-  va_copy(args_fmt, args);
-  int write_nbytes = vsnprintf((char *)dst, reserve_nbytes, fmt, args_fmt);
-  va_end(args_fmt);
+  u8 *dst = (u8 *)lo->mpsc.buf + (usz)off;
 
-  // 如果写入失败或者写入长度不符
-  if (write_nbytes < 0 || (usz)write_nbytes != (usz)nbytes) {
+  // 写入前缀
+  int written_prefix = snprintf((char *)dst, reserve_nbytes, "[%llu][%zu]", ts, id);
+  if (written_prefix != prefix_nbytes) {
+    mpsc_push(p);
+    return;
+  }
+
+  // 写入原始日志消息
+  va_list args_copy2;
+  va_copy(args_copy2, args);
+  int written_message =
+      vsnprintf((char *)dst + prefix_nbytes, reserve_nbytes - prefix_nbytes, fmt, args_copy2);
+  va_end(args_copy2);
+  if (written_message < 0 || written_message != message_nbytes) {
     mpsc_push(p);
     return;
   }
