@@ -35,6 +35,17 @@ typedef struct {
   mpsc_p_t *producers;  // 生产者状态数组
 } mpsc_t;
 
+static inline void mpsc_init(mpsc_t *mpsc, void *buf, usz cap, mpsc_p_t *producers, usz nproducers);
+static inline isz  mpsc_write(mpsc_t *mpsc, mpsc_p_t *p, const void *src, usz nbytes);
+static inline usz  mpsc_read(mpsc_t *mpsc, void *dst, usz nbytes);
+
+static inline mpsc_p_t *mpsc_reg(mpsc_t *mpsc, usz id);
+static inline void      mpsc_unreg(mpsc_p_t *p);
+static inline isz       mpsc_acquire(mpsc_t *mpsc, mpsc_p_t *p, usz nbytes);
+static inline void      mpsc_push(mpsc_p_t *p);
+static inline usz       mpsc_pop(mpsc_t *mpsc, usz *off);
+static inline void      mpsc_release(mpsc_t *mpsc, usz nbytes);
+
 static inline void
 mpsc_init(mpsc_t *mpsc, void *buf, usz cap, mpsc_p_t *producers, usz nproducers) {
   mpsc->buf        = buf;

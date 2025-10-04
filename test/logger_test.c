@@ -6,11 +6,12 @@
 
 logger_t logger;
 
-#define THREAD_COUNT 1000
+#define WRITE_THREAD_NUM 1000
+u64 PRODUCERS_CNTS[WRITE_THREAD_NUM];
 
 u8       LOGGER_FLUSH_BUF[128];
 u8       LOGGER_BUF[1024 * 1024];
-mpsc_p_t PRODUCERS[THREAD_COUNT];
+mpsc_p_t PRODUCERS[WRITE_THREAD_NUM];
 
 static inline void logger_stdout(void *fp, const u8 *src, size_t nbytes) {
   fwrite(src, nbytes, 1, fp);
@@ -24,13 +25,22 @@ void *flush_thread_func(void *arg) {
 }
 
 void *write_thread_func(void *arg) {
-  u64 cnt = *(u64 *)arg;
+  u64 id = *(u64 *)arg;
 
   while (true) {
 #ifdef _WIN32
-    logger_debug(&logger, "Thread %5u, cnt: %5llu\n", (u32)GetCurrentThreadId(), cnt);
+    logger_debug(&logger,
+                 "Thread %5u, id: %5llu, cnt: %llu\n",
+                 (u32)GetCurrentThreadId(),
+                 id,
+                 PRODUCERS_CNTS[id]++);
 #else
-    logger_debug(&logger, cnt, "Thread %10u, cnt: %5llu\n", (u32)pthread_self(), cnt);
+    logger_debug(&logger,
+                 id,
+                 "Thread %10u, id: %5llu, cnt: %llu\n",
+                 (u32)pthread_self(),
+                 id,
+                 PRODUCERS_CNTS[id]++);
 #endif
 
     delay_ms(1, YIELD);
@@ -59,14 +69,12 @@ int main() {
   pthread_t flush_thread;
   pthread_create(&flush_thread, NULL, flush_thread_func, &logger);
 
-  pthread_t threads[THREAD_COUNT];
-  u64       thread_cnts[THREAD_COUNT] = {0};
+  pthread_t write_thread[WRITE_THREAD_NUM];
+  for (u32 i = 0; i < WRITE_THREAD_NUM - 1; i++)
+    pthread_create(&write_thread[i], NULL, write_thread_func, &i);
 
-  for (int i = 0; i < THREAD_COUNT; i++)
-    pthread_create(&threads[i], NULL, write_thread_func, &i);
-
-  for (int i = 0; i < THREAD_COUNT; i++)
-    pthread_join(threads[i], NULL);
+  for (u32 i = 0; i < WRITE_THREAD_NUM - 1; i++)
+    pthread_join(write_thread[i], NULL);
 
   pthread_join(flush_thread, NULL);
 

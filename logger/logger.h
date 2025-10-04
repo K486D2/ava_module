@@ -60,6 +60,16 @@ typedef struct {
   logger_ops_t ops;
 } logger_t;
 
+static inline void logger_init(logger_t *logger, logger_cfg_t logger_cfg);
+static inline void logger_write(logger_t *logger, usz id, const char *fmt, va_list args);
+static inline void logger_flush(logger_t *logger);
+
+static inline void logger_data(logger_t *logger, usz id, const char *fmt, ...);
+static inline void logger_debug(logger_t *logger, usz id, const char *fmt, ...);
+static inline void logger_info(logger_t *logger, usz id, const char *fmt, ...);
+static inline void logger_warn(logger_t *logger, usz id, const char *fmt, ...);
+static inline void logger_error(logger_t *logger, usz id, const char *fmt, ...);
+
 #define DECL_LOGGER_PTRS(logger)                                                                   \
   logger_cfg_t *cfg = &(logger)->cfg;                                                              \
   logger_lo_t  *lo  = &(logger)->lo;                                                               \
