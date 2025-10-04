@@ -120,7 +120,7 @@ static inline void sched_remove_ready(sched_lo_t *lo, sched_task_t *task) {
   rb_erase(&task->rb_node, &lo->ready_tree);
 }
 
-static inline i32 sched_register_task(sched_t *sched, sched_task_cfg_t sched_task_cfg) {
+static inline int sched_register_task(sched_t *sched, sched_task_cfg_t sched_task_cfg) {
   DECL_SCHED_PTRS(sched);
 
   lo->curr_ts                                  = ops->f_get_ts();

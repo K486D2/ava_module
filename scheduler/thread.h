@@ -6,7 +6,7 @@
 #include "util/typedef.h"
 
 struct sched;
-static inline i32 sched_exec(struct sched *sched);
+static inline int sched_exec(struct sched *sched);
 
 #ifdef __linux__
 #include <pthread.h>
@@ -19,11 +19,11 @@ static inline void *sched_thread_exec(void *arg) {
   return NULL;
 }
 
-static inline void bind_thread_to_cpu(pthread_t thread_tid, i32 cpu_id) {
+static inline void bind_thread_to_cpu(pthread_t thread_tid, int cpu_id) {
   cpu_set_t cpuset;
   CPU_ZERO(&cpuset);
   CPU_SET(cpu_id, &cpuset);
-  i32 ret = pthread_setaffinity_np(thread_tid, sizeof(cpu_set_t), &cpuset);
+  int ret = pthread_setaffinity_np(thread_tid, sizeof(cpu_set_t), &cpuset);
   if (ret)
     printf("[SCHED] set thread affinity failed, errcode: %d\n", ret);
   printf("[SCHED] bind thread to CPU %d success\n", cpu_id);
@@ -32,10 +32,10 @@ static inline void bind_thread_to_cpu(pthread_t thread_tid, i32 cpu_id) {
 #include <windows.h>
 
 static inline DWORD WINAPI sched_thread_exec(LPVOID arg);
-static inline void         bind_thread_to_cpu(HANDLE thread_handle, i32 cpu_id) {
-  DWORD_PTR mask = 1u << cpu_id;
-  DWORD_PTR ret  = SetThreadAffinityMask(thread_handle, mask);
-  if (!ret)
+static inline void         bind_thread_to_cpu(HANDLE thread_handle, int cpu_id) {
+          DWORD_PTR mask = 1u << cpu_id;
+          DWORD_PTR ret  = SetThreadAffinityMask(thread_handle, mask);
+          if (!ret)
     printf("[SCHED] set thread affinity failed, errcode: %lu\n", GetLastError());
   printf("[SCHED] bind thread to CPU %d success\n", cpu_id);
 }
@@ -48,10 +48,10 @@ static inline DWORD WINAPI sched_thread_exec(LPVOID arg) {
 }
 #endif
 
-static inline void thread_init(void *arg, i32 cpu_id) {
+static inline void thread_init(void *arg, int cpu_id) {
 #ifdef __linux__
   pthread_t sched_tid;
-  i32       ret = pthread_create(&sched_tid, NULL, sched_thread_exec, arg);
+  int       ret = pthread_create(&sched_tid, NULL, sched_thread_exec, arg);
   if (ret != 0) {
     printf("[SCHED] create thread failed, errcode: %d\n", ret);
     return;

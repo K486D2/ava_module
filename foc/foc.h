@@ -13,32 +13,27 @@ static inline void foc_init(foc_t *foc, foc_cfg_t foc_cfg) {
   cfg->periph_cfg.adc2vbus     = cfg->periph_cfg.vbus_range / cfg->periph_cfg.adc_full_cnt;
   cfg->periph_cfg.pwm_full_cnt = cfg->periph_cfg.timer_freq / cfg->periph_cfg.pwm_freq;
 
-  lo->pll.cfg.fs = cfg->exec_freq;
-
+  lo->pll.cfg.fs        = cfg->exec_freq;
   lo->smo.cfg.fs        = cfg->exec_freq;
   lo->smo.cfg.motor_cfg = cfg->motor_cfg;
-
-  lo->hfi.cfg.fs = cfg->exec_freq;
-
-  lo->lbg.cfg.fs    = cfg->exec_freq;
-  lo->lbg.cfg.motor = cfg->motor_cfg;
+  lo->hfi.cfg.fs        = cfg->exec_freq;
+  lo->lbg.cfg.fs        = cfg->exec_freq;
+  lo->lbg.cfg.motor     = cfg->motor_cfg;
 
   pid_cfg_t cur_pid_cfg = {
       .fs = cfg->exec_freq / cfg->cur_div,
       .kp = cfg->motor_cfg.wc * cfg->motor_cfg.ld,
       .ki = cfg->motor_cfg.wc * cfg->motor_cfg.rs,
   };
-
   cfg->vel_cfg.fs = cfg->exec_freq / cfg->vel_div;
   cfg->pos_cfg.fs = cfg->exec_freq / cfg->pos_div;
   cfg->pd_cfg.fs  = cfg->exec_freq / cfg->pd_div;
 
-  pid_init(&lo->id_pid, cur_pid_cfg);
-  pid_init(&lo->iq_pid, cur_pid_cfg);
-
   pid_init(&lo->pd_pid, cfg->pd_cfg);
   pid_init(&lo->vel_pid, cfg->vel_cfg);
   pid_init(&lo->pos_pid, cfg->pos_cfg);
+  pid_init(&lo->id_pid, cur_pid_cfg);
+  pid_init(&lo->iq_pid, cur_pid_cfg);
 
   pll_init(&lo->pll, lo->pll.cfg);
   smo_init(&lo->smo, lo->smo.cfg);
