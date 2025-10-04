@@ -6,7 +6,7 @@
 
 logger_t logger;
 
-#define WRITE_THREAD_NUM 1
+#define WRITE_THREAD_NUM 1000
 u64 PRODUCERS_CNTS[WRITE_THREAD_NUM];
 
 u8       LOGGER_FLUSH_BUF[128];
@@ -62,11 +62,14 @@ int main() {
   pthread_t flush_thread;
   pthread_create(&flush_thread, NULL, flush_thread_func, &logger);
 
+  u64       thread_ids[WRITE_THREAD_NUM];
   pthread_t write_thread[WRITE_THREAD_NUM];
-  for (u32 i = 0; i <= WRITE_THREAD_NUM - 1; i++)
-    pthread_create(&write_thread[i], NULL, write_thread_func, &i);
+  for (u32 i = 0; i < WRITE_THREAD_NUM - 1; i++) {
+    thread_ids[i] = i;
+    pthread_create(&write_thread[i], NULL, write_thread_func, &thread_ids[i]);
+  }
 
-  for (u32 i = 0; i <= WRITE_THREAD_NUM - 1; i++)
+  for (u32 i = 0; i < WRITE_THREAD_NUM - 1; i++)
     pthread_join(write_thread[i], NULL);
 
   pthread_join(flush_thread, NULL);

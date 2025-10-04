@@ -96,11 +96,14 @@ static inline void logger_init(logger_t *logger, logger_cfg_t logger_cfg) {
 static inline void logger_write(logger_t *logger, usz id, const char *fmt, va_list args) {
   DECL_LOGGER_PTRS(logger);
 
+  va_list args_entry;
+  va_copy(args_entry, args);
   logger_entry_t entry = {
       .ts         = ops->f_get_ts(),
       .id         = id,
-      .msg_nbytes = (usz)vsnprintf(NULL, 0, fmt, args),
+      .msg_nbytes = (usz)vsnprintf(NULL, 0, fmt, args_entry) + 1,
   };
+  va_end(args_entry);
 
   usz total_nbytes = sizeof(entry) + entry.msg_nbytes;
   if (total_nbytes > cfg->cap)
@@ -115,33 +118,31 @@ static inline void logger_write(logger_t *logger, usz id, const char *fmt, va_li
 
   u8 *buf = (u8 *)lo->mpsc.buf + (usz)off;
   memcpy(buf, &entry, sizeof(entry));
-  int msg_nbytes = vsnprintf((char *)buf + sizeof(entry), entry.msg_nbytes, fmt, args);
-  if (msg_nbytes != (int)entry.msg_nbytes) {
-    mpsc_push(p);
-    mpsc_unreg(p);
-    return;
-  }
+
+  va_list args_msg;
+  va_copy(args_msg, args);
+  int msg_nbytes = vsnprintf((char *)buf + sizeof(entry), entry.msg_nbytes, fmt, args_msg);
+  va_end(args_msg);
 
   mpsc_push(p);
   mpsc_unreg(p);
+
+  if (msg_nbytes != (int)entry.msg_nbytes)
+    return;
 }
 
 static inline void logger_flush(logger_t *logger) {
   DECL_LOGGER_PTRS(logger);
 
   while (!lo->busy) {
-    logger_entry_t entry  = {0};
-    usz            nbytes = mpsc_read(&lo->mpsc, &entry, sizeof(entry));
-    if (nbytes == 0)
+    logger_entry_t entry        = {0};
+    usz            entry_nbytes = mpsc_read(&lo->mpsc, &entry, sizeof(entry));
+    if (entry_nbytes == 0)
       break;
 
     usz total_nbytes =
         snprintf((char *)cfg->flush_buf, cfg->flush_cap, "[%llu][%zu]", entry.ts, entry.id);
     total_nbytes += mpsc_read(&lo->mpsc, cfg->flush_buf + total_nbytes, entry.msg_nbytes);
-    if (entry.msg_nbytes + sizeof(entry) > total_nbytes) {
-      mpsc_release(&lo->mpsc, total_nbytes);
-      break;
-    }
 
     ops->f_flush(cfg->fp, cfg->flush_buf, total_nbytes);
     lo->busy = (cfg->e_mode == LOGGER_ASYNC);

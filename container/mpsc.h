@@ -223,7 +223,7 @@ static inline usz mpsc_read(mpsc_t *mpsc, void *dst, usz nbytes) {
   if (avail_nbytes == 0)
     return 0;
 
-  usz read_nbytes = (avail_nbytes < nbytes) ? avail_nbytes : nbytes;
+  usz read_nbytes = (avail_nbytes < nbytes) ? 0 : nbytes;
 
   if (off + read_nbytes <= mpsc->cap)
     memcpy(dst, (u8 *)mpsc->buf + off, read_nbytes);
