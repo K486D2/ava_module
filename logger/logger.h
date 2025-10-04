@@ -29,16 +29,14 @@ typedef enum {
 typedef struct {
   logger_mode_e  e_mode;
   logger_level_e e_level;
-  // mpsc_policy_e  e_policy;
-  char        end_sign;
-  const char *prefix;
-  void       *fp;
-  void       *buf;
-  size_t      cap;
-  u8         *flush_buf;
-  size_t      flush_cap;
-  mpsc_p_t   *producers;
-  size_t      nproducers;
+  char           end_sign;
+  void          *fp;
+  void          *buf;
+  size_t         cap;
+  u8            *flush_buf;
+  size_t         flush_cap;
+  mpsc_p_t      *producers;
+  size_t         nproducers;
 } logger_cfg_t;
 
 typedef struct {

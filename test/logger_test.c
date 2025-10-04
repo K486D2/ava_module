@@ -43,9 +43,8 @@ void *write_thread_func(void *arg) {
 
 int main() {
   logger_cfg_t logger_cfg = {
-      .e_mode  = LOGGER_SYNC,
-      .e_level = LOGGER_LEVEL_DEBUG,
-      // .e_policy      = SPSC_POLICY_REJECT,
+      .e_mode     = LOGGER_SYNC,
+      .e_level    = LOGGER_LEVEL_DEBUG,
       .end_sign   = '\n',
       .fp         = stdout,
       .buf        = (void *)LOGGER_BUF,
