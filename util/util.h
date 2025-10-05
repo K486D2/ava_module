@@ -30,11 +30,21 @@
       f_init((p), (p)->cfg);                                                                       \
   } while (0)
 
-#define RESET_OUT(ptr)       memset(&(ptr)->out, 0, sizeof((ptr)->out))
+#define RESET_OUT(ptr) memset(&(ptr)->out, 0, sizeof((ptr)->out))
 
+#ifdef __MINGW32__
+#define IS_SAME_TYPE(a, b) __mingw_types_compatible_p(__typeof__(a), __typeof__(b))
+#else
+#define IS_SAME_TYPE(a, b) __builtin_types_compatible_p(__typeof__(a), __typeof__(b))
+#endif
+
+#ifdef __cplusplus
+#define BUILD_BUG_ON_ZERO(e) ((sizeof(char[1 - 2 * !!(e)])) - 1)
+#else
 #define BUILD_BUG_ON_ZERO(e) (sizeof(struct { int : -!!(e); }))
-#define __same_type(a, b)    __builtin_types_compatible_p(typeof(a), typeof(b))
-#define __must_be_array(a)   BUILD_BUG_ON_ZERO(__same_type((a), &(a)[0]))
-#define ARRAY_SIZE(arr)      (sizeof(arr) / sizeof(arr[0]) + __must_be_array(arr))
+#endif
+
+#define MUST_BE_ARRAY(a) BUILD_BUG_ON_ZERO(IS_SAME_TYPE((a), &(a)[0]))
+#define ARRAY_SIZE(arr)  (sizeof(arr) / sizeof(arr[0]) + MUST_BE_ARRAY(arr))
 
 #endif // !UTIL_H

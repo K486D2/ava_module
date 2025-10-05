@@ -25,6 +25,7 @@ typedef u64 usz;
 typedef i64 isz;
 #endif
 
+#ifndef __cplusplus
 #ifndef bool
 #define bool u8
 #endif
@@ -35,6 +36,7 @@ typedef i64 isz;
 
 #ifndef false
 #define false 0
+#endif
 #endif
 
 /* 原子操作 */
