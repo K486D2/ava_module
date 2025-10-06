@@ -13,11 +13,10 @@
 #include "container/spsc.h"
 #include "util/util.h"
 
-#define SHM_SIZE 1024
-
 typedef struct {
   const char *name;
   u32         access;
+  usz         cap;
 } shm_cfg_t;
 
 typedef struct {
@@ -26,8 +25,9 @@ typedef struct {
 #elif defined(_WIN32)
   HANDLE fd;
 #endif
-  void *base;
-  bool  is_creator;
+  void   *base;
+  bool    is_creator;
+  spsc_t *spsc;
 } shm_lo_t;
 
 typedef struct {
@@ -58,14 +58,14 @@ static inline int shm_init(shm_t *shm, shm_cfg_t shm_cfg) {
       return -MEACCES;
     lo->is_creator = true;
 
-    if (ftruncate(lo->fd, SHM_SIZE) == -1) {
+    if (ftruncate(lo->fd, cfg->cap) == -1) {
       close(lo->fd);
       return -MEACCES;
     }
   } else
     lo->is_creator = false;
 
-  lo->base = mmap(NULL, SHM_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, lo->fd, 0);
+  lo->base = mmap(NULL, cfg->cap, PROT_READ | PROT_WRITE, MAP_SHARED, lo->fd, 0);
   if (lo->base == MAP_FAILED) {
     close(lo->fd);
     if (lo->is_creator)
@@ -81,7 +81,7 @@ static inline int shm_init(shm_t *shm, shm_cfg_t shm_cfg) {
                                NULL,                 // 默认安全属性
                                cfg->access,          // 可读可写
                                0,                    // 内存大小高32位
-                               SHM_SIZE,             // 内存大小低32位
+                               cfg->cap,             // 内存大小低32位
                                cfg->name);           // 命名对象
     if (lo->fd == NULL)
       return -MECREATE;
@@ -94,7 +94,7 @@ static inline int shm_init(shm_t *shm, shm_cfg_t shm_cfg) {
                            FILE_MAP_ALL_ACCESS, // 读写权限
                            0,
                            0,         // 偏移量
-                           SHM_SIZE); // 映射大小
+                           cfg->cap); // 映射大小
   if (lo->base == NULL) {
     UnmapViewOfFile(lo->base);
     CloseHandle(lo->fd);
@@ -102,7 +102,23 @@ static inline int shm_init(shm_t *shm, shm_cfg_t shm_cfg) {
   }
 #endif
 
+  lo->spsc = (spsc_t *)lo->base;
+  if (lo->is_creator)
+    spsc_init_buf(lo->spsc, cfg->cap >> 1, SPSC_POLICY_REJECT);
+
   return 0;
+}
+
+static inline void shm_read(shm_t *shm, void *dst, usz nbytes) {
+  DECL_SHM_PTRS(shm);
+
+  spsc_read_buf(lo->spsc, (u8 *)lo->base + sizeof(*lo->spsc), dst, nbytes);
+}
+
+static inline void shm_write(shm_t *shm, void *src, usz nbytes) {
+  DECL_SHM_PTRS(shm);
+
+  spsc_write_buf(lo->spsc, (u8 *)lo->base + sizeof(*lo->spsc), src, nbytes);
 }
 
 #endif // !SHARED_MEM_H

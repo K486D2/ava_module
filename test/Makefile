@@ -7,7 +7,7 @@ BINS      := $(addprefix $(DIR_BUILD)/, $(TARGETS))
 
 CC       := gcc
 FLAGS_C  += -Wall -Wextra
-FLAGS_C  += -g -fsanitize=address -fno-omit-frame-pointer
+FLAGS_C  += -g
 FLAGS_C  += -D_GNU_SOURCE
 FLAGS_LD += -lpthread -lm
 
