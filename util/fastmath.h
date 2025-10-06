@@ -59,13 +59,9 @@ static inline f32 fast_sinf(f32 x) {
   return (sig > 0) ? -y : y;
 }
 
-static inline f32 fast_cosf(f32 x) {
-  return fast_sinf(x + 1.5707963267948966192313216916398f);
-}
+static inline f32 fast_cosf(f32 x) { return fast_sinf(x + 1.5707963267948966192313216916398f); }
 
-static inline f32 fast_tanf(f32 x) {
-  return fast_sinf(x) / fast_cosf(x);
-}
+static inline f32 fast_tanf(f32 x) { return fast_sinf(x) / fast_cosf(x); }
 
 static inline f32 fast_expf(f32 x) {
   union {
@@ -83,12 +79,8 @@ static inline f32 fast_absf(f32 x) {
   return y;
 }
 
-static inline f32 fast_sqrtf(f32 x) {
-  return sqrtf(x);
-}
+static inline f32 fast_sqrtf(f32 x) { return sqrtf(x); }
 
-static inline f32 fast_modf(f32 x, f32 y) {
-  return fmodf(x, y);
-}
+static inline f32 fast_modf(f32 x, f32 y) { return fmodf(x, y); }
 
 #endif // !FASTMATH_H

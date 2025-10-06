@@ -32,4 +32,4 @@ AlignConsecutiveMacros: AcrossEmptyLines
 # 换行反斜杠对齐方式
 AlignEscapedNewlines: Right
 # 短函数是否写在一行
-AllowShortFunctionsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: true

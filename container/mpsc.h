@@ -62,9 +62,7 @@ static inline mpsc_p_t *mpsc_reg(mpsc_t *mpsc, usz id) {
   return p;
 }
 
-static inline void mpsc_unreg(mpsc_p_t *p) {
-  p->flag = false;
-}
+static inline void mpsc_unreg(mpsc_p_t *p) { p->flag = false; }
 
 static inline usz mpsc_get_wp(mpsc_t *mpsc) {
   u32 cnt = SPINLOCK_BACKOFF_MIN;

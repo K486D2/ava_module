@@ -52,9 +52,7 @@ static inline void foc_select_theta(foc_t *foc) {
   }
 }
 
-static inline void foc_ready(foc_t *foc) {
-  DECL_FOC_PTRS(foc);
-}
+static inline void foc_ready(foc_t *foc) { DECL_FOC_PTRS(foc); }
 
 static inline void foc_disable(foc_t *foc) {
   DECL_FOC_PTRS(foc);

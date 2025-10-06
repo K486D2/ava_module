@@ -78,24 +78,24 @@
 
 #define SGN(x)                         ((x) == 0.0F ? 0.0F : (x) > 0.0F ? 1.0F : -1.0F)
 
-#define SQ(x)                          ((x) * (x))       // 平方
-#define K(x)                           ((x)*1000U)       // 乘以 1K
-#define M(x)                           ((x)*1000000U)    // 乘以 1M
-#define G(x)                           ((x)*1000000000U) // 乘以 1G
+#define SQ(x)                          ((x) * (x))         // 平方
+#define K(x)                           ((x) * 1000U)       // 乘以 1K
+#define M(x)                           ((x) * 1000000U)    // 乘以 1M
+#define G(x)                           ((x) * 1000000000U) // 乘以 1G
 
-#define RAD_TO_DEG(rad)                ((rad)*57.2957795F)
+#define RAD_TO_DEG(rad)                ((rad) * 57.2957795F)
 #define DEG_TO_RAD(deg)                ((deg) / 57.2957795F)
 
 #define US_TO_S(us)                    ((us) / 1000000.0F)
-#define S_TO_US(s)                     ((s)*1000000U)
+#define S_TO_US(s)                     ((s) * 1000000U)
 #define US_TO_MS(us)                   ((us) / 1000.0F)
-#define MS_TO_US(ms)                   ((ms)*1000U)
+#define MS_TO_US(ms)                   ((ms) * 1000U)
 #define MS_TO_S(ms)                    ((ms) / 1000.0F)
-#define S_TO_MS(s)                     ((s)*1000U)
+#define S_TO_MS(s)                     ((s) * 1000U)
 
 #define HZ_TO_S(hz)                    (1.0F / (hz))
-#define HZ_TO_MS(hz)                   (1.0F / (hz)*1000U)
-#define HZ_TO_US(hz)                   (1.0F / (hz)*1000000U)
+#define HZ_TO_MS(hz)                   (1.0F / (hz) * 1000U)
+#define HZ_TO_US(hz)                   (1.0F / (hz) * 1000000U)
 
 #define MECH_TO_ELEC(theta, npp)       ((theta) * (npp))
 #define ELEC_TO_MECH(theta, npp)       ((theta) / (npp))
@@ -321,7 +321,7 @@ static inline f32 poly_eval(const f32 *coeffs, u32 order, f32 x) {
   return result;
 }
 
-#define IS_POWER_OF_2(n)    ((n) != 0 && (((n) & ((n)-1)) == 0))
-#define ROUNDUP_POW_OF_2(n) ((n) == 0 ? 1 : (1ULL << (sizeof(n) * 8 - clz64((n)-1))))
+#define IS_POWER_OF_2(n)    ((n) != 0 && (((n) & ((n) - 1)) == 0))
+#define ROUNDUP_POW_OF_2(n) ((n) == 0 ? 1 : (1ULL << (sizeof(n) * 8 - clz64((n) - 1))))
 
 #endif // !MATHDEF_H

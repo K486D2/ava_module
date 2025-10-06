@@ -64,21 +64,15 @@ static inline void spsc_reset(spsc_t *spsc) {
   atomic_store(&spsc->wp, 0);
 }
 
-static inline bool spsc_empty(spsc_t *spsc) {
-  return spsc_avail(spsc) == 0;
-}
+static inline bool spsc_empty(spsc_t *spsc) { return spsc_avail(spsc) == 0; }
 
-static inline bool spsc_full(spsc_t *spsc) {
-  return spsc_free(spsc) == 0;
-}
+static inline bool spsc_full(spsc_t *spsc) { return spsc_free(spsc) == 0; }
 
 static inline usz spsc_avail(spsc_t *spsc) {
   return atomic_load(&spsc->wp) - atomic_load(&spsc->rp);
 }
 
-static inline usz spsc_free(spsc_t *spsc) {
-  return spsc->cap - spsc_avail(spsc);
-}
+static inline usz spsc_free(spsc_t *spsc) { return spsc->cap - spsc_avail(spsc); }
 
 static inline usz spsc_policy(spsc_t *spsc, usz wp, usz rp, usz nbytes) {
   usz free = spsc->cap - (wp - rp);

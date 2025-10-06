@@ -54,9 +54,7 @@ static inline void __list_splice(list_head_t *node, list_head_t *head) {
   at->prev   = last;
 }
 
-static inline bool list_empty(const list_head_t *list) {
-  return list->next == list;
-}
+static inline bool list_empty(const list_head_t *list) { return list->next == list; }
 
 static inline void list_splice(list_head_t *node, list_head_t *head) {
   if (!list_empty(node))

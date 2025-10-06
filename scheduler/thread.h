@@ -33,9 +33,9 @@ static inline void bind_thread_to_cpu(pthread_t thread_tid, int cpu_id) {
 
 static inline DWORD WINAPI sched_thread_exec(LPVOID arg);
 static inline void         bind_thread_to_cpu(HANDLE thread_handle, int cpu_id) {
-          DWORD_PTR mask = 1u << cpu_id;
-          DWORD_PTR ret  = SetThreadAffinityMask(thread_handle, mask);
-          if (!ret)
+  DWORD_PTR mask = 1u << cpu_id;
+  DWORD_PTR ret  = SetThreadAffinityMask(thread_handle, mask);
+  if (!ret)
     printf("[SCHED] set thread affinity failed, errcode: %lu\n", GetLastError());
   printf("[SCHED] bind thread to CPU %d success\n", cpu_id);
 }

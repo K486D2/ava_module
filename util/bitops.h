@@ -33,30 +33,18 @@ static inline u32 ctz64(u64 x) {
 #endif
 }
 
-static inline u32 popcount64(u64 x) {
-  return (u32)__popcnt64(x);
-}
+static inline u32 popcount64(u64 x) { return (u32)__popcnt64(x); }
 
-static inline u64 bswap64(u64 x) {
-  return _byteswap_uint64(x);
-}
+static inline u64 bswap64(u64 x) { return _byteswap_uint64(x); }
 
-static inline u64 rol64(u64 x, u32 n) {
-  return _rotl64(x, n);
-}
+static inline u64 rol64(u64 x, u32 n) { return _rotl64(x, n); }
 
-static inline u64 ror64(u64 x, u32 n) {
-  return _rotr64(x, n);
-}
+static inline u64 ror64(u64 x, u32 n) { return _rotr64(x, n); }
 
 // BMI/BMI2 特殊操作
 #ifdef __BMI__
-static inline u64 blsr64(u64 x) {
-  return _blsr_u64(x);
-} // 清除最低位 1
-static inline u64 blsi64(u64 x) {
-  return _blsi_u64(x);
-} // 提取最低位 1
+static inline u64 blsr64(u64 x) { return _blsr_u64(x); } // 清除最低位 1
+static inline u64 blsi64(u64 x) { return _blsi_u64(x); } // 提取最低位 1
 #endif
 
 // ================= 32-bit =================
@@ -78,94 +66,54 @@ static inline u32 ctz32(u32 x) {
 #endif
 }
 
-static inline u32 popcount32(u32 x) {
-  return __popcnt(x);
-}
+static inline u32 popcount32(u32 x) { return __popcnt(x); }
 
-static inline u32 bswap32(u32 x) {
-  return _byteswap_ulong(x);
-}
+static inline u32 bswap32(u32 x) { return _byteswap_ulong(x); }
 
-static inline u32 rol32(u32 x, u32 n) {
-  return _rotl(x, n);
-}
+static inline u32 rol32(u32 x, u32 n) { return _rotl(x, n); }
 
-static inline u32 ror32(u32 x, u32 n) {
-  return _rotr(x, n);
-}
+static inline u32 ror32(u32 x, u32 n) { return _rotr(x, n); }
 
 #elif defined(__GNUC__) || defined(__clang__)
 
 // ================= 64-bit =================
 #ifdef __BMI__ // BMI/BMI2 支持
 #include <x86intrin.h>
-static inline u32 ctz64(u64 x) {
-  return _tzcnt_u64(x);
-}
+static inline u32 ctz64(u64 x) { return _tzcnt_u64(x); }
 
-static inline u64 blsr64(u64 x) {
-  return _blsr_u64(x);
-}
+static inline u64 blsr64(u64 x) { return _blsr_u64(x); }
 
-static inline u64 blsi64(u64 x) {
-  return _blsi_u64(x);
-}
+static inline u64 blsi64(u64 x) { return _blsi_u64(x); }
 #else
-static inline u32 ctz64(u64 x) {
-  return x ? __builtin_ctzll(x) : 64;
-}
+static inline u32 ctz64(u64 x) { return x ? __builtin_ctzll(x) : 64; }
 #endif
 
-static inline u32 clz64(u64 x) {
-  return x ? __builtin_clzll(x) : 64;
-}
+static inline u32 clz64(u64 x) { return x ? __builtin_clzll(x) : 64; }
 
-static inline u32 popcount64(u64 x) {
-  return __builtin_popcountll(x);
-}
+static inline u32 popcount64(u64 x) { return __builtin_popcountll(x); }
 
-static inline u64 bswap64(u64 x) {
-  return __builtin_bswap64(x);
-}
+static inline u64 bswap64(u64 x) { return __builtin_bswap64(x); }
 
-static inline u64 rol64(u64 x, u32 n) {
-  return (x << n) | (x >> (64 - n));
-}
+static inline u64 rol64(u64 x, u32 n) { return (x << n) | (x >> (64 - n)); }
 
-static inline u64 ror64(u64 x, u32 n) {
-  return (x >> n) | (x << (64 - n));
-}
+static inline u64 ror64(u64 x, u32 n) { return (x >> n) | (x << (64 - n)); }
 
 // ================= 32-bit =================
 #ifdef __BMI__
-static inline u32 ctz32(u32 x) {
-  return _tzcnt_u32(x);
-}
+static inline u32 ctz32(u32 x) { return _tzcnt_u32(x); }
 #else
-static inline u32 ctz32(u32 x) {
-  return x ? __builtin_ctz(x) : 32;
-}
+static inline u32 ctz32(u32 x) { return x ? __builtin_ctz(x) : 32; }
 #endif
 
-static inline u32 clz32(u32 x) {
-  return x ? __builtin_clz(x) : 32;
-}
+static inline u32 clz32(u32 x) { return x ? __builtin_clz(x) : 32; }
 
-static inline u32 popcount32(u32 x) {
-  return __builtin_popcount(x);
-}
+static inline u32 popcount32(u32 x) { return __builtin_popcount(x); }
 
-static inline u32 bswap32(u32 x) {
-  return __builtin_bswap32(x);
-}
+static inline u32 bswap32(u32 x) { return __builtin_bswap32(x); }
 
-static inline u32 rol32(u32 x, u32 n) {
-  return (x << n) | (x >> (32 - n));
-}
+static inline u32 rol32(u32 x, u32 n) { return (x << n) | (x >> (32 - n)); }
 
-static inline u32 ror32(u32 x, u32 n) {
-  return (x >> n) | (x << (32 - n));
-}
+static inline u32 ror32(u32 x, u32 n) { return (x >> n) | (x << (32 - n)); }
 
 #else // fallback 循环实现
 
@@ -210,13 +158,9 @@ static inline u64 bswap64(u64 x) {
   return y;
 }
 
-static inline u64 rol64(u64 x, u32 n) {
-  return (x << n) | (x >> (64 - n));
-}
+static inline u64 rol64(u64 x, u32 n) { return (x << n) | (x >> (64 - n)); }
 
-static inline u64 ror64(u64 x, u32 n) {
-  return (x >> n) | (x << (64 - n));
-}
+static inline u64 ror64(u64 x, u32 n) { return (x >> n) | (x << (64 - n)); }
 
 // ================= 32-bit =================
 static inline u32 clz32(u32 x) {
@@ -259,31 +203,19 @@ static inline u32 bswap32(u32 x) {
   return y;
 }
 
-static inline u32 rol32(u32 x, u32 n) {
-  return (x << n) | (x >> (32 - n));
-}
+static inline u32 rol32(u32 x, u32 n) { return (x << n) | (x >> (32 - n)); }
 
-static inline u32 ror32(u32 x, u32 n) {
-  return (x >> n) | (x << (32 - n));
-}
+static inline u32 ror32(u32 x, u32 n) { return (x >> n) | (x << (32 - n)); }
 
 #endif
 
 // ================= LSB / MSB =================
-static inline u32 lsb64(u64 x) {
-  return ctz64(x);
-}
+static inline u32 lsb64(u64 x) { return ctz64(x); }
 
-static inline u32 msb64(u64 x) {
-  return 63 - clz64(x);
-}
+static inline u32 msb64(u64 x) { return 63 - clz64(x); }
 
-static inline u32 lsb32(u32 x) {
-  return ctz32(x);
-}
+static inline u32 lsb32(u32 x) { return ctz32(x); }
 
-static inline u32 msb32(u32 x) {
-  return 31 - clz32(x);
-}
+static inline u32 msb32(u32 x) { return 31 - clz32(x); }
 
 #endif // !BITOPS_H

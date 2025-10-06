@@ -22,9 +22,7 @@ typedef struct {
 
 // 初始化根节点
 #define RB_ROOT                                                                                    \
-  (rb_root_t) {                                                                                    \
-    NULL                                                                                           \
-  }
+  (rb_root_t) { NULL }
 
 // 获取父节点
 static inline rb_node_t *rb_parent(const rb_node_t *rb) {
@@ -44,25 +42,15 @@ static inline void rb_set_color(rb_node_t *rb, rb_color_e color) {
   rb->__rb_parent_color = (rb->__rb_parent_color & ~1) | color;
 }
 
-static inline bool rb_is_red(const rb_node_t *rb) {
-  return rb_color(rb) == RB_RED;
-}
+static inline bool rb_is_red(const rb_node_t *rb) { return rb_color(rb) == RB_RED; }
 
-static inline bool rb_is_black(const rb_node_t *rb) {
-  return rb_color(rb) == RB_BLACK;
-}
+static inline bool rb_is_black(const rb_node_t *rb) { return rb_color(rb) == RB_BLACK; }
 
-static inline void rb_set_red(rb_node_t *rb) {
-  rb_set_color(rb, RB_RED);
-}
+static inline void rb_set_red(rb_node_t *rb) { rb_set_color(rb, RB_RED); }
 
-static inline void rb_set_black(rb_node_t *rb) {
-  rb_set_color(rb, RB_BLACK);
-}
+static inline void rb_set_black(rb_node_t *rb) { rb_set_color(rb, RB_BLACK); }
 
-static inline bool rb_is_unlinked(const rb_node_t *rb) {
-  return rb->__rb_parent_color == (u64)rb;
-}
+static inline bool rb_is_unlinked(const rb_node_t *rb) { return rb->__rb_parent_color == (u64)rb; }
 
 static inline void rb_link_node(rb_node_t *node, rb_node_t *parent, rb_node_t **rb_link) {
   node->__rb_parent_color = (u64)parent;
