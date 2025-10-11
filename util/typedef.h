@@ -40,10 +40,7 @@ typedef i64 isz;
 #endif
 
 /* 原子操作 */
-#ifndef __cplusplus
-#include <stdatomic.h>
-#define atomic_t(x) _Atomic x
-#else
+#ifdef __cplusplus
 #include <atomic>
 #define atomic_t(x)                    std::atomic<x>
 #define atomic_store(a, v)             std::atomic_store(a, v)
@@ -57,6 +54,9 @@ constexpr auto memory_order_relaxed = std::memory_order_relaxed;
 constexpr auto memory_order_acquire = std::memory_order_acquire;
 constexpr auto memory_order_release = std::memory_order_release;
 constexpr auto memory_order_acq_rel = std::memory_order_acq_rel;
+#else
+#include <stdatomic.h>
+#define atomic_t(x) _Atomic x
 #endif
 
 #define SPINLOCK_BACKOFF_MIN 4
