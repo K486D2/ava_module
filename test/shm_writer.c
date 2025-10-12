@@ -24,8 +24,8 @@ int main() {
     shm_write(&shm, &cnt, sizeof(cnt));
     printf("write cnt: %u, spsc wp: %llu, spsc rp: %llu, spsc free: %llu\n",
            cnt,
-           atomic_load(&shm.lo.spsc->wp),
-           atomic_load(&shm.lo.spsc->rp),
+           ATOMIC_LOAD(&shm.lo.spsc->wp),
+           ATOMIC_LOAD(&shm.lo.spsc->rp),
            spsc_free(shm.lo.spsc));
   }
 

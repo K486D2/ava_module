@@ -40,23 +40,24 @@ typedef i64 isz;
 #endif
 
 /* 原子操作 */
-#ifdef __cplusplus
+#ifndef __cplusplus
+#include <stdatomic.h>
+#define ATOMIC(x) _Atomic x
+#else
 #include <atomic>
-#define atomic_t(x)                    std::atomic<x>
-#define atomic_store(a, v)             std::atomic_store(a, v)
-#define atomic_load(a)                 std::atomic_load(a)
-#define atomic_load_explicit(a, m)     std::atomic_load_explicit(a, m)
-#define atomic_store_explicit(a, v, m) std::atomic_store_explicit(a, v, m)
-#define atomic_compare_exchange_weak_explicit(a, o, n, s, f)                                       \
+#define ATOMIC(x)                      std::atomic<x>
+#define ATOMIC_LOAD(a)                 std::atomic_load(a)
+#define ATOMIC_LOAD_EXPLICIT(a, m)     std::atomic_load_explicit(a, m)
+#define ATOMIC_STORE(a, v)             std::atomic_store(a, v)
+#define ATOMIC_STORE_EXPLICIT(a, v, m) std::atomic_store_explicit(a, v, m)
+#define ATOMIC_CAS_WEAK_EXPLICIT(a, o, n, s, f)                                                    \
   std::atomic_compare_exchange_weak_explicit(a, o, n, s, f)
-
+#define ATOMIC_CAS_STRONG_EXPLICIT(a, o, n, s, f)                                                  \
+  std::atomic_compare_exchange_strong_explicit(a, o, n, s, f)
 constexpr auto memory_order_relaxed = std::memory_order_relaxed;
 constexpr auto memory_order_acquire = std::memory_order_acquire;
 constexpr auto memory_order_release = std::memory_order_release;
 constexpr auto memory_order_acq_rel = std::memory_order_acq_rel;
-#else
-#include <stdatomic.h>
-#define atomic_t(x) _Atomic x
 #endif
 
 #define SPINLOCK_BACKOFF_MIN 4

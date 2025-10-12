@@ -21,16 +21,16 @@
 #endif
 
 typedef struct {
-  atomic_t(usz) reserve_pos; // 当前生产者申请的写区终点
-  atomic_t(bool) flag;       // 是否活跃
+  ATOMIC(usz) reserve_pos; // 当前生产者申请的写区终点
+  ATOMIC(bool) flag;       // 是否活跃
 } mpsc_p_t;
 
 typedef struct {
   void *buf;            // 环形缓冲区存放实际数据
   usz   cap;            // 环形缓冲区容量
   usz   warp_end;       // wrap 回绕的标记位置
-  atomic_t(usz) wp;     // 全局写指针(生产者共享)
-  atomic_t(usz) rp;     // 全局读指针(消费者独占)
+  ATOMIC(usz) wp;       // 全局写指针(生产者共享)
+  ATOMIC(usz) rp;       // 全局读指针(消费者独占)
   usz       nproducers; // 生产者数量
   mpsc_p_t *producers;  // 生产者状态数组
 } mpsc_t;
@@ -57,8 +57,8 @@ mpsc_init(mpsc_t *mpsc, void *buf, usz cap, mpsc_p_t *producers, usz nproducers)
 
 static inline mpsc_p_t *mpsc_reg(mpsc_t *mpsc, usz id) {
   mpsc_p_t *p = &mpsc->producers[id];
-  atomic_store_explicit(&p->reserve_pos, MPSC_OFF_MAX, memory_order_relaxed);
-  atomic_store_explicit(&p->flag, true, memory_order_release);
+  ATOMIC_STORE_EXPLICIT(&p->reserve_pos, MPSC_OFF_MAX, memory_order_relaxed);
+  ATOMIC_STORE_EXPLICIT(&p->flag, true, memory_order_release);
   return p;
 }
 
@@ -69,7 +69,7 @@ static inline usz mpsc_get_wp(mpsc_t *mpsc) {
   usz wp;
 
 retry:
-  wp = atomic_load_explicit(&mpsc->wp, memory_order_acquire);
+  wp = ATOMIC_LOAD_EXPLICIT(&mpsc->wp, memory_order_acquire);
   if (wp & MPSC_WRAP_LOCK_BIT) {
     SPINLOCK_BACKOFF(cnt);
     goto retry;
@@ -82,7 +82,7 @@ static inline usz mpsc_get_reserve_pos(mpsc_p_t *p) {
   usz reserve_pos;
 
 retry:
-  reserve_pos = atomic_load_explicit(&p->reserve_pos, memory_order_acquire);
+  reserve_pos = ATOMIC_LOAD_EXPLICIT(&p->reserve_pos, memory_order_acquire);
   if (reserve_pos & MPSC_WRAP_LOCK_BIT) {
     SPINLOCK_BACKOFF(cnt);
     goto retry;
@@ -109,13 +109,13 @@ static inline isz mpsc_acquire(mpsc_t *mpsc, mpsc_p_t *p, usz nbytes) {
     off = wp & MPSC_OFF_MASK;
 
     // 标记正在申请写入
-    atomic_store_explicit(&p->reserve_pos, off | MPSC_WRAP_LOCK_BIT, memory_order_relaxed);
+    ATOMIC_STORE_EXPLICIT(&p->reserve_pos, off | MPSC_WRAP_LOCK_BIT, memory_order_relaxed);
 
     // 尝试申请的终点位置
     target = off + nbytes;
-    usz rp = atomic_load_explicit(&mpsc->rp, memory_order_relaxed);
+    usz rp = ATOMIC_LOAD_EXPLICIT(&mpsc->rp, memory_order_relaxed);
     if (off < rp && target >= rp) {
-      atomic_store_explicit(&p->reserve_pos, MPSC_OFF_MAX, memory_order_release);
+      ATOMIC_STORE_EXPLICIT(&p->reserve_pos, MPSC_OFF_MAX, memory_order_release);
       return -1;
     }
 
@@ -123,7 +123,7 @@ static inline isz mpsc_acquire(mpsc_t *mpsc, mpsc_p_t *p, usz nbytes) {
     if (target >= mpsc->cap) {
       target = (target > mpsc->cap) ? (MPSC_WRAP_LOCK_BIT | nbytes) : 0;
       if ((target & MPSC_OFF_MASK) >= rp) {
-        atomic_store_explicit(&p->reserve_pos, MPSC_OFF_MAX, memory_order_release);
+        ATOMIC_STORE_EXPLICIT(&p->reserve_pos, MPSC_OFF_MAX, memory_order_release);
         return -1;
       }
       target |= MPSC_WRAP_INCR(wp & MPSC_WRAP_COUNTER);
@@ -132,24 +132,24 @@ static inline isz mpsc_acquire(mpsc_t *mpsc, mpsc_p_t *p, usz nbytes) {
   } while (!atomic_compare_exchange_weak(&mpsc->wp, &wp, target));
 
   // 清除 wrap lock bit，标记 reserve_pos 申请完成
-  atomic_store_explicit(
+  ATOMIC_STORE_EXPLICIT(
       &p->reserve_pos, p->reserve_pos & ~MPSC_WRAP_LOCK_BIT, memory_order_relaxed);
 
   // 如果申请触发 wrap
   if (target & MPSC_WRAP_LOCK_BIT) {
     mpsc->warp_end = off;
-    atomic_store_explicit(&mpsc->wp, (target & ~MPSC_WRAP_LOCK_BIT), memory_order_release);
+    ATOMIC_STORE_EXPLICIT(&mpsc->wp, (target & ~MPSC_WRAP_LOCK_BIT), memory_order_release);
     off = 0;
   }
   return (isz)off;
 }
 
 static inline void mpsc_push(mpsc_p_t *p) {
-  atomic_store_explicit(&p->reserve_pos, MPSC_OFF_MAX, memory_order_release);
+  ATOMIC_STORE_EXPLICIT(&p->reserve_pos, MPSC_OFF_MAX, memory_order_release);
 }
 
 static inline usz mpsc_pop(mpsc_t *mpsc, usz *off) {
-  usz rp = atomic_load_explicit(&mpsc->rp, memory_order_relaxed);
+  usz rp = ATOMIC_LOAD_EXPLICIT(&mpsc->rp, memory_order_relaxed);
   usz wp;
 
 retry:
@@ -165,7 +165,7 @@ retry:
   usz ready = MPSC_OFF_MAX;
   for (usz i = 0; i < mpsc->nproducers; i++) {
     mpsc_p_t *p = &mpsc->producers[i];
-    if (!atomic_load_explicit(&p->flag, memory_order_relaxed))
+    if (!ATOMIC_LOAD_EXPLICIT(&p->flag, memory_order_relaxed))
       continue;
 
     usz reserve_pos = mpsc_get_reserve_pos(p);
@@ -182,7 +182,7 @@ retry:
       if (mpsc->warp_end != MPSC_OFF_MAX)
         mpsc->warp_end = MPSC_OFF_MAX;
       rp = 0;
-      atomic_store_explicit(&mpsc->rp, rp, memory_order_release);
+      ATOMIC_STORE_EXPLICIT(&mpsc->rp, rp, memory_order_release);
       goto retry;
     }
     ready = (ready < warp_end) ? ready : warp_end;

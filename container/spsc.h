@@ -17,8 +17,8 @@ typedef struct {
   spsc_policy_e e_policy; // 写入数据超过剩余空间时的处理策略
   void         *buf;      // 缓冲区
   usz           cap;      // 缓冲区容量(2^n)
-  atomic_t(usz) wp;       // 写入位置
-  atomic_t(usz) rp;       // 读取位置
+  ATOMIC(usz) wp;         // 写入位置
+  ATOMIC(usz) rp;         // 读取位置
 } spsc_t;
 
 static inline int  spsc_init(spsc_t *spsc, void *buf, usz cap, spsc_policy_e e_policy);
@@ -54,14 +54,14 @@ static inline int spsc_init_buf(spsc_t *spsc, usz cap, spsc_policy_e e_policy) {
 
   spsc->e_policy = e_policy;
   spsc->cap      = cap;
-  atomic_store(&spsc->rp, 0);
-  atomic_store(&spsc->wp, 0);
+  ATOMIC_STORE(&spsc->rp, 0);
+  ATOMIC_STORE(&spsc->wp, 0);
   return 0;
 }
 
 static inline void spsc_reset(spsc_t *spsc) {
-  atomic_store(&spsc->rp, 0);
-  atomic_store(&spsc->wp, 0);
+  ATOMIC_STORE(&spsc->rp, 0);
+  ATOMIC_STORE(&spsc->wp, 0);
 }
 
 static inline bool spsc_empty(spsc_t *spsc) { return spsc_avail(spsc) == 0; }
@@ -69,7 +69,7 @@ static inline bool spsc_empty(spsc_t *spsc) { return spsc_avail(spsc) == 0; }
 static inline bool spsc_full(spsc_t *spsc) { return spsc_free(spsc) == 0; }
 
 static inline usz spsc_avail(spsc_t *spsc) {
-  return atomic_load(&spsc->wp) - atomic_load(&spsc->rp);
+  return ATOMIC_LOAD(&spsc->wp) - ATOMIC_LOAD(&spsc->rp);
 }
 
 static inline usz spsc_free(spsc_t *spsc) { return spsc->cap - spsc_avail(spsc); }
@@ -103,8 +103,8 @@ static inline usz spsc_read(spsc_t *spsc, void *dst, usz nbytes) {
 }
 
 static inline usz spsc_write_buf(spsc_t *spsc, void *buf, const void *src, usz nbytes) {
-  usz wp = atomic_load_explicit(&spsc->wp, memory_order_relaxed);
-  usz rp = atomic_load_explicit(&spsc->rp, memory_order_acquire);
+  usz wp = ATOMIC_LOAD_EXPLICIT(&spsc->wp, memory_order_relaxed);
+  usz rp = ATOMIC_LOAD_EXPLICIT(&spsc->rp, memory_order_acquire);
 
   nbytes = spsc_policy(spsc, wp, rp, nbytes);
   if (nbytes == 0)
@@ -116,13 +116,13 @@ static inline usz spsc_write_buf(spsc_t *spsc, void *buf, const void *src, usz n
   memcpy((u8 *)buf + off, src, first);
   memcpy((u8 *)buf, (u8 *)src + first, nbytes - first);
 
-  atomic_store_explicit(&spsc->wp, wp + nbytes, memory_order_release);
+  ATOMIC_STORE_EXPLICIT(&spsc->wp, wp + nbytes, memory_order_release);
   return nbytes;
 }
 
 static inline usz spsc_read_buf(spsc_t *spsc, void *buf, void *dst, usz nbytes) {
-  usz rp = atomic_load_explicit(&spsc->rp, memory_order_relaxed);
-  usz wp = atomic_load_explicit(&spsc->wp, memory_order_acquire);
+  usz rp = ATOMIC_LOAD_EXPLICIT(&spsc->rp, memory_order_relaxed);
+  usz wp = ATOMIC_LOAD_EXPLICIT(&spsc->wp, memory_order_acquire);
 
   usz avail = wp - rp;
   if (nbytes > avail)
@@ -136,7 +136,7 @@ static inline usz spsc_read_buf(spsc_t *spsc, void *buf, void *dst, usz nbytes) 
   memcpy(dst, (u8 *)buf + off, first);
   memcpy((u8 *)dst + first, (u8 *)buf, nbytes - first);
 
-  atomic_store_explicit(&spsc->rp, rp + nbytes, memory_order_release);
+  ATOMIC_STORE_EXPLICIT(&spsc->rp, rp + nbytes, memory_order_release);
   return nbytes;
 }
 
