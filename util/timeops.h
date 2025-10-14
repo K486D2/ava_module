@@ -1,7 +1,9 @@
 #ifndef TIMEDEF_H
 #define TIMEDEF_H
 
-#ifdef _WIN32
+#ifdef __linux__
+#include <unistd.h>
+#elif defined(_WIN32)
 #include <windows.h>
 #endif
 
