@@ -17,8 +17,8 @@ typedef union {
                 usz prev_idx;
         } fcfs;
         struct {
-                rb_root_t rbtree;
-                rb_node_t nodes[SCHED_TASK_MAX];
+                rb_root_t rbroot;
+                rb_node_t rbnodes[SCHED_TASK_MAX];
         } cfs;
 } sched_algo_ctx;
 
@@ -123,30 +123,30 @@ static inline int sched_cfs_task_cmp(const sched_task_t *a, const sched_task_t *
 static inline void sched_cfs_insert_task(sched_t *sched, sched_task_t *task) {
         DECL_PTRS_1(sched, lo);
 
-        rb_root_t  *root     = &lo->algo_ctx.cfs.rbtree;
-        rb_node_t **new_node = &root->rb_node;
-        rb_node_t  *parent   = NULL;
+        rb_root_t  *rbroot     = &lo->algo_ctx.cfs.rbroot;
+        rb_node_t **new_rbnode = &rbroot->rb_node;
+        rb_node_t  *parent     = NULL;
 
         // 将任务的红黑树节点与任务关联
-        rb_node_t *node = &lo->algo_ctx.cfs.nodes[task->cfg.id];
-        task->node      = node;
+        rb_node_t *rbnode = &lo->algo_ctx.cfs.rbnodes[task->cfg.id];
+        task->node        = rbnode;
 
-        while (*new_node) {
-                sched_task_t *curr = rb_entry(*new_node, sched_task_t, node);
+        while (*new_rbnode) {
+                sched_task_t *curr = rb_entry(*new_rbnode, sched_task_t, node);
                 int           cmp  = sched_cfs_task_cmp(task, curr);
-                parent             = *new_node;
-                new_node           = (cmp < 0) ? &(*new_node)->rb_left : &(*new_node)->rb_right;
+                parent             = *new_rbnode;
+                new_rbnode         = (cmp < 0) ? &(*new_rbnode)->rb_left : &(*new_rbnode)->rb_right;
         }
-        rb_link_node(node, parent, new_node);
-        rb_insert_color(node, root);
+        rb_link_node(task->node, parent, new_rbnode);
+        rb_insert_color(task->node, rbroot);
 }
 
 static inline void sched_cfs_remove_task(sched_t *sched, sched_task_t *task) {
         DECL_PTRS_1(sched, lo);
 
-        rb_root_t *root = &lo->algo_ctx.cfs.rbtree;
+        rb_root_t *rbroot = &lo->algo_ctx.cfs.rbroot;
         if (task->node) {
-                rb_erase((rb_node_t *)task->node, root);
+                rb_erase((rb_node_t *)task->node, rbroot);
                 task->node = NULL;
         }
 }
@@ -154,11 +154,11 @@ static inline void sched_cfs_remove_task(sched_t *sched, sched_task_t *task) {
 static inline sched_task_t *sched_cfs_get_task(sched_t *sched) {
         DECL_PTRS_1(sched, lo);
 
-        rb_root_t *root = &lo->algo_ctx.cfs.rbtree;
-        rb_node_t *node = rb_first(root);
-        if (!node)
+        rb_root_t *rbroot = &lo->algo_ctx.cfs.rbroot;
+        rb_node_t *rbnode = rb_first(rbroot);
+        if (!rbnode)
                 return NULL;
-        return rb_entry(node, sched_task_t, node);
+        return rb_entry(rbnode, sched_task_t, node);
 }
 
 static inline sched_task_t *sched_fcfs_get_task(sched_t *sched) {
