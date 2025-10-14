@@ -42,6 +42,7 @@ typedef i64 isz;
 /* 原子操作 */
 #ifndef __cplusplus
 #include <stdatomic.h>
+
 #define ATOMIC(x)                               _Atomic x
 #define ATOMIC_LOAD(a)                          atomic_load(a)
 #define ATOMIC_LOAD_EXPLICIT(a, m)              atomic_load_explicit(a, m)
@@ -52,6 +53,7 @@ typedef i64 isz;
   atomic_compare_exchange_strong_explicit(a, o, n, s, f)
 #else
 #include <atomic>
+
 #define ATOMIC(x)                      std::atomic<x>
 #define ATOMIC_LOAD(a)                 std::atomic_load(a)
 #define ATOMIC_LOAD_EXPLICIT(a, m)     std::atomic_load_explicit(a, m)

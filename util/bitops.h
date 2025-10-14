@@ -3,6 +3,12 @@
 
 #include "typedef.h"
 
+#define BIT(n)           (1UL << (n))
+#define BIT_SET(v, n)    ((v) |= BIT(n))
+#define BIT_CLEAR(v, n)  ((v) &= ~BIT(n))
+#define BIT_TOGGLE(v, n) ((v) ^= BIT(n))
+#define BIT_CHECK(v, n)  (((v) >> (n)) & 1U)
+
 #ifdef _MSC_VER
 #include <intrin.h>
 #pragma intrinsic(_BitScanForward, _BitScanReverse)
@@ -16,20 +22,20 @@
 
 // ================= 64-bit =================
 static inline u32 clz64(u64 x) {
-  unsigned long index;
-  if (_BitScanReverse64(&index, x))
-    return 63 - index;
-  return 64;
+        unsigned long index;
+        if (_BitScanReverse64(&index, x))
+                return 63 - index;
+        return 64;
 }
 
 static inline u32 ctz64(u64 x) {
 #ifdef __BMI__
-  return _tzcnt_u64(x); // BMI2 指令
+        return _tzcnt_u64(x); // BMI2 指令
 #else
-  unsigned long index;
-  if (_BitScanForward64(&index, x))
-    return index;
-  return 64;
+        unsigned long index;
+        if (_BitScanForward64(&index, x))
+                return index;
+        return 64;
 #endif
 }
 
@@ -49,20 +55,20 @@ static inline u64 blsi64(u64 x) { return _blsi_u64(x); } // 提取最低位 1
 
 // ================= 32-bit =================
 static inline u32 clz32(u32 x) {
-  unsigned long index;
-  if (_BitScanReverse(&index, x))
-    return 31 - index;
-  return 32;
+        unsigned long index;
+        if (_BitScanReverse(&index, x))
+                return 31 - index;
+        return 32;
 }
 
 static inline u32 ctz32(u32 x) {
 #ifdef __BMI__
-  return (u32)_tzcnt_u32(x);
+        return (u32)_tzcnt_u32(x);
 #else
-  unsigned long index;
-  if (_BitScanForward(&index, x))
-    return index;
-  return 32;
+        unsigned long index;
+        if (_BitScanForward(&index, x))
+                return index;
+        return 32;
 #endif
 }
 
@@ -119,43 +125,43 @@ static inline u32 ror32(u32 x, u32 n) { return (x >> n) | (x << (32 - n)); }
 
 // ================= 64-bit =================
 static inline u32 clz64(u64 x) {
-  if (!x)
-    return 64;
-  u32 n = 0;
-  for (int i = 63; i >= 0; i--)
-    if ((x >> i) & 1)
-      break;
-    else
-      n++;
-  return n;
+        if (!x)
+                return 64;
+        u32 n = 0;
+        for (int i = 63; i >= 0; i--)
+                if ((x >> i) & 1)
+                        break;
+                else
+                        n++;
+        return n;
 }
 
 static inline u32 ctz64(u64 x) {
-  if (!x)
-    return 64;
-  u32 n = 0;
-  for (int i = 0; i < 64; i++)
-    if ((x >> i) & 1)
-      break;
-    else
-      n++;
-  return n;
+        if (!x)
+                return 64;
+        u32 n = 0;
+        for (int i = 0; i < 64; i++)
+                if ((x >> i) & 1)
+                        break;
+                else
+                        n++;
+        return n;
 }
 
 static inline u32 popcount64(u64 x) {
-  u32 cnt = 0;
-  while (x) {
-    cnt += x & 1;
-    x >>= 1;
-  }
-  return cnt;
+        u32 cnt = 0;
+        while (x) {
+                cnt += x & 1;
+                x >>= 1;
+        }
+        return cnt;
 }
 
 static inline u64 bswap64(u64 x) {
-  u64 y = 0;
-  for (u32 i = 0; i < 8; i++)
-    y |= ((x >> (i * 8)) & 0xFF) << ((7 - i) * 8);
-  return y;
+        u64 y = 0;
+        for (u32 i = 0; i < 8; i++)
+                y |= ((x >> (i * 8)) & 0xFF) << ((7 - i) * 8);
+        return y;
 }
 
 static inline u64 rol64(u64 x, u32 n) { return (x << n) | (x >> (64 - n)); }
@@ -164,43 +170,43 @@ static inline u64 ror64(u64 x, u32 n) { return (x >> n) | (x << (64 - n)); }
 
 // ================= 32-bit =================
 static inline u32 clz32(u32 x) {
-  if (!x)
-    return 32;
-  u32 n = 0;
-  for (int i = 31; i >= 0; i--)
-    if ((x >> i) & 1)
-      break;
-    else
-      n++;
-  return n;
+        if (!x)
+                return 32;
+        u32 n = 0;
+        for (int i = 31; i >= 0; i--)
+                if ((x >> i) & 1)
+                        break;
+                else
+                        n++;
+        return n;
 }
 
 static inline u32 ctz32(u32 x) {
-  if (!x)
-    return 32;
-  u32 n = 0;
-  for (int i = 0; i < 32; i++)
-    if ((x >> i) & 1)
-      break;
-    else
-      n++;
-  return n;
+        if (!x)
+                return 32;
+        u32 n = 0;
+        for (int i = 0; i < 32; i++)
+                if ((x >> i) & 1)
+                        break;
+                else
+                        n++;
+        return n;
 }
 
 static inline u32 popcount32(u32 x) {
-  u32 cnt = 0;
-  while (x) {
-    cnt += x & 1;
-    x >>= 1;
-  }
-  return cnt;
+        u32 cnt = 0;
+        while (x) {
+                cnt += x & 1;
+                x >>= 1;
+        }
+        return cnt;
 }
 
 static inline u32 bswap32(u32 x) {
-  u32 y = 0;
-  for (u32 i = 0; i < 4; i++)
-    y |= ((x >> (i * 8)) & 0xFF) << ((3 - i) * 8);
-  return y;
+        u32 y = 0;
+        for (u32 i = 0; i < 4; i++)
+                y |= ((x >> (i * 8)) & 0xFF) << ((3 - i) * 8);
+        return y;
 }
 
 static inline u32 rol32(u32 x, u32 n) { return (x << n) | (x >> (32 - n)); }

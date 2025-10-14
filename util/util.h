@@ -9,28 +9,53 @@
 #define AT(addr) __attribute__((section(addr)))
 
 #define ATOMIC_EXEC(code)                                                                          \
-  do {                                                                                             \
-    volatile u32 _primask = __get_PRIMASK();                                                       \
-    __disable_irq();                                                                               \
-    {code};                                                                                        \
-    __set_PRIMASK(_primask);                                                                       \
-  } while (0)
+        do {                                                                                       \
+                volatile u32 _primask = __get_PRIMASK();                                           \
+                __disable_irq();                                                                   \
+                {code};                                                                            \
+                __set_PRIMASK(_primask);                                                           \
+        } while (0)
 
 #define ARG_UNUSED(arg) (void)(arg)
 
 #define ARG_CHECK(arg)                                                                             \
-  do {                                                                                             \
-    if ((arg) == NULL)                                                                             \
-      return -MEINVAL;                                                                             \
-  } while (0)
+        do {                                                                                       \
+                if ((arg) == NULL)                                                                 \
+                        return -MEINVAL;                                                           \
+        } while (0)
 
 #define CFG_CHECK(p, f_init)                                                                       \
-  do {                                                                                             \
-    if (memcmp(&((p)->cfg), &((p)->lo.cfg), sizeof((p)->cfg)) != 0)                                \
-      f_init((p), (p)->cfg);                                                                       \
-  } while (0)
+        do {                                                                                       \
+                if (memcmp(&((p)->cfg), &((p)->lo.cfg), sizeof((p)->cfg)) != 0)                    \
+                        f_init((p), (p)->cfg);                                                     \
+        } while (0)
 
 #define RESET_OUT(ptr) memset(&(ptr)->out, 0, sizeof((ptr)->out))
+
+#define DECL_PTRS_1(s, a1)                                                                         \
+        typeof((s)->a1) *a1 = &(s)->a1;                                                            \
+        ARG_UNUSED(a1);
+#define DECL_PTRS_2(s, a1, a2)                 DECL_PTRS_1(s, a1) DECL_PTRS_1(s, a2)
+#define DECL_PTRS_3(s, a1, a2, a3)             DECL_PTRS_2(s, a1, a2) DECL_PTRS_1(s, a3)
+#define DECL_PTRS_4(s, a1, a2, a3, a4)         DECL_PTRS_3(s, a1, a2, a3) DECL_PTRS_1(s, a4)
+#define DECL_PTRS_5(s, a1, a2, a3, a4, a5)     DECL_PTRS_4(s, a1, a2, a3, a4) DECL_PTRS_1(s, a5)
+#define DECL_PTRS_6(s, a1, a2, a3, a4, a5, a6) DECL_PTRS_5(s, a1, a2, a3, a4, a5) DECL_PTRS_1(s, a6)
+#define DECL_PTRS_7(s, a1, a2, a3, a4, a5, a6, a7)                                                 \
+        DECL_PTRS_6(s, a1, a2, a3, a4, a5, a6) DECL_PTRS_1(s, a7)
+#define DECL_PTRS_8(s, a1, a2, a3, a4, a5, a6, a7, a8)                                             \
+        DECL_PTRS_7(s, a1, a2, a3, a4, a5, a6, a7) DECL_PTRS_1(s, a8)
+
+#define GET_MACRO(_1, _2, _3, _4, _5, _6, _7, _8, NAME, ...) NAME
+#define DECL_PTRS(...)                                                                             \
+        GET_MACRO(__VA_ARGS__,                                                                     \
+                  DECL_PTRS_8,                                                                     \
+                  DECL_PTRS_7,                                                                     \
+                  DECL_PTRS_6,                                                                     \
+                  DECL_PTRS_5,                                                                     \
+                  DECL_PTRS_4,                                                                     \
+                  DECL_PTRS_3,                                                                     \
+                  DECL_PTRS_2,                                                                     \
+                  DECL_PTRS_1)(__VA_ARGS__)
 
 #ifdef __MINGW32__
 #define IS_SAME_TYPE(a, b) __mingw_types_compatible_p(__typeof__(a), __typeof__(b))
