@@ -6,7 +6,7 @@ int main() {
   shm_t     shm     = {0};
   shm_cfg_t shm_cfg = {
       .name   = "ch1",
-      .access = PAGE_READWRITE,
+      .access = SHM_READWRITE,
       .cap    = 1024,
   };
 
@@ -22,7 +22,7 @@ int main() {
   while (true) {
     cnt++;
     shm_write(&shm, &cnt, sizeof(cnt));
-    printf("write cnt: %u, spsc wp: %llu, spsc rp: %llu, spsc free: %llu\n",
+    printf("write cnt: %llu, spsc wp: %llu, spsc rp: %llu, spsc free: %llu\n",
            cnt,
            ATOMIC_LOAD(&shm.lo.spsc->wp),
            ATOMIC_LOAD(&shm.lo.spsc->rp),

@@ -5,8 +5,8 @@
 int main() {
   shm_t     shm     = {0};
   shm_cfg_t shm_cfg = {
-      .name   = "shm",
-      .access = PAGE_READWRITE,
+      .name   = "ch1",
+      .access = SHM_READWRITE,
       .cap    = 1024,
   };
 
@@ -21,7 +21,7 @@ int main() {
   u64 cnt = 0;
   while (true) {
     shm_read(&shm, &cnt, sizeof(cnt));
-    printf("read cnt: %u, spsc wp: %llu, spsc rp: %llu, spsc free: %llu\n",
+    printf("read cnt: %llu, spsc wp: %llu, spsc rp: %llu, spsc free: %llu\n",
            cnt,
            ATOMIC_LOAD(&shm.lo.spsc->wp),
            ATOMIC_LOAD(&shm.lo.spsc->rp),

@@ -13,10 +13,22 @@
 #include "container/spsc.h"
 #include "util/util.h"
 
+typedef enum {
+#ifdef __linux__
+  SHM_READONLY  = PROT_READ,
+  SHM_WRITEONLY = PROT_WRITE,
+  SHM_READWRITE = SHM_READONLY | SHM_WRITEONLY,
+#elif defined(__WIN32)
+  SHM_READONLY  = PAGE_READONLY,
+  SHM_WRITEONLY = PAGE_READWRITE,
+  SHM_READWRITE = PAGE_READWRITE,
+#endif
+} shm_access_e;
+
 typedef struct {
-  const char *name;
-  u32         access;
-  usz         cap;
+  const char  *name;
+  shm_access_e access;
+  usz          cap;
 } shm_cfg_t;
 
 typedef struct {
@@ -65,7 +77,7 @@ static inline int shm_init(shm_t *shm, shm_cfg_t shm_cfg) {
   } else
     lo->is_creator = false;
 
-  lo->base = mmap(NULL, cfg->cap, PROT_READ | PROT_WRITE, MAP_SHARED, lo->fd, 0);
+  lo->base = mmap(NULL, cfg->cap, cfg->access, MAP_SHARED, lo->fd, 0);
   if (lo->base == MAP_FAILED) {
     close(lo->fd);
     if (lo->is_creator)

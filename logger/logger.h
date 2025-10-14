@@ -141,7 +141,7 @@ static inline void logger_flush(logger_t *logger) {
       break;
 
     usz total_nbytes =
-        snprintf((char *)cfg->flush_buf, cfg->flush_cap, "[%llu][%zu]", entry.ts, entry.id);
+        snprintf((char *)cfg->flush_buf, cfg->flush_cap, "[%llu][%llu]", entry.ts, entry.id);
     total_nbytes += mpsc_read(&lo->mpsc, cfg->flush_buf + total_nbytes, entry.msg_nbytes);
 
     ops->f_flush(cfg->fp, cfg->flush_buf, total_nbytes);

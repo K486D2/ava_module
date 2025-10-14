@@ -42,7 +42,14 @@ typedef i64 isz;
 /* 原子操作 */
 #ifndef __cplusplus
 #include <stdatomic.h>
-#define ATOMIC(x) _Atomic x
+#define ATOMIC(x)                               _Atomic x
+#define ATOMIC_LOAD(a)                          atomic_load(a)
+#define ATOMIC_LOAD_EXPLICIT(a, m)              atomic_load_explicit(a, m)
+#define ATOMIC_STORE(a, v)                      atomic_store(a, v)
+#define ATOMIC_STORE_EXPLICIT(a, v, m)          atomic_store_explicit(a, v, m)
+#define ATOMIC_CAS_WEAK_EXPLICIT(a, o, n, s, f) atomic_compare_exchange_weak_explicit(a, o, n, s, f)
+#define ATOMIC_CAS_STRONG_EXPLICIT(a, o, n, s, f)                                                  \
+  atomic_compare_exchange_strong_explicit(a, o, n, s, f)
 #else
 #include <atomic>
 #define ATOMIC(x)                      std::atomic<x>
