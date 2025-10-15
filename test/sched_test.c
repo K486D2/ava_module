@@ -4,7 +4,6 @@
 #include "sched/sched.h"
 #include "util/typedef.h"
 
-// sched_t fcfs;
 sched_t cfs;
 
 u64 fake_time_us = 0;
@@ -17,16 +16,9 @@ void task_cb(void *arg) {
 }
 
 int main(void) {
-
-        // FCFS 调度器初始化
-        // sched_cfg_t fcfs_cfg = {.cpu_id = 19, .type = SCHED_TYPE_FCFS};
-        // sched_init(&fcfs, fcfs_cfg);
-
-        // CFS 调度器初始化
         sched_cfg_t cfg_cfg = {.cpu_id = 19, .type = SCHED_TYPE_CFS};
         sched_init(&cfs, cfg_cfg);
 
-        // 创建任务
         sched_task_cfg_t tasks[] = {
             {
                 .id           = 0,
@@ -62,16 +54,6 @@ int main(void) {
         cfs.lo.tasks[2].cfg = tasks[2];
         cfs.ops.f_get_ts    = get_ts_us;
 
-        // 注册任务到 FCFS
-        // for (int i = 0; i < 3; i++) {
-        //         sched_task_t *t        = &fcfs.lo.tasks[fcfs.lo.tasks_num++];
-        //         t->cfg                 = tasks[i];
-        //         t->status.e_state      = SCHED_TASK_STATE_RUNNING;
-        //         t->status.create_ts    = get_ts_us();
-        //         t->status.next_exec_ts = get_ts_us();
-        // }
-
-        // 注册任务到 CFS
         for (int i = 0; i < 3; i++) {
                 sched_task_t *t        = &cfs.lo.tasks[cfs.lo.ntasks++];
                 t->cfg                 = tasks[i];
@@ -83,12 +65,8 @@ int main(void) {
                 sched_cfs_insert_task(&cfs, t);
         }
 
-        // 模拟时间推进执行
         for (int step = 0; step < 10; step++) {
                 fake_time_us += 500; // 每次增加 0.15 ms
-
-                // printf("\n=== FCFS step %d ===\n", step);
-                // sched_exec(&fcfs);
 
                 printf("\n=== CFS step %d ===\n", step);
                 sched_exec(&cfs);

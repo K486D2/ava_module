@@ -11,7 +11,7 @@ typedef enum {
 } rb_color_e;
 
 typedef struct rb_node {
-        u64             __rb_parent_color;
+        usz             __rb_parent_color;
         struct rb_node *rb_right;
         struct rb_node *rb_left;
 } rb_node_t;
@@ -20,18 +20,15 @@ typedef struct {
         rb_node_t *rb_node;
 } rb_root_t;
 
-// 初始化根节点
 #define RB_ROOT                                                                                    \
         (rb_root_t) { NULL }
 
-// 获取父节点
 static inline rb_node_t *rb_parent(const rb_node_t *rb) {
         return (rb_node_t *)(rb->__rb_parent_color & ~3);
 }
 
-// 设置父节点
 static inline void rb_set_parent(rb_node_t *rb, rb_node_t *p) {
-        rb->__rb_parent_color = (u64)p | (rb->__rb_parent_color & 3);
+        rb->__rb_parent_color = (usz)p | (rb->__rb_parent_color & 3);
 }
 
 static inline rb_color_e rb_color(const rb_node_t *rb) {
@@ -50,16 +47,13 @@ static inline void rb_set_red(rb_node_t *rb) { rb_set_color(rb, RB_RED); }
 
 static inline void rb_set_black(rb_node_t *rb) { rb_set_color(rb, RB_BLACK); }
 
-static inline bool rb_is_unlinked(const rb_node_t *rb) { return rb->__rb_parent_color == (u64)rb; }
+static inline bool rb_is_unlinked(const rb_node_t *rb) { return rb->__rb_parent_color == (usz)rb; }
 
 static inline void rb_link_node(rb_node_t *node, rb_node_t *parent, rb_node_t **rb_link) {
-        node->__rb_parent_color = (u64)parent;
+        node->__rb_parent_color = (usz)parent;
         node->rb_left = node->rb_right = NULL;
         *rb_link                       = node;
 }
-
-// 容器宏(用于从节点获取包含结构)
-#define rb_entry(ptr, type, member) ((type *)((char *)(ptr)-offsetof(type, member)))
 
 static inline void __rb_rotate_left(rb_node_t *node, rb_root_t *root) {
         rb_node_t *right  = node->rb_right;

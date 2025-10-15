@@ -2,9 +2,9 @@
 #include <stdio.h>
 #include <unistd.h>
 
-#include "logger/logger.h"
+#include "log/log.h"
 
-logger_t logger;
+log_t g_log;
 
 #define WRITE_THREAD_NUM 1000
 u64 PRODUCERS_CNTS[WRITE_THREAD_NUM];
@@ -13,15 +13,16 @@ u8       LOGGER_FLUSH_BUF[128];
 u8       LOGGER_BUF[1024 * 1024];
 mpsc_p_t PRODUCERS[WRITE_THREAD_NUM];
 
-static inline void logger_stdout(void *fp, const u8 *src, size_t nbytes) {
+static inline void log_stdout(void *fp, const u8 *src, size_t nbytes) {
         fwrite(src, nbytes, 1, fp);
         fflush(fp);
 }
 
 void *flush_thread_func(void *arg) {
-        logger_t *logger = (logger_t *)arg;
+        ARG_UNUSED(arg);
+
         while (true)
-                logger_flush(logger);
+                log_flush(&g_log);
         return NULL;
 }
 
@@ -30,16 +31,16 @@ void *write_thread_func(void *arg) {
 
         while (true) {
 #ifdef _WIN32
-                logger_debug(&logger,
-                             "Thread %10u, cnt: %10llu\n",
-                             (u32)GetCurrentThreadId(),
-                             PRODUCERS_CNTS[id]++);
+                log_debug(&log,
+                          "Thread %10u, cnt: %10llu\n",
+                          (u32)GetCurrentThreadId(),
+                          PRODUCERS_CNTS[id]++);
 #else
-                logger_debug(&logger,
-                             id,
-                             "Thread %10u, cnt: %10llu\n",
-                             (u32)pthread_self(),
-                             PRODUCERS_CNTS[id]++);
+                log_debug(&g_log,
+                          id,
+                          "Thread %10u, cnt: %10llu\n",
+                          (u32)pthread_self(),
+                          PRODUCERS_CNTS[id]++);
 #endif
 
                 delay_ms(1, YIELD);
@@ -48,9 +49,9 @@ void *write_thread_func(void *arg) {
 }
 
 int main() {
-        logger_cfg_t logger_cfg = {
-            .e_mode     = LOGGER_SYNC,
-            .e_level    = LOGGER_LEVEL_DEBUG,
+        log_cfg_t log_cfg = {
+            .e_mode     = LOG_MODE_SYNC,
+            .e_level    = LOG_LEVEL_DEBUG,
             .end_sign   = '\n',
             .fp         = stdout,
             .buf        = (void *)LOGGER_BUF,
@@ -60,12 +61,12 @@ int main() {
             .producers  = (mpsc_p_t *)&PRODUCERS,
             .nproducers = ARRAY_SIZE(PRODUCERS),
         };
-        logger.ops.f_flush  = logger_stdout;
-        logger.ops.f_get_ts = get_mono_ts_us;
-        logger_init(&logger, logger_cfg);
+        g_log.ops.f_flush  = log_stdout;
+        g_log.ops.f_get_ts = get_mono_ts_us;
+        log_init(&g_log, log_cfg);
 
         pthread_t flush_thread;
-        pthread_create(&flush_thread, NULL, flush_thread_func, &logger);
+        pthread_create(&flush_thread, NULL, flush_thread_func, NULL);
 
         u64       thread_ids[WRITE_THREAD_NUM];
         pthread_t write_thread[WRITE_THREAD_NUM];

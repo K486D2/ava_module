@@ -12,7 +12,7 @@
 #include "ds/ds.h"
 #include "filter/filter.h"
 #include "foc/foc.h"
-#include "logger/logger.h"
+#include "log/log.h"
 #include "obs/obs.h"
 #include "sched/sched.h"
 #include "trans/trans.h"

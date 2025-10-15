@@ -77,7 +77,9 @@
 #define BUILD_BUG_ON_ZERO(e) (sizeof(struct { int : -!!(e); }))
 #endif
 
-#define MUST_BE_ARRAY(a) BUILD_BUG_ON_ZERO(IS_SAME_TYPE((a), &(a)[0]))
-#define ARRAY_SIZE(arr)  (sizeof(arr) / sizeof(arr[0]) + MUST_BE_ARRAY(arr))
+#define MUST_BE_ARRAY(a)                BUILD_BUG_ON_ZERO(IS_SAME_TYPE((a), &(a)[0]))
+#define ARRAY_SIZE(arr)                 (sizeof(arr) / sizeof(arr[0]) + MUST_BE_ARRAY(arr))
+
+#define CONTAINER_OF(ptr, type, member) (type *)((char *)(ptr)-offsetof(type, member))
 
 #endif // !UTIL_H

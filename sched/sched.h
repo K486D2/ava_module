@@ -1,5 +1,5 @@
-#ifndef SCHEDULER_H
-#define SCHEDULER_H
+#ifndef SCHED_H
+#define SCHED_H
 
 #include "ds/rbtree.h"
 #include "util/util.h"
@@ -128,11 +128,11 @@ static inline void sched_cfs_insert_task(sched_t *sched, sched_task_t *task) {
         rb_node_t  *rb_parent   = NULL;
 
         // 将任务的红黑树节点与任务关联
-        rb_node_t *rbnode = &lo->algo_ctx.cfs.rb_nodes[task->cfg.id];
-        task->node        = rbnode;
+        rb_node_t *rb_node = &lo->algo_ctx.cfs.rb_nodes[task->cfg.id];
+        task->node         = rb_node;
 
         while (*new_rb_node) {
-                sched_task_t *curr = rb_entry(*new_rb_node, sched_task_t, node);
+                sched_task_t *curr = CONTAINER_OF(*new_rb_node, sched_task_t, node);
                 int           cmp  = sched_cfs_task_cmp(task, curr);
                 rb_parent          = *new_rb_node;
                 new_rb_node = (cmp < 0) ? &(*new_rb_node)->rb_left : &(*new_rb_node)->rb_right;
@@ -158,7 +158,7 @@ static inline sched_task_t *sched_cfs_get_task(sched_t *sched) {
         rb_node_t *rb_node = rb_first(rb_root);
         if (!rb_node)
                 return NULL;
-        return rb_entry(rb_node, sched_task_t, node);
+        return CONTAINER_OF(rb_node, sched_task_t, node);
 }
 
 static inline sched_task_t *sched_fcfs_get_task(sched_t *sched) {
@@ -242,4 +242,4 @@ static inline int sched_exec(sched_t *sched) {
         return 0;
 }
 
-#endif // !SCHEDULER_H
+#endif // !SCHED_H
