@@ -7,7 +7,7 @@
 #include "sched_thread.h"
 
 #ifndef SCHED_TASK_MAX
-#define SCHED_TASK_MAX 3
+#define SCHED_TASK_MAX 8
 #endif
 
 typedef void (*sched_cb_f)(void *arg);
@@ -18,7 +18,6 @@ typedef union {
         } fcfs;
         struct {
                 rb_root_t rb_root;
-                rb_node_t rb_nodes[SCHED_TASK_MAX];
         } cfs;
 } sched_algo_ctx;
 
@@ -53,7 +52,7 @@ typedef struct {
         u32        priority;     // 任务优先级, 数值越小优先级越高
         usz        exec_freq;    // 执行频率
         usz        exec_cnt_max; // 最多执行次数
-        usz        delay;        // 初始延时
+        usz        delay_tick;   // 初始延时
         sched_cb_f f_cb;         // 回调函数
         void      *arg;          // 回调参数
 } sched_task_cfg_t;
@@ -69,7 +68,7 @@ typedef struct {
 typedef struct {
         sched_task_cfg_t    cfg;
         sched_task_status_t status;
-        void               *node; // 调度算法节点
+        rb_node_t           rb_node;
 } sched_task_t;
 
 typedef u64 (*sched_get_ts_f)(void);
@@ -127,27 +126,26 @@ static inline void sched_cfs_insert_task(sched_t *sched, sched_task_t *task) {
         rb_node_t **new_rb_node = &rb_root->rb_node;
         rb_node_t  *rb_parent   = NULL;
 
-        // 将任务的红黑树节点与任务关联
-        rb_node_t *rb_node = &lo->algo_ctx.cfs.rb_nodes[task->cfg.id];
-        task->node         = rb_node;
+        if (task->cfg.id >= SCHED_TASK_MAX)
+                return;
 
         while (*new_rb_node) {
-                sched_task_t *curr = CONTAINER_OF(*new_rb_node, sched_task_t, node);
+                sched_task_t *curr = CONTAINER_OF(*new_rb_node, sched_task_t, rb_node);
                 int           cmp  = sched_cfs_task_cmp(task, curr);
                 rb_parent          = *new_rb_node;
                 new_rb_node = (cmp < 0) ? &(*new_rb_node)->rb_left : &(*new_rb_node)->rb_right;
         }
-        rb_link_node(task->node, rb_parent, new_rb_node);
-        rb_insert_color(task->node, rb_root);
+        rb_link_node(&task->rb_node, rb_parent, new_rb_node);
+        rb_insert_color(&task->rb_node, rb_root);
 }
 
 static inline void sched_cfs_remove_task(sched_t *sched, sched_task_t *task) {
         DECL_PTRS(sched, lo);
 
         rb_root_t *rb_root = &lo->algo_ctx.cfs.rb_root;
-        if (task->node) {
-                rb_erase((rb_node_t *)task->node, rb_root);
-                task->node = NULL;
+        if (task->rb_node.__rb_parent_color) {
+                rb_erase(&task->rb_node, rb_root);
+                memset(&task->rb_node, 0, sizeof(rb_node_t));
         }
 }
 
@@ -158,14 +156,13 @@ static inline sched_task_t *sched_cfs_get_task(sched_t *sched) {
         rb_node_t *rb_node = rb_first(rb_root);
         if (!rb_node)
                 return NULL;
-        return CONTAINER_OF(rb_node, sched_task_t, node);
+        return CONTAINER_OF(rb_node, sched_task_t, rb_node);
 }
 
 static inline sched_task_t *sched_fcfs_get_task(sched_t *sched) {
         DECL_PTRS(sched, lo);
 
         usz prev_idx = lo->algo_ctx.fcfs.prev_idx;
-
         for (usz i = 0; i < lo->ntasks; ++i) {
                 usz           idx = (prev_idx + i) % lo->ntasks;
                 sched_task_t *t   = &lo->tasks[idx];
@@ -175,6 +172,21 @@ static inline sched_task_t *sched_fcfs_get_task(sched_t *sched) {
                 }
         }
         return NULL;
+}
+
+static inline int sched_add_task(sched_t *sched, sched_task_cfg_t task_cfg) {
+        DECL_PTRS(sched, lo, ops);
+
+        sched_task_t *task        = &lo->tasks[lo->ntasks];
+        task->cfg                 = task_cfg;
+        task->status.e_state      = SCHED_TASK_STATE_RUNNING;
+        task->status.create_ts    = ops->f_get_ts();
+        task->status.next_exec_ts = task->status.create_ts + task->cfg.delay_tick;
+
+        ops->f_insert_task(sched, task);
+        lo->ntasks++;
+
+        return 0;
 }
 
 static inline int sched_init(sched_t *sched, sched_cfg_t sched_cfg) {
@@ -213,18 +225,16 @@ static inline int sched_exec(sched_t *sched) {
         if (!task || !task->cfg.f_cb)
                 return -MEINVAL;
 
-        if (lo->curr_ts - task->status.create_ts < task->cfg.delay)
+        if (lo->curr_ts - task->status.create_ts < task->cfg.delay_tick)
                 return 0;
 
         if (lo->curr_ts < task->status.next_exec_ts)
                 return 0;
 
-        if (sched->cfg.type == SCHED_TYPE_CFS && task->node)
+        if (sched->cfg.type == SCHED_TYPE_CFS)
                 sched_cfs_remove_task(sched, task);
 
-        task->status.e_state = SCHED_TASK_STATE_RUNNING;
-
-        u64 begin_ts = ops->f_get_ts();
+        u64 begin_ts = lo->curr_ts;
         task->cfg.f_cb(task->cfg.arg);
         u64 end_ts = ops->f_get_ts();
 
@@ -233,7 +243,6 @@ static inline int sched_exec(sched_t *sched) {
 
         if (task->cfg.exec_cnt_max == 0 || task->status.exec_cnt < task->cfg.exec_cnt_max) {
                 task->status.next_exec_ts = end_ts + HZ_TO_US(task->cfg.exec_freq);
-                task->status.e_state      = SCHED_TASK_STATE_RUNNING;
                 if (sched->cfg.type == SCHED_TYPE_CFS)
                         sched_cfs_insert_task(sched, task);
         } else
