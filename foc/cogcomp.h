@@ -5,7 +5,7 @@
 
 #define COGCOMP_MAP_SIZE 360
 typedef struct {
-  f32 map[COGCOMP_MAP_SIZE];
+        f32 map[COGCOMP_MAP_SIZE];
 } cogcomp_t;
 
 static int write_map(f32) {}

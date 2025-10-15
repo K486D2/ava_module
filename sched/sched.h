@@ -1,7 +1,7 @@
 #ifndef SCHEDULER_H
 #define SCHEDULER_H
 
-#include "container/rbtree.h"
+#include "ds/rbtree.h"
 #include "util/util.h"
 
 #include "sched_thread.h"
@@ -30,15 +30,15 @@ typedef union {
  *                   |
  *                   | wakeup
  *                   |
- *     +----------+  |  +-----------+
- *     |  STOPPED |<--->| RUNNING   |
- *     +----------+     +-----------+
- *             \              |
- *              \             |
- *               \            v
- *                \---->  +--------+
- *                        |  DEAD  |
- *                        +--------+
+ *     +----------+  |  +----------+
+ *     |  STOPPED |<--->| RUNNING  |
+ *     +----------+     +----------+
+ *           \              |
+ *            \             |
+ *             \            v
+ *              \---->  +--------+
+ *                      |  DEAD  |
+ *                      +--------+
  *
  */
 typedef enum {

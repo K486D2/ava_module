@@ -34,29 +34,29 @@ static const f32 COS_TABLE[] = {
 };
 
 static inline f32 fast_sinf(f32 x) {
-  x = (x) * (57.295779513082320876798154814105f);
+        x = (x) * (57.295779513082320876798154814105f);
 
-  i32 sig = 0;
-  if (x > 0.0f) {
-    while (x >= 360.0f)
-      x = x - 360.0f;
-  } else {
-    while (x < 0.0f)
-      x = x + 360.0f;
-  }
+        i32 sig = 0;
+        if (x > 0.0f) {
+                while (x >= 360.0f)
+                        x = x - 360.0f;
+        } else {
+                while (x < 0.0f)
+                        x = x + 360.0f;
+        }
 
-  if (x >= 180.0f) {
-    sig = 1u;
-    x   = x - 180.0f;
-  }
+        if (x >= 180.0f) {
+                sig = 1u;
+                x   = x - 180.0f;
+        }
 
-  x = (x > 90.0f) ? (180.0f - x) : x;
+        x = (x > 90.0f) ? (180.0f - x) : x;
 
-  i32 a = x * 0.1f;
-  f32 b = x - 10.0f * a;
+        i32 a = x * 0.1f;
+        f32 b = x - 10.0f * a;
 
-  f32 y = SIN_TABLE[a] * COS_TABLE[(i32)b] + b * f32_HOLLYST * SIN_TABLE[9u - a];
-  return (sig > 0) ? -y : y;
+        f32 y = SIN_TABLE[a] * COS_TABLE[(i32)b] + b * f32_HOLLYST * SIN_TABLE[9u - a];
+        return (sig > 0) ? -y : y;
 }
 
 static inline f32 fast_cosf(f32 x) { return fast_sinf(x + 1.5707963267948966192313216916398f); }
@@ -64,19 +64,19 @@ static inline f32 fast_cosf(f32 x) { return fast_sinf(x + 1.57079632679489661923
 static inline f32 fast_tanf(f32 x) { return fast_sinf(x) / fast_cosf(x); }
 
 static inline f32 fast_expf(f32 x) {
-  union {
-    u32 i;
-    f32 f;
-  } v;
-  v.i = (1u << 23u) * (1.4426950409f * x + 126.93490512f);
-  return v.f;
+        union {
+                u32 i;
+                f32 f;
+        } v;
+        v.i = (1u << 23u) * (1.4426950409f * x + 126.93490512f);
+        return v.f;
 }
 
 static inline f32 fast_absf(f32 x) {
-  f32 y = x;
-  if (x < 0.0f)
-    y = -x;
-  return y;
+        f32 y = x;
+        if (x < 0.0f)
+                y = -x;
+        return y;
 }
 
 static inline f32 fast_sqrtf(f32 x) { return sqrtf(x); }

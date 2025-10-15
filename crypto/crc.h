@@ -40,10 +40,10 @@ static const u32 CRC32_TABLE[256] = {
 };
 
 static inline u32 crc32(const u8 *data, usz nbytes) {
-  u32 crc = 0xFFFFFFFF;
-  for (usz i = 0; i < nbytes; i++)
-    crc = (crc >> 8) ^ CRC32_TABLE[(crc ^ data[i]) & 0xFF];
-  return crc ^ 0xFFFFFFFF;
+        u32 crc = 0xFFFFFFFF;
+        for (usz i = 0; i < nbytes; i++)
+                crc = (crc >> 8) ^ CRC32_TABLE[(crc ^ data[i]) & 0xFF];
+        return crc ^ 0xFFFFFFFF;
 }
 
 #endif // !CRC_H

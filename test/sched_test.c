@@ -1,7 +1,7 @@
 #include <stdint.h>
 #include <stdio.h>
 
-#include "scheduler/scheduler.h"
+#include "sched/sched.h"
 #include "util/typedef.h"
 
 // sched_t fcfs;

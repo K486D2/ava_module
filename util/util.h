@@ -61,6 +61,10 @@
                   DUMMY)                                                                           \
         (p, __VA_ARGS__)
 
+#define DECL_PTR_RENAME(p, name)                                                                   \
+        typeof((p)) name = p;                                                                      \
+        ARG_UNUSED(name);
+
 #ifdef __MINGW32__
 #define IS_SAME_TYPE(a, b) __mingw_types_compatible_p(__typeof__(a), __typeof__(b))
 #else
