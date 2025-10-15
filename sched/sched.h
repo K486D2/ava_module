@@ -4,7 +4,7 @@
 #include "ds/rbtree.h"
 #include "util/util.h"
 
-#include "sched_thread.h"
+#include "thread.h"
 
 #ifndef SCHED_TASK_MAX
 #define SCHED_TASK_MAX 8
