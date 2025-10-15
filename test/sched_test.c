@@ -73,7 +73,7 @@ int main(void) {
 
         // 注册任务到 CFS
         for (int i = 0; i < 3; i++) {
-                sched_task_t *t        = &cfs.lo.tasks[cfs.lo.tasks_num++];
+                sched_task_t *t        = &cfs.lo.tasks[cfs.lo.ntasks++];
                 t->cfg                 = tasks[i];
                 t->status.e_state      = SCHED_TASK_STATE_RUNNING;
                 t->status.create_ts    = get_ts_us();

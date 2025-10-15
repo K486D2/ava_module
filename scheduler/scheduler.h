@@ -17,8 +17,8 @@ typedef union {
                 usz prev_idx;
         } fcfs;
         struct {
-                rb_root_t rbroot;
-                rb_node_t rbnodes[SCHED_TASK_MAX];
+                rb_root_t rb_root;
+                rb_node_t rb_nodes[SCHED_TASK_MAX];
         } cfs;
 } sched_algo_ctx;
 
@@ -90,7 +90,7 @@ typedef struct {
 typedef struct {
         f32            elapsed_us;
         usz            curr_ts;
-        usz            tasks_num;
+        usz            ntasks;
         sched_task_t   tasks[SCHED_TASK_MAX];
         sched_algo_ctx algo_ctx;
 } sched_lo_t;
@@ -121,53 +121,53 @@ static inline int sched_cfs_task_cmp(const sched_task_t *a, const sched_task_t *
 }
 
 static inline void sched_cfs_insert_task(sched_t *sched, sched_task_t *task) {
-        DECL_PTRS_1(sched, lo);
+        DECL_PTRS(sched, lo);
 
-        rb_root_t  *rbroot     = &lo->algo_ctx.cfs.rbroot;
-        rb_node_t **new_rbnode = &rbroot->rb_node;
-        rb_node_t  *parent     = NULL;
+        rb_root_t  *rb_root     = &lo->algo_ctx.cfs.rb_root;
+        rb_node_t **new_rb_node = &rb_root->rb_node;
+        rb_node_t  *rb_parent   = NULL;
 
         // 将任务的红黑树节点与任务关联
-        rb_node_t *rbnode = &lo->algo_ctx.cfs.rbnodes[task->cfg.id];
+        rb_node_t *rbnode = &lo->algo_ctx.cfs.rb_nodes[task->cfg.id];
         task->node        = rbnode;
 
-        while (*new_rbnode) {
-                sched_task_t *curr = rb_entry(*new_rbnode, sched_task_t, node);
+        while (*new_rb_node) {
+                sched_task_t *curr = rb_entry(*new_rb_node, sched_task_t, node);
                 int           cmp  = sched_cfs_task_cmp(task, curr);
-                parent             = *new_rbnode;
-                new_rbnode         = (cmp < 0) ? &(*new_rbnode)->rb_left : &(*new_rbnode)->rb_right;
+                rb_parent          = *new_rb_node;
+                new_rb_node = (cmp < 0) ? &(*new_rb_node)->rb_left : &(*new_rb_node)->rb_right;
         }
-        rb_link_node(task->node, parent, new_rbnode);
-        rb_insert_color(task->node, rbroot);
+        rb_link_node(task->node, rb_parent, new_rb_node);
+        rb_insert_color(task->node, rb_root);
 }
 
 static inline void sched_cfs_remove_task(sched_t *sched, sched_task_t *task) {
-        DECL_PTRS_1(sched, lo);
+        DECL_PTRS(sched, lo);
 
-        rb_root_t *rbroot = &lo->algo_ctx.cfs.rbroot;
+        rb_root_t *rb_root = &lo->algo_ctx.cfs.rb_root;
         if (task->node) {
-                rb_erase((rb_node_t *)task->node, rbroot);
+                rb_erase((rb_node_t *)task->node, rb_root);
                 task->node = NULL;
         }
 }
 
 static inline sched_task_t *sched_cfs_get_task(sched_t *sched) {
-        DECL_PTRS_1(sched, lo);
+        DECL_PTRS(sched, lo);
 
-        rb_root_t *rbroot = &lo->algo_ctx.cfs.rbroot;
-        rb_node_t *rbnode = rb_first(rbroot);
-        if (!rbnode)
+        rb_root_t *rb_root = &lo->algo_ctx.cfs.rb_root;
+        rb_node_t *rb_node = rb_first(rb_root);
+        if (!rb_node)
                 return NULL;
-        return rb_entry(rbnode, sched_task_t, node);
+        return rb_entry(rb_node, sched_task_t, node);
 }
 
 static inline sched_task_t *sched_fcfs_get_task(sched_t *sched) {
-        DECL_PTRS_1(sched, lo);
+        DECL_PTRS(sched, lo);
 
         usz prev_idx = lo->algo_ctx.fcfs.prev_idx;
 
-        for (usz i = 0; i < lo->tasks_num; ++i) {
-                usz           idx = (prev_idx + i) % lo->tasks_num;
+        for (usz i = 0; i < lo->ntasks; ++i) {
+                usz           idx = (prev_idx + i) % lo->ntasks;
                 sched_task_t *t   = &lo->tasks[idx];
                 if (t->status.e_state == SCHED_TASK_STATE_RUNNING) {
                         lo->algo_ctx.fcfs.prev_idx = idx + 1;
@@ -178,7 +178,7 @@ static inline sched_task_t *sched_fcfs_get_task(sched_t *sched) {
 }
 
 static inline int sched_init(sched_t *sched, sched_cfg_t sched_cfg) {
-        DECL_PTRS_2(sched, cfg, ops);
+        DECL_PTRS(sched, cfg, ops);
 
         *cfg = sched_cfg;
 
@@ -205,7 +205,7 @@ static inline int sched_init(sched_t *sched, sched_cfg_t sched_cfg) {
 }
 
 static inline int sched_exec(sched_t *sched) {
-        DECL_PTRS_2(sched, lo, ops);
+        DECL_PTRS(sched, ops, lo);
 
         lo->curr_ts = ops->f_get_ts();
 
