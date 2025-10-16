@@ -129,7 +129,7 @@ static inline void log_flush(log_t *log) {
                         break;
 
                 usz total_nbytes = snprintf(
-                    (char *)cfg->flush_buf, cfg->flush_cap, "[%llu][%llu]", entry.ts, entry.id);
+                    (char *)cfg->flush_buf, cfg->flush_cap, "[%llu][%zu]", entry.ts, entry.id);
                 total_nbytes +=
                     mpsc_read(&lo->mpsc, cfg->flush_buf + total_nbytes, entry.msg_nbytes);
 
