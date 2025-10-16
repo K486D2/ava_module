@@ -81,9 +81,15 @@ typedef enum {
         SCHED_TYPE_CFS,
 } sched_type_e;
 
+typedef enum {
+        SCHED_TICK_US,
+        SCHED_TICK_MS,
+} sched_tick_e;
+
 typedef struct {
         u8           cpu_id;
-        sched_type_e type;
+        sched_type_e e_type;
+        sched_tick_e e_tick;
 } sched_cfg_t;
 
 typedef struct {
@@ -106,6 +112,19 @@ typedef struct sched {
         sched_lo_t  lo;
         sched_ops_t ops;
 } sched_t;
+
+static inline u64 sched_hz2tick(sched_t *sched, f32 hz) {
+        DECL_PTRS(sched, cfg);
+
+        switch (cfg->e_tick) {
+        case SCHED_TICK_US:
+                return HZ_TO_US(hz);
+        case SCHED_TICK_MS:
+                return HZ_TO_MS(hz);
+        default:
+                return 0;
+        }
+}
 
 static inline int sched_cfs_task_cmp(const sched_task_t *a, const sched_task_t *b) {
         if (a->status.next_exec_ts < b->status.next_exec_ts)
@@ -194,7 +213,7 @@ static inline int sched_init(sched_t *sched, sched_cfg_t sched_cfg) {
 
         *cfg = sched_cfg;
 
-        switch (cfg->type) {
+        switch (cfg->e_type) {
         case SCHED_TYPE_FCFS: {
                 ops->f_get_task    = sched_fcfs_get_task;
                 ops->f_insert_task = NULL;
@@ -231,7 +250,7 @@ static inline int sched_exec(sched_t *sched) {
         if (lo->curr_ts < task->status.next_exec_ts)
                 return 0;
 
-        if (sched->cfg.type == SCHED_TYPE_CFS)
+        if (sched->cfg.e_type == SCHED_TYPE_CFS)
                 sched_cfs_remove_task(sched, task);
 
         u64 begin_ts = lo->curr_ts;
@@ -242,8 +261,8 @@ static inline int sched_exec(sched_t *sched) {
         task->status.elapsed_us = (f32)(end_ts - begin_ts);
 
         if (task->cfg.exec_cnt_max == 0 || task->status.exec_cnt < task->cfg.exec_cnt_max) {
-                task->status.next_exec_ts = end_ts + HZ_TO_US(task->cfg.exec_freq);
-                if (sched->cfg.type == SCHED_TYPE_CFS)
+                task->status.next_exec_ts = end_ts + sched_hz2tick(sched, task->cfg.exec_freq);
+                if (sched->cfg.e_type == SCHED_TYPE_CFS)
                         sched_cfs_insert_task(sched, task);
         } else
                 task->status.e_state = SCHED_TASK_STATE_DEAD;

@@ -16,7 +16,11 @@ void task_cb(void *arg) {
 }
 
 int main(void) {
-        sched_cfg_t cfg_cfg = {.cpu_id = 19, .type = SCHED_TYPE_CFS};
+        sched_cfg_t cfg_cfg = {
+            .cpu_id = 19,
+            .e_type = SCHED_TYPE_CFS,
+            .e_tick = SCHED_TICK_US,
+        };
         sched_init(&cfs, cfg_cfg);
 
         sched_task_cfg_t tasks[] = {
@@ -25,7 +29,7 @@ int main(void) {
                 .priority     = 1,
                 .exec_freq    = 1000,
                 .exec_cnt_max = 3,
-                .delay_tick     = 0,
+                .delay_tick   = 0,
                 .f_cb         = task_cb,
                 .arg          = "A",
             },
@@ -34,7 +38,7 @@ int main(void) {
                 .priority     = 1,
                 .exec_freq    = 500,
                 .exec_cnt_max = 5,
-                .delay_tick     = 0,
+                .delay_tick   = 0,
                 .f_cb         = task_cb,
                 .arg          = "B",
             },
@@ -43,7 +47,7 @@ int main(void) {
                 .priority     = 1,
                 .exec_freq    = 800,
                 .exec_cnt_max = 2,
-                .delay_tick     = 0,
+                .delay_tick   = 0,
                 .f_cb         = task_cb,
                 .arg          = "C",
             },
