@@ -11,17 +11,20 @@ IndentWidth: 8
 
 ---
 Language: Cpp
-# 指针对齐方式
-PointerAlignment: Right
-# 控制左大括号位置
-BreakBeforeBraces: Attach
+
 # 最大行宽
 ColumnLimit: 100
-# 控制左圆括号前是否有空格
+# 指针对齐方式
+PointerAlignment: Right
+# 左大括号位置
+BreakBeforeBraces: Allman
+# case 缩进
+IndentCaseLabels: true
+# 左圆括号前是否有空格
 SpaceBeforeParens: ControlStatements
-# 对齐连续声明的变量
+# 对齐连续声明
 AlignConsecutiveDeclarations: true
-# 对齐连续赋值的变量
+# 对齐赋值操作符
 AlignConsecutiveAssignments: true
 # 对齐函数形参(若需要折行)
 BinPackParameters: false

@@ -12,14 +12,16 @@ static inline int sched_exec(struct sched *sched);
 #include <pthread.h>
 #include <sched.h>
 
-static inline void *sched_thread_exec(void *arg) {
+static inline void *sched_thread_exec(void *arg)
+{
         struct sched *t = (struct sched *)arg;
         while (true)
                 sched_exec(t);
         return NULL;
 }
 
-static inline void sched_bind_thread_to_cpu(pthread_t thread_tid, int cpu_id) {
+static inline void sched_bind_thread_to_cpu(pthread_t thread_tid, int cpu_id)
+{
         cpu_set_t cpuset;
         CPU_ZERO(&cpuset);
         CPU_SET(cpu_id, &cpuset);
@@ -32,15 +34,17 @@ static inline void sched_bind_thread_to_cpu(pthread_t thread_tid, int cpu_id) {
 #include <windows.h>
 
 static inline DWORD WINAPI sched_thread_exec(LPVOID arg);
-static inline void         sched_bind_thread_to_cpu(HANDLE thread_handle, int cpu_id) {
-                DWORD_PTR mask = 1u << cpu_id;
-                DWORD_PTR ret  = SetThreadAffinityMask(thread_handle, mask);
-                if (!ret)
+static inline void         sched_bind_thread_to_cpu(HANDLE thread_handle, int cpu_id)
+{
+        DWORD_PTR mask = 1u << cpu_id;
+        DWORD_PTR ret  = SetThreadAffinityMask(thread_handle, mask);
+        if (!ret)
                 printf("[SCHED]set thread affinity failed, errcode: %lu\n", GetLastError());
         printf("[SCHED]bind thread to CPU %d success\n", cpu_id);
 }
 
-static inline DWORD WINAPI sched_thread_exec(LPVOID arg) {
+static inline DWORD WINAPI sched_thread_exec(LPVOID arg)
+{
         struct sched *t = (struct sched *)arg;
         while (true)
                 sched_exec(t);
@@ -48,11 +52,13 @@ static inline DWORD WINAPI sched_thread_exec(LPVOID arg) {
 }
 #endif
 
-static inline void sched_thread_init(void *arg, int cpu_id) {
+static inline void sched_thread_init(void *arg, int cpu_id)
+{
 #ifdef __linux__
         pthread_t sched_tid;
         int       ret = pthread_create(&sched_tid, NULL, sched_thread_exec, arg);
-        if (ret != 0) {
+        if (ret != 0)
+        {
                 printf("[SCHED]create thread failed, errcode: %d\n", ret);
                 return;
         }
@@ -65,7 +71,8 @@ static inline void sched_thread_init(void *arg, int cpu_id) {
                                         0,                 // 默认创建标志
                                         &thread_id         // 用于接收线程ID
         );
-        if (sched_tid == NULL) {
+        if (sched_tid == NULL)
+        {
                 printf("[SCHED]create thread failed, errcode: %lu\n", GetLastError());
                 return;
         }

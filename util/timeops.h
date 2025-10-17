@@ -19,7 +19,8 @@
 
 #define WIN_TO_UNIX_EPOCH 116444736000000000ULL
 
-static inline u64 get_mono_ts_ns(void) {
+static inline u64 get_mono_ts_ns(void)
+{
 #ifdef __linux__
         struct timespec ts;
         clock_gettime(CLOCK_MONOTONIC_RAW, &ts);
@@ -39,7 +40,8 @@ static inline u64 get_mono_ts_ms(void) { return get_mono_ts_ns() / 1000000u; }
 
 static inline u64 get_mono_ts_s(void) { return get_mono_ts_ns() / 1000000000u; }
 
-static inline u64 get_real_ts_ns(void) {
+static inline u64 get_real_ts_ns(void)
+{
 #ifdef __linux__
         struct timespec ts;
         clock_gettime(CLOCK_REALTIME, &ts);
@@ -63,14 +65,17 @@ static inline u64 get_real_ts_ms(void) { return get_real_ts_ns() / 1000000u; }
 
 static inline u64 get_real_ts_s(void) { return get_real_ts_ns() / 1000000000u; }
 
-typedef enum {
+typedef enum
+{
         SPIN,
         YIELD,
 } delay_e;
 
-static inline void spin(u32 us) {
+static inline void spin(u32 us)
+{
         u64 start = get_mono_ts_us();
-        while ((get_mono_ts_us() - start) < us) {
+        while ((get_mono_ts_us() - start) < us)
+        {
                 asm volatile("nop" ::: "memory");
         }
 }
@@ -86,29 +91,41 @@ static inline void yield(u32 ms) { spin(MS_TO_US(ms)); }
 
 static inline void delay_us(u64 us) { spin(us); }
 
-static inline void delay_ms(u64 ms, delay_e e_delay) {
-        switch (e_delay) {
-        case SPIN: {
-                spin(MS_TO_US(ms));
-        } break;
-        case YIELD: {
-                yield(ms);
-        } break;
-        default:
+static inline void delay_ms(u64 ms, delay_e e_delay)
+{
+        switch (e_delay)
+        {
+                case SPIN:
+                {
+                        spin(MS_TO_US(ms));
+                }
                 break;
+                case YIELD:
+                {
+                        yield(ms);
+                }
+                break;
+                default:
+                        break;
         }
 }
 
-static inline void delay_s(u64 s, delay_e e_delay) {
-        switch (e_delay) {
-        case SPIN: {
-                spin(S_TO_US(s));
-        } break;
-        case YIELD: {
-                yield(S_TO_MS(s));
-        } break;
-        default:
+static inline void delay_s(u64 s, delay_e e_delay)
+{
+        switch (e_delay)
+        {
+                case SPIN:
+                {
+                        spin(S_TO_US(s));
+                }
                 break;
+                case YIELD:
+                {
+                        yield(S_TO_MS(s));
+                }
+                break;
+                default:
+                        break;
         }
 }
 

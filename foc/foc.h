@@ -4,7 +4,8 @@
 #include "foccali.h"
 #include "focstate.h"
 
-static inline void foc_init(foc_t *foc, foc_cfg_t foc_cfg) {
+static inline void foc_init(foc_t *foc, foc_cfg_t foc_cfg)
+{
         DECL_PTRS(foc, cfg, lo);
 
         *cfg = foc_cfg;
@@ -41,7 +42,8 @@ static inline void foc_init(foc_t *foc, foc_cfg_t foc_cfg) {
         lbg_init(&lo->lbg, lo->lbg.cfg);
 }
 
-static inline void foc_rotor_cal(foc_t *foc) {
+static inline void foc_rotor_cal(foc_t *foc)
+{
         DECL_PTRS(foc, cfg, ops, in, lo);
 
         // 机械角度获取与圈数计算
@@ -69,13 +71,15 @@ static inline void foc_rotor_cal(foc_t *foc) {
         // 机械角速度计算
         in->rotor.mech_omega = ELEC_TO_MECH(in->rotor.sensor_omega, cfg->motor_cfg.npp);
 
-        if (lo->e_theta == FOC_THETA_SENSOR) {
+        if (lo->e_theta == FOC_THETA_SENSOR)
+        {
                 in->rotor.theta = in->rotor.sensor_theta;
                 in->rotor.omega = in->rotor.sensor_omega;
         }
 }
 
-static inline void foc_get_fdb(foc_t *foc) {
+static inline void foc_get_fdb(foc_t *foc)
+{
         DECL_PTRS(foc, in, lo);
 
         lo->fdb_pvct.pos = in->rotor.mech_total_theta;
@@ -83,28 +87,38 @@ static inline void foc_get_fdb(foc_t *foc) {
         lo->fdb_pvct.cur = in->i_dq.q;
 }
 
-static inline void foc_exec(foc_t *foc) {
+static inline void foc_exec(foc_t *foc)
+{
         DECL_PTRS(foc, lo);
 
         lo->exec_cnt++;
 
         foc_rotor_cal(foc);
 
-        switch (lo->e_state) {
-        case FOC_STATE_CALI:
-                foc_cali(foc);
-                break;
-        case FOC_STATE_READY:
-                foc_ready(foc);
-                break;
-        case FOC_STATE_DISABLE:
-                foc_disable(foc);
-                break;
-        case FOC_STATE_ENABLE:
-                foc_enable(foc);
-                break;
-        default:
-                break;
+        switch (lo->e_state)
+        {
+                case FOC_STATE_CALI:
+                {
+                        foc_cali(foc);
+                        break;
+                }
+                case FOC_STATE_READY:
+                {
+                        foc_ready(foc);
+                        break;
+                }
+                case FOC_STATE_DISABLE:
+                {
+                        foc_disable(foc);
+                        break;
+                }
+                case FOC_STATE_ENABLE:
+                {
+                        foc_enable(foc);
+                        break;
+                }
+                default:
+                        break;
         }
 
         foc_get_fdb(foc);

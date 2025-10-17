@@ -1,7 +1,8 @@
 #ifndef ERRDEF_H
 #define ERRDEF_H
 
-enum errdef_e {
+enum errdef_e
+{
         MEINVAL,
         MEBUSY,
         MEACCES,

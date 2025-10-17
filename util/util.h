@@ -9,7 +9,8 @@
 #define AT(addr) __attribute__((section(addr)))
 
 #define ATOMIC_EXEC(code)                                                                          \
-        do {                                                                                       \
+        do                                                                                         \
+        {                                                                                          \
                 volatile u32 _primask = __get_PRIMASK();                                           \
                 __disable_irq();                                                                   \
                 {code};                                                                            \
@@ -19,13 +20,15 @@
 #define ARG_UNUSED(arg) (void)(arg)
 
 #define ARG_CHECK(arg)                                                                             \
-        do {                                                                                       \
+        do                                                                                         \
+        {                                                                                          \
                 if ((arg) == NULL)                                                                 \
                         return -MEINVAL;                                                           \
         } while (0)
 
 #define CFG_CHECK(p, f_init)                                                                       \
-        do {                                                                                       \
+        do                                                                                         \
+        {                                                                                          \
                 if (memcmp(&((p)->cfg), &((p)->lo.cfg), sizeof((p)->cfg)) != 0)                    \
                         f_init((p), (p)->cfg);                                                     \
         } while (0)
@@ -80,6 +83,6 @@
 #define MUST_BE_ARRAY(a)                BUILD_BUG_ON_ZERO(IS_SAME_TYPE((a), &(a)[0]))
 #define ARRAY_SIZE(arr)                 (sizeof(arr) / sizeof(arr[0]) + MUST_BE_ARRAY(arr))
 
-#define CONTAINER_OF(ptr, type, member) (type *)((char *)(ptr)-offsetof(type, member))
+#define CONTAINER_OF(ptr, type, member) (type *)((char *)(ptr) - offsetof(type, member))
 
 #endif // !UTIL_H

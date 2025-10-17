@@ -5,12 +5,14 @@
 
 net_t net;
 
-static inline int init(void) {
+static inline int init(void)
+{
         net_cfg_t net_cfg = {.type = NET_TYPE_UDP};
         return net_init(&net, net_cfg);
 }
 
-static inline int exec(void) {
+static inline int exec(void)
+{
         net_ch_t ch = {
             .remote_ip = "192.168.137.101",
             // .remote_ip   = "127.0.0.1",
@@ -30,7 +32,8 @@ static inline int exec(void) {
         char txbuf[1024] = {0};
         char rxbuf[1024] = {0};
 
-        while (true) {
+        while (true)
+        {
                 sprintf(txbuf, "%llu", cnt++);
                 u64 start = get_mono_ts_us();
                 ret       = net_send_recv(&ch, txbuf, strlen(txbuf), rxbuf, sizeof(rxbuf), 1);
@@ -42,7 +45,8 @@ static inline int exec(void) {
         return 0;
 }
 
-int main() {
+int main()
+{
         init();
         exec();
         return 0;

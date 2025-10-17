@@ -14,7 +14,8 @@
 #include "util/mathdef.h"
 #include "util/util.h"
 
-typedef enum {
+typedef enum
+{
         FFT_POINT_32      = 32,
         FFT_POINT_64      = 64,
         FFT_POINT_128     = 128,
@@ -33,7 +34,8 @@ typedef enum {
         FFT_POINT_1048576 = 1048576,
 } fft_size_e;
 
-typedef struct {
+typedef struct
+{
         f32    fs;
         u8     flag;
         size_t point_num;
@@ -42,16 +44,18 @@ typedef struct {
 #if defined(__linux__) || defined(_WIN32)
         fftwf_complex *out_buf;
 #elif defined(ARM_MATH)
-        f32                       *out_buf;
+        f32 *out_buf;
 #endif
         f32 *mag_buf;
 } fft_cfg_t;
 
-typedef struct {
+typedef struct
+{
         f32 *buf;
 } fft_in_t;
 
-typedef struct {
+typedef struct
+{
         f32    fr;
         f32    ft;
         size_t out_idx;
@@ -59,7 +63,8 @@ typedef struct {
         f32    max_mag;
 } fft_out_t;
 
-typedef struct {
+typedef struct
+{
         u32    elapsed_us;
         spsc_t spsc;
         bool   neet_exec;
@@ -72,14 +77,16 @@ typedef struct {
 #endif
 } fft_lo_t;
 
-typedef struct {
+typedef struct
+{
         fft_cfg_t cfg;
         fft_in_t  in;
         fft_out_t out;
         fft_lo_t  lo;
 } fft_t;
 
-static inline void fft_init(fft_t *fft, fft_cfg_t fft_cfg) {
+static inline void fft_init(fft_t *fft, fft_cfg_t fft_cfg)
+{
         DECL_PTRS(fft, cfg, in, out, lo);
 
         *cfg = fft_cfg;
@@ -99,7 +106,8 @@ static inline void fft_init(fft_t *fft, fft_cfg_t fft_cfg) {
 #endif
 }
 
-static inline void fft_exec(fft_t *fft) {
+static inline void fft_exec(fft_t *fft)
+{
         DECL_PTRS(fft, cfg, in, out, lo);
 
         if (!lo->neet_exec)
@@ -129,7 +137,8 @@ static inline void fft_exec(fft_t *fft) {
         lo->elapsed_us = (u32)(get_mono_ts_us() - start);
 }
 
-static inline void fft_destroy(fft_t *fft) {
+static inline void fft_destroy(fft_t *fft)
+{
         DECL_PTRS(fft, lo);
 
 #if defined(__linux__) || defined(_WIN32)
@@ -137,7 +146,8 @@ static inline void fft_destroy(fft_t *fft) {
 #endif
 }
 
-static inline void fft_exec_in(fft_t *fft, f32 val) {
+static inline void fft_exec_in(fft_t *fft, f32 val)
+{
         DECL_PTRS(fft, lo);
 
         if (spsc_write(&lo->spsc, &val, sizeof(val)) == 0)

@@ -4,25 +4,29 @@
 #include "filter/pll.h"
 #include "util/util.h"
 
-typedef struct {
+typedef struct
+{
         f32         fs;
         motor_cfg_t motor;
         f32         wc;
         f32         damp;
 } lbg_cfg_t;
 
-typedef struct {
+typedef struct
+{
         f32 theta;
         f32 elec_tor;
 } lbg_in_t;
 
-typedef struct {
+typedef struct
+{
         f32 est_theta, est_omega;
         f32 est_load_tor;
         f32 sum_tor;
 } lbg_out_t;
 
-typedef struct {
+typedef struct
+{
         lbg_cfg_t cfg;
 
         f32 g1;
@@ -33,14 +37,16 @@ typedef struct {
         f32 est_omega;
 } lbg_lo_t;
 
-typedef struct {
+typedef struct
+{
         lbg_cfg_t cfg;
         lbg_in_t  in;
         lbg_out_t out;
         lbg_lo_t  lo;
 } lbg_obs_t;
 
-static void lbg_init(lbg_obs_t *lbg, lbg_cfg_t lbg_cfg) {
+static void lbg_init(lbg_obs_t *lbg, lbg_cfg_t lbg_cfg)
+{
         DECL_PTRS(lbg, cfg, lo);
 
         *cfg = lo->cfg = lbg_cfg;
@@ -50,7 +56,8 @@ static void lbg_init(lbg_obs_t *lbg, lbg_cfg_t lbg_cfg) {
         lo->ki = SQ(cfg->wc) * cfg->wc * cfg->motor.j;
 }
 
-static void lbg_exec(lbg_obs_t *lbg) {
+static void lbg_exec(lbg_obs_t *lbg)
+{
         CFG_CHECK(lbg, lbg_init);
         DECL_PTRS(lbg, cfg, in, out, lo);
 
@@ -75,7 +82,8 @@ static void lbg_exec(lbg_obs_t *lbg) {
         WARP_TAU(out->est_theta);
 }
 
-static void lbg_exec_in(lbg_obs_t *lbg, f32 theta, f32 elec_tor) {
+static void lbg_exec_in(lbg_obs_t *lbg, f32 theta, f32 elec_tor)
+{
         DECL_PTRS(lbg, in);
 
         in->theta    = theta;

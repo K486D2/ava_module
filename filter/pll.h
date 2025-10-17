@@ -4,7 +4,8 @@
 #include "util/mathdef.h"
 #include "util/util.h"
 
-typedef struct {
+typedef struct
+{
         f32 fs;
         f32 wc;
         f32 damp;
@@ -13,17 +14,20 @@ typedef struct {
         f32 ki;
 } pll_cfg_t;
 
-typedef struct {
+typedef struct
+{
         f32_ab_t ab;
         f32      theta;
 } pll_in_t;
 
-typedef struct {
+typedef struct
+{
         f32 theta;
         f32 omega, lpf_omega;
 } pll_out_t;
 
-typedef struct {
+typedef struct
+{
         pll_cfg_t cfg;
         f32       ki_out;
         f32       prev_theta;
@@ -31,14 +35,16 @@ typedef struct {
         f32       ffd_omega, lpf_ffd_omega;
 } pll_lo_t;
 
-typedef struct {
+typedef struct
+{
         pll_cfg_t cfg;
         pll_in_t  in;
         pll_out_t out;
         pll_lo_t  lo;
 } pll_filter_t;
 
-static inline void pll_init(pll_filter_t *pll, pll_cfg_t pll_cfg) {
+static inline void pll_init(pll_filter_t *pll, pll_cfg_t pll_cfg)
+{
         DECL_PTRS(pll, cfg);
 
         *cfg = pll_cfg;
@@ -48,7 +54,8 @@ static inline void pll_init(pll_filter_t *pll, pll_cfg_t pll_cfg) {
         cfg->ffd_lpf_fc = 0.5f * cfg->lpf_fc;
 }
 
-static inline void pll_exec(pll_filter_t *pll) {
+static inline void pll_exec(pll_filter_t *pll)
+{
         CFG_CHECK(pll, pll_init);
         DECL_PTRS(pll, cfg, in, out, lo);
 
@@ -62,7 +69,8 @@ static inline void pll_exec(pll_filter_t *pll) {
         WARP_TAU(out->theta);
 }
 
-static inline void pll_exec_ab_in(pll_filter_t *pll, f32_ab_t ab) {
+static inline void pll_exec_ab_in(pll_filter_t *pll, f32_ab_t ab)
+{
         DECL_PTRS(pll, in, out, lo);
 
         in->ab = ab;
@@ -73,7 +81,8 @@ static inline void pll_exec_ab_in(pll_filter_t *pll, f32_ab_t ab) {
         pll_exec(pll);
 }
 
-static inline void pll_exec_theta_in(pll_filter_t *pll, f32 theta) {
+static inline void pll_exec_theta_in(pll_filter_t *pll, f32 theta)
+{
         DECL_PTRS(pll, cfg, in, out, lo);
 
         in->theta = theta;

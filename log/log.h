@@ -13,7 +13,8 @@
 #include "util/typedef.h"
 #include "util/util.h"
 
-typedef enum {
+typedef enum
+{
         LOG_LEVEL_DATA,  // 数据
         LOG_LEVEL_DEBUG, // 调试
         LOG_LEVEL_INFO,  // 一般
@@ -21,18 +22,21 @@ typedef enum {
         LOG_LEVEL_ERROR, // 错误
 } log_level_e;
 
-typedef enum {
+typedef enum
+{
         LOG_MODE_SYNC,
         LOG_MODE_ASYNC,
 } log_mode_e;
 
-typedef struct {
+typedef struct
+{
         u64 ts;
         usz id;
         usz msg_nbytes;
 } log_entry_t;
 
-typedef struct {
+typedef struct
+{
         log_mode_e  e_mode;
         log_level_e e_level;
         char        end_sign;
@@ -45,7 +49,8 @@ typedef struct {
         size_t      nproducers;
 } log_cfg_t;
 
-typedef struct {
+typedef struct
+{
         mpsc_t mpsc;
         bool   busy;
 } log_lo_t;
@@ -53,12 +58,14 @@ typedef struct {
 typedef u64 (*log_get_ts_f)(void);
 typedef void (*log_flush_f)(void *fp, const u8 *src, size_t nbytes);
 
-typedef struct {
+typedef struct
+{
         log_get_ts_f f_get_ts;
         log_flush_f  f_flush;
 } log_ops_t;
 
-typedef struct {
+typedef struct
+{
         log_cfg_t cfg;
         log_lo_t  lo;
         log_ops_t ops;
@@ -74,14 +81,16 @@ static inline void log_info(log_t *log, usz id, const char *fmt, ...);
 static inline void log_warn(log_t *log, usz id, const char *fmt, ...);
 static inline void log_error(log_t *log, usz id, const char *fmt, ...);
 
-static inline void log_init(log_t *log, log_cfg_t log_cfg) {
+static inline void log_init(log_t *log, log_cfg_t log_cfg)
+{
         DECL_PTRS(log, cfg, lo);
 
         *cfg = log_cfg;
         mpsc_init(&lo->mpsc, cfg->buf, cfg->cap, cfg->producers, cfg->nproducers);
 }
 
-static inline void log_write(log_t *log, usz id, const char *fmt, va_list args) {
+static inline void log_write(log_t *log, usz id, const char *fmt, va_list args)
+{
         DECL_PTRS(log, cfg, ops, lo);
 
         va_list args_entry;
@@ -99,7 +108,8 @@ static inline void log_write(log_t *log, usz id, const char *fmt, va_list args) 
 
         mpsc_p_t *p   = mpsc_reg(&lo->mpsc, id);
         isz       off = mpsc_acquire(&lo->mpsc, p, total_nbytes);
-        if (off < 0) {
+        if (off < 0)
+        {
                 mpsc_unreg(p);
                 return;
         }
@@ -119,10 +129,12 @@ static inline void log_write(log_t *log, usz id, const char *fmt, va_list args) 
                 return;
 }
 
-static inline void log_flush(log_t *log) {
+static inline void log_flush(log_t *log)
+{
         DECL_PTRS(log, cfg, ops, lo);
 
-        while (!lo->busy) {
+        while (!lo->busy)
+        {
                 log_entry_t entry        = {0};
                 usz         entry_nbytes = mpsc_read(&lo->mpsc, &entry, sizeof(entry));
                 if (entry_nbytes == 0)
@@ -138,7 +150,8 @@ static inline void log_flush(log_t *log) {
         }
 }
 
-static inline void log_data(log_t *log, usz id, const char *fmt, ...) {
+static inline void log_data(log_t *log, usz id, const char *fmt, ...)
+{
         DECL_PTRS(log, cfg);
 
         if (cfg->e_level > LOG_LEVEL_DATA)
@@ -150,7 +163,8 @@ static inline void log_data(log_t *log, usz id, const char *fmt, ...) {
         va_end(args);
 }
 
-static inline void log_debug(log_t *log, usz id, const char *fmt, ...) {
+static inline void log_debug(log_t *log, usz id, const char *fmt, ...)
+{
         DECL_PTRS(log, cfg);
 
         if (cfg->e_level > LOG_LEVEL_DEBUG)
@@ -162,7 +176,8 @@ static inline void log_debug(log_t *log, usz id, const char *fmt, ...) {
         va_end(args);
 }
 
-static inline void log_info(log_t *log, usz id, const char *fmt, ...) {
+static inline void log_info(log_t *log, usz id, const char *fmt, ...)
+{
         DECL_PTRS(log, cfg);
 
         if (cfg->e_level > LOG_LEVEL_INFO)
@@ -174,7 +189,8 @@ static inline void log_info(log_t *log, usz id, const char *fmt, ...) {
         va_end(args);
 }
 
-static inline void log_warn(log_t *log, usz id, const char *fmt, ...) {
+static inline void log_warn(log_t *log, usz id, const char *fmt, ...)
+{
         DECL_PTRS(log, cfg);
 
         if (cfg->e_level > LOG_LEVEL_WARN)
@@ -186,7 +202,8 @@ static inline void log_warn(log_t *log, usz id, const char *fmt, ...) {
         va_end(args);
 }
 
-static inline void log_error(log_t *log, usz id, const char *fmt, ...) {
+static inline void log_error(log_t *log, usz id, const char *fmt, ...)
+{
         DECL_PTRS(log, cfg);
 
         if (cfg->e_level > LOG_LEVEL_ERROR)

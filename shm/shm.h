@@ -13,7 +13,8 @@
 #include "ds/spsc.h"
 #include "util/util.h"
 
-typedef enum {
+typedef enum
+{
 #ifdef __linux__
         SHM_READONLY  = PROT_READ,
         SHM_WRITEONLY = PROT_WRITE,
@@ -24,13 +25,15 @@ typedef enum {
 #endif
 } shm_access_e;
 
-typedef struct {
+typedef struct
+{
         const char  *name;
         shm_access_e access;
         usz          cap;
 } shm_cfg_t;
 
-typedef struct {
+typedef struct
+{
 #ifdef __linux__
         int fd;
 #elif defined(_WIN32)
@@ -41,33 +44,39 @@ typedef struct {
         spsc_t *spsc;
 } shm_lo_t;
 
-typedef struct {
+typedef struct
+{
         shm_cfg_t cfg;
         shm_lo_t  lo;
 } shm_t;
 
-static inline int shm_init(shm_t *shm, shm_cfg_t shm_cfg) {
+static inline int shm_init(shm_t *shm, shm_cfg_t shm_cfg)
+{
         DECL_PTRS(shm, cfg, lo);
 
         *cfg = shm_cfg;
 
 #ifdef __linux__
         lo->fd = shm_open(cfg->name, O_RDWR, 0666);
-        if (lo->fd == -1) {
+        if (lo->fd == -1)
+        {
                 lo->fd = shm_open(cfg->name, O_CREAT | O_RDWR, 0666);
                 if (lo->fd == -1)
                         return -MEACCES;
                 lo->is_creator = true;
 
-                if (ftruncate(lo->fd, cfg->cap) == -1) {
+                if (ftruncate(lo->fd, cfg->cap) == -1)
+                {
                         close(lo->fd);
                         return -MEACCES;
                 }
-        } else
+        }
+        else
                 lo->is_creator = false;
 
         lo->base = mmap(NULL, cfg->cap, cfg->access, MAP_SHARED, lo->fd, 0);
-        if (lo->base == MAP_FAILED) {
+        if (lo->base == MAP_FAILED)
+        {
                 close(lo->fd);
                 if (lo->is_creator)
                         shm_unlink(cfg->name);
@@ -77,7 +86,8 @@ static inline int shm_init(shm_t *shm, shm_cfg_t shm_cfg) {
         lo->fd = OpenFileMapping(FILE_MAP_ALL_ACCESS, // 读写权限
                                  FALSE,               // 不继承句柄
                                  cfg->name);          // 共享内存名称
-        if (lo->fd == NULL) {
+        if (lo->fd == NULL)
+        {
                 lo->fd = CreateFileMapping(INVALID_HANDLE_VALUE, // 使用物理内存
                                            NULL,                 // 默认安全属性
                                            cfg->access,          // 可读可写
@@ -87,7 +97,8 @@ static inline int shm_init(shm_t *shm, shm_cfg_t shm_cfg) {
                 if (lo->fd == NULL)
                         return -MECREATE;
                 lo->is_creator = true;
-        } else
+        }
+        else
                 lo->is_creator = false;
 
         // 映射到进程地址空间
@@ -96,7 +107,8 @@ static inline int shm_init(shm_t *shm, shm_cfg_t shm_cfg) {
                                  0,
                                  0,         // 偏移量
                                  cfg->cap); // 映射大小
-        if (lo->base == NULL) {
+        if (lo->base == NULL)
+        {
                 UnmapViewOfFile(lo->base);
                 CloseHandle(lo->fd);
                 return -MEACCES;
@@ -110,13 +122,15 @@ static inline int shm_init(shm_t *shm, shm_cfg_t shm_cfg) {
         return 0;
 }
 
-static inline void shm_read(shm_t *shm, void *dst, usz nbytes) {
+static inline void shm_read(shm_t *shm, void *dst, usz nbytes)
+{
         DECL_PTRS(shm, lo);
 
         spsc_read_buf(lo->spsc, (u8 *)lo->base + sizeof(*lo->spsc), dst, nbytes);
 }
 
-static inline void shm_write(shm_t *shm, void *src, usz nbytes) {
+static inline void shm_write(shm_t *shm, void *src, usz nbytes)
+{
         DECL_PTRS(shm, lo);
 
         spsc_write_buf(lo->spsc, (u8 *)lo->base + sizeof(*lo->spsc), src, nbytes);

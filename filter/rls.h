@@ -5,22 +5,26 @@
 
 #define MAX_ORDER 8
 
-typedef struct {
+typedef struct
+{
         u32 order;
         f32 lambda;
         f32 delta;
 } rls_cfg_t;
 
-typedef struct {
+typedef struct
+{
         f32 x;
         f32 ref;
 } rls_in_t;
 
-typedef struct {
+typedef struct
+{
         f32 y_hat;
 } rls_out_t;
 
-typedef struct {
+typedef struct
+{
         f32 err;
         f32 denom;
         f32 w[MAX_ORDER];
@@ -32,20 +36,23 @@ typedef struct {
         f32 xtp[MAX_ORDER];
 } rls_lo_t;
 
-typedef struct {
+typedef struct
+{
         rls_cfg_t cfg;
         rls_in_t  in;
         rls_out_t out;
         rls_lo_t  lo;
 } rls_filter_t;
 
-static inline void rls_init(rls_filter_t *rls, rls_cfg_t rls_cfg) {
+static inline void rls_init(rls_filter_t *rls, rls_cfg_t rls_cfg)
+{
         DECL_PTRS(rls, cfg);
 
         *cfg = rls_cfg;
 }
 
-static inline void rls_exec(rls_filter_t *rls) {
+static inline void rls_exec(rls_filter_t *rls)
+{
         DECL_PTRS(rls, cfg, in, out, lo);
 
         for (u32 i = cfg->order - 1; i > 0; i--)
@@ -56,7 +63,8 @@ static inline void rls_exec(rls_filter_t *rls) {
                 out->y_hat += lo->w[i] * lo->x[i];
         lo->err = in->ref - out->y_hat;
 
-        for (u32 i = 0; i < cfg->order; i++) {
+        for (u32 i = 0; i < cfg->order; i++)
+        {
                 for (u32 j = 0; j < cfg->order; j++)
                         lo->px[i] += lo->p[i][j] * lo->x[j];
         }
@@ -70,17 +78,20 @@ static inline void rls_exec(rls_filter_t *rls) {
         for (u32 i = 0; i < cfg->order; i++)
                 lo->w[i] += lo->k[i] * lo->err;
 
-        for (u32 j = 0; j < cfg->order; j++) {
+        for (u32 j = 0; j < cfg->order; j++)
+        {
                 for (u32 i = 0; i < cfg->order; i++)
                         lo->xtp[j] += lo->x[i] * lo->p[i][j];
         }
 
-        for (u32 i = 0; i < cfg->order; i++) {
+        for (u32 i = 0; i < cfg->order; i++)
+        {
                 for (u32 j = 0; j < cfg->order; j++)
                         lo->temp[i][j] = lo->k[i] * lo->xtp[j];
         }
 
-        for (u32 i = 0; i < cfg->order; i++) {
+        for (u32 i = 0; i < cfg->order; i++)
+        {
                 for (u32 j = 0; j < cfg->order; j++)
                         lo->p[i][j] = (lo->p[i][j] - lo->temp[i][j]) / cfg->lambda;
         }

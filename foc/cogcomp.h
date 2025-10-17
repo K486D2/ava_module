@@ -4,7 +4,8 @@
 #include "util/typedef.h"
 
 #define COGCOMP_MAP_SIZE 360
-typedef struct {
+typedef struct
+{
         f32 map[COGCOMP_MAP_SIZE];
 } cogcomp_t;
 

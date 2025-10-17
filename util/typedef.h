@@ -21,8 +21,8 @@ typedef double f64;
 typedef u32 usz;
 typedef i32 isz;
 #else
-typedef u64    usz;
-typedef i64    isz;
+typedef u64 usz;
+typedef i64 isz;
 #endif
 
 #ifndef __cplusplus
@@ -77,42 +77,49 @@ constexpr auto memory_order_acq_rel = std::memory_order_acq_rel;
 #define SPINLOCK_BACKOFF_HOOK
 #endif
 #define SPINLOCK_BACKOFF(cnt)                                                                      \
-        do {                                                                                       \
+        do                                                                                         \
+        {                                                                                          \
                 for (int __i = (cnt); __i != 0; __i--)                                             \
                         SPINLOCK_BACKOFF_HOOK;                                                     \
                 if ((cnt) < SPINLOCK_BACKOFF_MAX)                                                  \
                         (cnt) += (cnt);                                                            \
         } while (0);
 
-typedef struct {
+typedef struct
+{
         u32 u;
         u32 v;
         u32 w;
 } u32_uvw_t;
 
-typedef struct {
+typedef struct
+{
         i32 u;
         i32 v;
         i32 w;
 } i32_uvw_t;
 
-typedef struct {
+typedef struct
+{
         f32 u;
         f32 v;
         f32 w;
 } f32_uvw_t;
 
-typedef struct {
+typedef struct
+{
         f32 a;
         f32 b;
 } f32_ab_t;
 
-typedef struct {
+typedef struct
+{
         f32 d;
         f32 q;
 } f32_dq_t;
 
-typedef struct {
+typedef struct
+{
         u32 npp;
         f32 ld;
         f32 lq;
@@ -123,7 +130,8 @@ typedef struct {
         f32 cur2tor[4], tor2cur[4], max_tor;
 } motor_cfg_t;
 
-typedef struct {
+typedef struct
+{
         /* ADC */
         u32 adc_full_cnt;
         u32 adc_cali_cnt_max, theta_cali_cnt_max;

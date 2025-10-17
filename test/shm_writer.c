@@ -2,7 +2,8 @@
 
 #include "module.h"
 
-int main() {
+int main()
+{
         shm_t     shm     = {0};
         shm_cfg_t shm_cfg = {
             .name   = "ch1",
@@ -11,7 +12,8 @@ int main() {
         };
 
         int ret = shm_init(&shm, shm_cfg);
-        if (ret < 0) {
+        if (ret < 0)
+        {
                 printf("writer: shm init failed, errcode: %d\n", ret);
                 exit(-1);
         }
@@ -19,7 +21,8 @@ int main() {
         printf("shm_addr: 0x%p, buf_addr: 0x%p\n", shm.lo.base, shm.lo.spsc->buf);
 
         u64 cnt = 0;
-        while (true) {
+        while (true)
+        {
                 cnt++;
                 shm_write(&shm, &cnt, sizeof(cnt));
                 printf("write cnt: %llu, spsc wp: %llu, spsc rp: %llu, spsc free: %llu\n",

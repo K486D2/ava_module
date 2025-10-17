@@ -10,12 +10,14 @@ u64 fake_time_us = 0;
 
 u64 get_ts_us(void) { return fake_time_us; }
 
-void task_cb(void *arg) {
+void task_cb(void *arg)
+{
         const char *name = (const char *)arg;
         printf("[%.6llu] Task %s executed\n", fake_time_us, name);
 }
 
-int main(void) {
+int main(void)
+{
         sched_cfg_t cfg_cfg = {
             .cpu_id = 19,
             .e_type = SCHED_TYPE_CFS,
@@ -58,7 +60,8 @@ int main(void) {
         for (int i = 0; i < 3; i++)
                 sched_add_task(&cfs, tasks[i]);
 
-        for (int step = 0; step < 10; step++) {
+        for (int step = 0; step < 10; step++)
+        {
                 fake_time_us += 500; // 每次增加 0.15 ms
 
                 printf("\n=== CFS step %d ===\n", step);

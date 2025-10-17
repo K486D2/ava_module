@@ -3,27 +3,37 @@
 
 #include "focdef.h"
 
-static inline void foc_select_mode(foc_t *foc) {
+static inline void foc_select_mode(foc_t *foc)
+{
         DECL_PTRS(foc, lo);
 
         if (lo->e_mode == lo->e_last_mode)
                 return;
 
-        switch (lo->e_mode) {
-        case FOC_MODE_CUR: {
-                lo->ref_pvct.cur = 0.0f;
-        } break;
-        case FOC_MODE_VEL: {
-                lo->ref_pvct.vel = 0.0f;
-        } break;
-        case FOC_MODE_POS: {
-                lo->ref_pvct.pos = lo->fdb_pvct.pos;
-        } break;
-        case FOC_MODE_PD: {
-                lo->ref_pvct.pos = lo->fdb_pvct.pos;
-        } break;
-        default:
-                break;
+        switch (lo->e_mode)
+        {
+                case FOC_MODE_CUR:
+                {
+                        lo->ref_pvct.cur = 0.0f;
+                        break;
+                }
+                case FOC_MODE_VEL:
+                {
+                        lo->ref_pvct.vel = 0.0f;
+                        break;
+                }
+                case FOC_MODE_POS:
+                {
+                        lo->ref_pvct.pos = lo->fdb_pvct.pos;
+                        break;
+                }
+                case FOC_MODE_PD:
+                {
+                        lo->ref_pvct.pos = lo->fdb_pvct.pos;
+                        break;
+                }
+                default:
+                        break;
         }
 
         lo->e_last_mode = lo->e_mode;
@@ -31,7 +41,8 @@ static inline void foc_select_mode(foc_t *foc) {
 
 static inline void foc_vol_ctl(foc_t *foc) { ARG_UNUSED(foc); }
 
-static inline void foc_cur_ctl(foc_t *foc) {
+static inline void foc_cur_ctl(foc_t *foc)
+{
         DECL_PTRS(foc, cfg, in, out, lo);
 
         if (++lo->cur_div_cnt < cfg->cur_div)
@@ -57,7 +68,8 @@ static inline void foc_cur_ctl(foc_t *foc) {
         out->v_dq.d = id_pid->out.val;
 }
 
-static inline void foc_vel_ctl(foc_t *foc) {
+static inline void foc_vel_ctl(foc_t *foc)
+{
         DECL_PTRS(foc, cfg, lo);
 
         if (++lo->vel_div_cnt < cfg->vel_div)
@@ -68,7 +80,8 @@ static inline void foc_vel_ctl(foc_t *foc) {
         lo->ref_pvct.cur = lo->vel_pid.out.val;
 }
 
-static inline void foc_pos_ctl(foc_t *foc) {
+static inline void foc_pos_ctl(foc_t *foc)
+{
         DECL_PTRS(foc, cfg, lo);
 
         if (++lo->pos_div_cnt < cfg->pos_div)
@@ -79,7 +92,8 @@ static inline void foc_pos_ctl(foc_t *foc) {
         lo->ref_pvct.vel = lo->pos_pid.out.val;
 }
 
-static inline void foc_pd_ctl(foc_t *foc) {
+static inline void foc_pd_ctl(foc_t *foc)
+{
         DECL_PTRS(foc, cfg, lo);
 
         if (++lo->pd_div_cnt < cfg->pd_div)
