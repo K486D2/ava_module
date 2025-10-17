@@ -269,8 +269,8 @@ popcount64(u64 x)
 {
         u32 cnt = 0;
         while (x) {
-                cnt += x & 1;
-                x >>= 1;
+                cnt  += x & 1;
+                x   >>= 1;
         }
         return cnt;
 }
@@ -330,8 +330,8 @@ popcount32(u32 x)
 {
         u32 cnt = 0;
         while (x) {
-                cnt += x & 1;
-                x >>= 1;
+                cnt  += x & 1;
+                x   >>= 1;
         }
         return cnt;
 }

@@ -39,9 +39,9 @@ sine_exec(sine_t *sine)
 {
         DECL_PTRS(sine, cfg, out, lo);
 
-        lo->phase_incr = TAU * cfg->wave_freq / cfg->fs;
-        out->val       = cfg->amp * SIN(cfg->phase) + cfg->offset;
-        cfg->phase += lo->phase_incr;
+        lo->phase_incr  = TAU * cfg->wave_freq / cfg->fs;
+        out->val        = cfg->amp * SIN(cfg->phase) + cfg->offset;
+        cfg->phase     += lo->phase_incr;
         WARP_TAU(cfg->phase);
 }
 

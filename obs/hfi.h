@@ -82,13 +82,13 @@ hfi_polar_idf(hfi_obs_t *hfi)
                                 lo->e_polar_idf = HFI_POLAR_IDF_POSITIVE;
                 } break;
                 case HFI_POLAR_IDF_POSITIVE: {
-                        out->id = cfg->hfi_id;
+                        out->id     = cfg->hfi_id;
                         lo->id_pos += ABS(lo->lpf_id);
                         if (lo->polar_cnt > lo->polar_cnt_max * 2)
                                 lo->e_polar_idf = HFI_POLAR_IDF_NEGATIVE;
                 } break;
                 case HFI_POLAR_IDF_NEGATIVE: {
-                        out->id = -cfg->hfi_id;
+                        out->id     = -cfg->hfi_id;
                         lo->id_neg += ABS(lo->lpf_id);
                         if (lo->polar_cnt == lo->polar_cnt_max * 3) {
                                 // cfg->hfi_vd      = (ABS(lo->id_pos) > ABS(lo->id_neg)) ?

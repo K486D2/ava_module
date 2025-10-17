@@ -11,8 +11,8 @@
 #define DWT_INIT()                                              \
         do {                                                    \
                 CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk; \
-                DWT->CYCCNT = 0U;                               \
-                DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;            \
+                DWT->CYCCNT       = 0U;                         \
+                DWT->CTRL        |= DWT_CTRL_CYCCNTENA_Msk;     \
         } while (0)
 
 #define MEASURE_TIME(total, name, iterations, code)          \

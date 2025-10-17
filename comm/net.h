@@ -118,8 +118,8 @@ net_set_nonblock(net_ch_t *ch)
         if (flags < 0)
                 return flags;
 
-        flags |= O_NONBLOCK;
-        int ret = fcntl(ch->sock, F_SETFL, flags);
+        flags   |= O_NONBLOCK;
+        int ret  = fcntl(ch->sock, F_SETFL, flags);
         return ret;
 #elif defined(_WIN32)
         unsigned long mode = 1;

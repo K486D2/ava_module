@@ -17,29 +17,40 @@ AlignConsecutiveDeclarations:
   Enabled: true
   AcrossEmptyLines: true
   AcrossComments: false
+
 # 对齐赋值操作符
 AlignConsecutiveAssignments:
   Enabled: true
   AcrossEmptyLines: true
   AcrossComments: false
+  AlignCompound: true
 
 # 最大行宽
 ColumnLimit: 100
+
 # 指针对齐方式
 PointerAlignment: Right
+
 # 左大括号位置
 BreakBeforeBraces: Linux
+
 # case 缩进
 IndentCaseLabels: true
+
 # 左圆括号前是否有空格
 SpaceBeforeParens: ControlStatements
+
 # 对齐函数形参(若需要折行)
 BinPackParameters: false
+
 # 对齐函数实参(若需要折行)
 BinPackArguments: false
+
 # 对齐连续宏(跨空行)
 AlignConsecutiveMacros: AcrossEmptyLines
+
 # 换行反斜杠对齐方式
 AlignEscapedNewlines: Left
+
 # 短函数是否写在一行
 AllowShortFunctionsOnASingleLine: Inline

@@ -43,8 +43,8 @@ foc_cali(foc_t *foc)
                                 in->rotor.force_theta = TAU;
                                 if (++lo->theta_cali_hold_cnt
                                     >= cfg->periph_cfg.theta_cali_cnt_max) {
-                                        lo->theta_offset_sum += in->rotor.sensor_theta;
-                                        lo->theta_cali_hold_cnt = 0;
+                                        lo->theta_offset_sum    += in->rotor.sensor_theta;
+                                        lo->theta_cali_hold_cnt  = 0;
                                         if (++lo->theta_cali_cnt >= cfg->motor_cfg.npp)
                                                 lo->e_cali = FOC_CALI_CCW;
                                         else
@@ -59,8 +59,8 @@ foc_cali(foc_t *foc)
                                 in->rotor.force_theta = 0.0f;
                                 if (++lo->theta_cali_hold_cnt
                                     >= cfg->periph_cfg.theta_cali_cnt_max) {
-                                        lo->theta_offset_sum += in->rotor.sensor_theta;
-                                        lo->theta_cali_hold_cnt = 0;
+                                        lo->theta_offset_sum    += in->rotor.sensor_theta;
+                                        lo->theta_cali_hold_cnt  = 0;
                                         if (++lo->theta_cali_cnt >= cfg->motor_cfg.npp * 2)
                                                 lo->e_cali = FOC_CALI_FINISH;
                                         else
