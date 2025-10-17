@@ -5,7 +5,7 @@
 
 #include "ds/rbtree.h"
 #include "util/errdef.h"
-#include "util/mathdef.h"
+#include "util/timeops.h"
 
 #include "thread.h"
 

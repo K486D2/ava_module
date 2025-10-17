@@ -1,6 +1,7 @@
 #ifndef BITOPS_H
 #define BITOPS_H
 
+#include "marcodef.h"
 #include "typedef.h"
 
 #define LF(n)            (1U << (n))

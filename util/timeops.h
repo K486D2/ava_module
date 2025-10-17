@@ -1,5 +1,5 @@
-#ifndef TIMEDEF_H
-#define TIMEDEF_H
+#ifndef TIMEOPS_H
+#define TIMEOPS_H
 
 #ifdef __linux__
 #include <unistd.h>
@@ -7,17 +7,33 @@
 #include <windows.h>
 #endif
 
-#include <string.h>
 #include <time.h>
 
-#include "mathdef.h"
+#include "marcodef.h"
 #include "typedef.h"
 
-#define NANO_PER_SEC      1000000000ULL // 10^9
-#define MICRO_PER_SEC     1000000ULL    // 10^6
-#define MILLI_PER_SEC     1000ULL       // 10^3
+#define NANO_PER_SEC      (1000000000ULL) // 10^9
+#define MICRO_PER_SEC     (1000000ULL)    // 10^6
+#define MILLI_PER_SEC     (1000ULL)       // 10^3
 
-#define WIN_TO_UNIX_EPOCH 116444736000000000ULL
+#define WIN_TO_UNIX_EPOCH (116444736000000000ULL)
+
+#define NS2US(ns)         ((ns) / 1000.0F)
+#define NS2MS(ns)         ((ns) / 1000000.0F)
+#define NS2S(ns)          ((ns) / 1000000000.0F)
+#define US2NS(us)         ((us) * 1000U)
+#define US2MS(us)         ((us) / 1000.0F)
+#define US2S(us)          ((us) / 1000000.0F)
+#define MS2NS(ms)         ((ms) * 1000000U)
+#define MS2US(ms)         ((ms) * 1000U)
+#define MS2S(ms)          ((ms) / 1000.0F)
+#define S2NS(s)           ((s) * 1000000000U)
+#define S2US(s)           ((s) * 1000000U)
+#define S2MS(s)           ((s) * 1000U)
+
+#define HZ2S(hz)          (1.0F / (hz))
+#define HZ2MS(hz)         (1.0F / (hz) * 1000U)
+#define HZ2US(hz)         (1.0F / (hz) * 1000000U)
 
 HAPI u64
 get_mono_ts_ns(void)
@@ -162,4 +178,4 @@ delay_s(u64 s, delay_e e_delay)
         }
 }
 
-#endif // !TIMEDEF_H
+#endif // !TIMEOPS_H

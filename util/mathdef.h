@@ -48,21 +48,21 @@
 #endif
 
 #ifndef PI
-#define PI 3.1415926F
+#define PI (3.1415926F)
 #endif
 
 #ifndef E
-#define E 2.7182818F
+#define E (2.7182818F)
 #endif
 
-#define TAU             6.2831853F
-#define DIV_PI_BY_2     1.5707963F
-#define LN2             0.6931471F
-#define DIV_2_BY_3      0.6666666F
-#define SQRT_2          1.4142135F
-#define SQRT_3          1.7320508F
-#define DIV_1_BY_SQRT_3 0.5773502F
-#define DIV_SQRT_3_BY_2 0.8660254F
+#define TAU             (6.2831853F)
+#define DIV_PI_BY_2     (1.5707963F)
+#define LN2             (0.6931471F)
+#define DIV_2_BY_3      (0.6666666F)
+#define SQRT_2          (1.4142135F)
+#define SQRT_3          (1.7320508F)
+#define DIV_1_BY_SQRT_3 (0.5773502F)
+#define DIV_SQRT_3_BY_2 (0.8660254F)
 
 #ifndef MIN
 #define MIN(x, y) ((x) < (y) ? (x) : (y))
@@ -85,17 +85,6 @@
 
 #define RAD2DEG(rad)                   ((rad) * 57.2957795F)
 #define DEG2RAD(deg)                   ((deg) / 57.2957795F)
-
-#define US2S(us)                       ((us) / 1000000.0F)
-#define S2US(s)                        ((s) * 1000000U)
-#define US2MS(us)                      ((us) / 1000.0F)
-#define MS2US(ms)                      ((ms) * 1000U)
-#define MS2S(ms)                       ((ms) / 1000.0F)
-#define S2MS(s)                        ((s) * 1000U)
-
-#define HZ2S(hz)                       (1.0F / (hz))
-#define HZ2MS(hz)                      (1.0F / (hz) * 1000U)
-#define HZ2US(hz)                      (1.0F / (hz) * 1000000U)
 
 #define MECH2ELEC(theta, npp)          ((theta) * (npp))
 #define ELEC2MECH(theta, npp)          ((theta) / (npp))

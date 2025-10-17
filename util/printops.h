@@ -1,5 +1,5 @@
-#ifndef PRINT_UTIL_H
-#define PRINT_UTIL_H
+#ifndef PRINTOPS_H
+#define PRINTOPS_H
 
 #include <stdarg.h>
 #include <stdio.h>
@@ -253,4 +253,4 @@ print_table_row(const char *fmt, ...)
         va_end(args);
 }
 
-#endif // !PRINT_UTIL_H
+#endif // !PRINTOPS_H
