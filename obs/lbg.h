@@ -1,5 +1,5 @@
-#ifndef LUENBERGER_H
-#define LUENBERGER_H
+#ifndef LBG_H
+#define LBG_H
 
 #include "filter/pll.h"
 #include "util/util.h"
@@ -90,4 +90,4 @@ lbg_exec_in(lbg_obs_t *lbg, f32 theta, f32 elec_tor)
         lbg_exec(lbg);
 }
 
-#endif // !LUENBERGER_H
+#endif // !LBG_H

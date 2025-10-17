@@ -97,7 +97,7 @@ fft_init(fft_t *fft, fft_cfg_t fft_cfg)
 #if defined(__linux__) || defined(_WIN32)
         lo->p = fftwf_plan_dft_r2c_1d(cfg->npoints, in->buf, lo->buf, FFTW_ESTIMATE);
 #elif defined(ARM_MATH)
-        arm_rfft_fast_init_f32(&lo->s, (u16)cfg->point_num);
+        arm_rfft_fast_init_f32(&lo->s, (u16)cfg->npoints);
 #endif
 }
 
@@ -119,10 +119,10 @@ fft_exec(fft_t *fft)
                 out->mag_buf[i] = SQRT(lo->buf[i][0] * lo->buf[i][0] + lo->buf[i][1] * lo->buf[i][1]);
         find_max(&out->mag_buf[1], cfg->npoints >> 1, &out->max_mag, &out->out_idx);
 #elif defined(ARM_MATH)
-        arm_hanning_f32(lo->buf, cfg->point_num);
+        arm_hanning_f32(lo->buf, cfg->npoints);
         arm_rfft_fast_f32(&lo->s, in->buf, lo->buf, cfg->flag);
-        arm_cmplx_mag_f32(lo->buf, out->mag_buf, cfg->point_num >> 1);
-        arm_max_f32(&out->mag_buf[1], cfg->point_num >> 1, &out->max_mag, &out->out_idx);
+        arm_cmplx_mag_f32(lo->buf, out->mag_buf, cfg->npoints >> 1);
+        arm_max_f32(&out->mag_buf[1], cfg->npoints >> 1, &out->max_mag, &out->out_idx);
 #endif
 
         out->ft = out->out_idx * cfg->fs / (f32)cfg->npoints;
