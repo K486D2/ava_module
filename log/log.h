@@ -12,7 +12,6 @@
 #include "ds/mpsc.h"
 #include "util/marcodef.h"
 #include "util/typedef.h"
-#include "util/util.h"
 
 typedef enum {
         LOG_LEVEL_DATA,  // 数据

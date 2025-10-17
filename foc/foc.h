@@ -58,7 +58,7 @@ foc_rotor_cal(foc_t *foc)
         in->rotor.mech_prev_theta  = in->rotor.mech_theta;
 
         // 电角度计算
-        in->rotor.sensor_theta       = MECH_TO_ELEC(in->rotor.mech_theta, cfg->motor_cfg.npp) - cfg->theta_offset;
+        in->rotor.sensor_theta       = MECH2ELEC(in->rotor.mech_theta, cfg->motor_cfg.npp) - cfg->theta_offset;
         in->rotor.sensor_comp_theta  = cfg->sensor_theta_comp_gain * in->rotor.sensor_omega / cfg->exec_freq;
         in->rotor.sensor_theta      += in->rotor.sensor_comp_theta;
         WARP_TAU(in->rotor.sensor_theta);
@@ -69,7 +69,7 @@ foc_rotor_cal(foc_t *foc)
         in->rotor.sensor_omega = pll->out.lpf_omega;
 
         // 机械角速度计算
-        in->rotor.mech_omega = ELEC_TO_MECH(in->rotor.sensor_omega, cfg->motor_cfg.npp);
+        in->rotor.mech_omega = ELEC2MECH(in->rotor.sensor_omega, cfg->motor_cfg.npp);
 
         if (lo->e_theta == FOC_THETA_SENSOR) {
                 in->rotor.theta = in->rotor.sensor_theta;

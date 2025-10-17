@@ -3,6 +3,7 @@
 #include <unistd.h>
 
 #include "log/log.h"
+#include "util/timeops.h"
 
 log_t g_log;
 

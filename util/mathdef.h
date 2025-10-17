@@ -83,25 +83,22 @@
 #define M(x)                           ((x) * 1000000U)    // 乘以 1M
 #define G(x)                           ((x) * 1000000000U) // 乘以 1G
 
-#define RAD_TO_DEG(rad)                ((rad) * 57.2957795F)
-#define DEG_TO_RAD(deg)                ((deg) / 57.2957795F)
+#define RAD2DEG(rad)                   ((rad) * 57.2957795F)
+#define DEG2RAD(deg)                   ((deg) / 57.2957795F)
 
-#define US_TO_S(us)                    ((us) / 1000000.0F)
-#define S_TO_US(s)                     ((s) * 1000000U)
-#define US_TO_MS(us)                   ((us) / 1000.0F)
-#define MS_TO_US(ms)                   ((ms) * 1000U)
-#define MS_TO_S(ms)                    ((ms) / 1000.0F)
-#define S_TO_MS(s)                     ((s) * 1000U)
+#define US2S(us)                       ((us) / 1000000.0F)
+#define S2US(s)                        ((s) * 1000000U)
+#define US2MS(us)                      ((us) / 1000.0F)
+#define MS2US(ms)                      ((ms) * 1000U)
+#define MS2S(ms)                       ((ms) / 1000.0F)
+#define S2MS(s)                        ((s) * 1000U)
 
-#define HZ_TO_S(hz)                    (1.0F / (hz))
-#define HZ_TO_MS(hz)                   (1.0F / (hz) * 1000U)
-#define HZ_TO_US(hz)                   (1.0F / (hz) * 1000000U)
+#define HZ2S(hz)                       (1.0F / (hz))
+#define HZ2MS(hz)                      (1.0F / (hz) * 1000U)
+#define HZ2US(hz)                      (1.0F / (hz) * 1000000U)
 
-#define MECH_TO_ELEC(theta, npp)       ((theta) * (npp))
-#define ELEC_TO_MECH(theta, npp)       ((theta) / (npp))
-
-#define LF(n)                          (1U << (n))
-#define RF(n)                          (1U >> (n))
+#define MECH2ELEC(theta, npp)          ((theta) * (npp))
+#define ELEC2MECH(theta, npp)          ((theta) / (npp))
 
 #define INTEGRATOR(ret, val, gain, fs) (ret) += (gain) * (val) / (fs)
 

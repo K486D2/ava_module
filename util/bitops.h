@@ -3,6 +3,8 @@
 
 #include "typedef.h"
 
+#define LF(n)            (1U << (n))
+#define RF(n)            (1U >> (n))
 #define BIT(n)           (1UL << (n))
 #define BIT_SET(v, n)    ((v) |= BIT(n))
 #define BIT_CLEAR(v, n)  ((v) &= ~BIT(n))

@@ -1,6 +1,8 @@
 #ifndef FOCCALI_H
 #define FOCCALI_H
 
+#include "util/bitops.h"
+
 #include "focstate.h"
 
 HAPI int

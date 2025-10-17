@@ -122,7 +122,7 @@ yield(u32 ms)
 HAPI void
 yield(u32 ms)
 {
-        spin(MS_TO_US(ms));
+        spin(MS2US(ms));
 }
 #endif
 
@@ -137,7 +137,7 @@ delay_ms(u64 ms, delay_e e_delay)
 {
         switch (e_delay) {
                 case SPIN: {
-                        spin(MS_TO_US(ms));
+                        spin(MS2US(ms));
                 } break;
                 case YIELD: {
                         yield(ms);
@@ -152,10 +152,10 @@ delay_s(u64 s, delay_e e_delay)
 {
         switch (e_delay) {
                 case SPIN: {
-                        spin(S_TO_US(s));
+                        spin(S2US(s));
                 } break;
                 case YIELD: {
-                        yield(S_TO_MS(s));
+                        yield(S2MS(s));
                 } break;
                 default:
                         break;

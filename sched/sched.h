@@ -1,8 +1,11 @@
 #ifndef SCHED_H
 #define SCHED_H
 
+#include <string.h>
+
 #include "ds/rbtree.h"
-#include "util/util.h"
+#include "util/errdef.h"
+#include "util/mathdef.h"
 
 #include "thread.h"
 
@@ -120,9 +123,9 @@ sched_hz2tick(sched_t *sched, f32 hz)
 
         switch (cfg->e_tick) {
                 case SCHED_TICK_US:
-                        return HZ_TO_US(hz);
+                        return HZ2US(hz);
                 case SCHED_TICK_MS:
-                        return HZ_TO_MS(hz);
+                        return HZ2MS(hz);
                 default:
                         return 0;
         }
