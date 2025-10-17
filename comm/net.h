@@ -94,7 +94,7 @@ typedef struct net {
         net_t *name = (net);           \
         ARG_UNUSED(name);
 
-static inline int
+HAPI int
 net_init(net_t *net, net_cfg_t net_cfg)
 {
         DECL_PTRS(net, cfg, lo);
@@ -110,7 +110,7 @@ net_init(net_t *net, net_cfg_t net_cfg)
         return 0;
 }
 
-static inline int
+HAPI int
 net_set_nonblock(net_ch_t *ch)
 {
 #ifdef __linux__
@@ -128,7 +128,7 @@ net_set_nonblock(net_ch_t *ch)
 #endif
 }
 
-static inline int
+HAPI int
 net_add_ch(net_t *net, net_ch_t *ch)
 {
         DECL_PTRS(net, cfg, lo);
@@ -149,13 +149,13 @@ net_add_ch(net_t *net, net_ch_t *ch)
         if (ret < 0)
                 return ret;
 
-        struct sockaddr_in remote_addr = { 0 };
+        struct sockaddr_in remote_addr = {0};
         remote_addr.sin_family         = AF_INET;
         remote_addr.sin_port           = htons(ch->remote_port);
         remote_addr.sin_addr.s_addr    = inet_addr(ch->remote_ip);
 
         if (strlen(ch->local_ip) != 0 && ch->local_port != 0) {
-                struct sockaddr_in local_addr = { 0 };
+                struct sockaddr_in local_addr = {0};
                 local_addr.sin_family         = AF_INET;
                 local_addr.sin_port           = htons(ch->local_port);
                 local_addr.sin_addr.s_addr    = inet_addr(ch->local_ip);
@@ -177,7 +177,7 @@ cleanup:
         return ret;
 }
 
-static inline int
+HAPI int
 net_send(net_ch_t *ch, void *tx_buf, u32 size)
 {
 #ifdef __linux__
@@ -188,12 +188,12 @@ net_send(net_ch_t *ch, void *tx_buf, u32 size)
         return ret;
 }
 
-static inline int
+HAPI int
 net_recv_yield(net_ch_t *ch, void *rx_buf, u32 size, u32 timeout_ms)
 {
         struct timeval tv = {
-                .tv_sec  = (i32)timeout_ms / 1000,                      // 秒
-                .tv_usec = (i32)(timeout_ms - tv.tv_sec * 1000) * 1000, // 微秒
+            .tv_sec  = (i32)timeout_ms / 1000,                      // 秒
+            .tv_usec = (i32)(timeout_ms - tv.tv_sec * 1000) * 1000, // 微秒
         };
 
 #ifdef __linux__
@@ -206,7 +206,7 @@ net_recv_yield(net_ch_t *ch, void *rx_buf, u32 size, u32 timeout_ms)
         return ret;
 }
 
-static inline int
+HAPI int
 net_recv_spin(net_ch_t *ch, void *rx_buf, u32 size, u32 timeout_ms)
 {
         u64 start_ts_ns = get_mono_ts_ns();
@@ -224,7 +224,7 @@ net_recv_spin(net_ch_t *ch, void *rx_buf, u32 size, u32 timeout_ms)
         return -METIMEOUT;
 }
 
-static inline int
+HAPI int
 net_recv(net_ch_t *ch, void *rx_buf, u32 size, u32 timeout_ms)
 {
         int ret;
@@ -241,7 +241,7 @@ net_recv(net_ch_t *ch, void *rx_buf, u32 size, u32 timeout_ms)
         return ret;
 }
 
-static inline int
+HAPI int
 net_send_recv(net_ch_t *ch, void *tx_buf, u32 tx_size, void *rx_buf, u32 rx_size, u32 timeout_ms)
 {
         int ret;
@@ -259,7 +259,7 @@ typedef struct {
         char resp[MAX_RESP_BUF_SIZE];
 } net_broadcast_t;
 
-// static inline int net_broadcast(const char      *remote_ip,
+// HAPI int net_broadcast(const char      *remote_ip,
 //                                 u16              remote_port,
 //                                 const u8        *tx_buf,
 //                                 u32              size,

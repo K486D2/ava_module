@@ -46,7 +46,7 @@ typedef struct {
         shm_lo_t  lo;
 } shm_t;
 
-static inline int
+HAPI int
 shm_init(shm_t *shm, shm_cfg_t shm_cfg)
 {
         DECL_PTRS(shm, cfg, lo);
@@ -112,7 +112,7 @@ shm_init(shm_t *shm, shm_cfg_t shm_cfg)
         return 0;
 }
 
-static inline void
+HAPI void
 shm_read(shm_t *shm, void *dst, usz nbytes)
 {
         DECL_PTRS(shm, lo);
@@ -120,7 +120,7 @@ shm_read(shm_t *shm, void *dst, usz nbytes)
         spsc_read_buf(lo->spsc, (u8 *)lo->base + sizeof(*lo->spsc), dst, nbytes);
 }
 
-static inline void
+HAPI void
 shm_write(shm_t *shm, void *src, usz nbytes)
 {
         DECL_PTRS(shm, lo);

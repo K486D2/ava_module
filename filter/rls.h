@@ -39,7 +39,7 @@ typedef struct {
         rls_lo_t  lo;
 } rls_filter_t;
 
-static inline void
+HAPI void
 rls_init(rls_filter_t *rls, rls_cfg_t rls_cfg)
 {
         DECL_PTRS(rls, cfg);
@@ -47,7 +47,7 @@ rls_init(rls_filter_t *rls, rls_cfg_t rls_cfg)
         *cfg = rls_cfg;
 }
 
-static inline void
+HAPI void
 rls_exec(rls_filter_t *rls)
 {
         DECL_PTRS(rls, cfg, in, out, lo);

@@ -1,21 +1,21 @@
 #ifndef TYPEDEF_H
 #define TYPEDEF_H
 
-typedef unsigned char  u8;
-typedef signed char    i8;
+typedef unsigned char u8;
+typedef signed char   i8;
 
 typedef unsigned short u16;
 typedef signed short   i16;
 
-typedef unsigned int   u32;
-typedef signed int     i32;
+typedef unsigned int u32;
+typedef signed int   i32;
 
 //* on Windows, (unsigned long) is 32bit
 typedef unsigned long long u64;
 typedef signed long long   i64;
 
-typedef float              f32;
-typedef double             f64;
+typedef float  f32;
+typedef double f64;
 
 #ifdef MCU
 typedef u32 usz;
@@ -43,26 +43,23 @@ typedef i64 isz;
 #ifndef __cplusplus
 #include <stdatomic.h>
 
-#define ATOMIC(x)                               _Atomic x
-#define ATOMIC_LOAD(a)                          atomic_load(a)
-#define ATOMIC_LOAD_EXPLICIT(a, m)              atomic_load_explicit(a, m)
-#define ATOMIC_STORE(a, v)                      atomic_store(a, v)
-#define ATOMIC_STORE_EXPLICIT(a, v, m)          atomic_store_explicit(a, v, m)
-#define ATOMIC_CAS_WEAK_EXPLICIT(a, o, n, s, f) atomic_compare_exchange_weak_explicit(a, o, n, s, f)
-#define ATOMIC_CAS_STRONG_EXPLICIT(a, o, n, s, f) \
-        atomic_compare_exchange_strong_explicit(a, o, n, s, f)
+#define ATOMIC(x)                                 _Atomic x
+#define ATOMIC_LOAD(a)                            atomic_load(a)
+#define ATOMIC_LOAD_EXPLICIT(a, m)                atomic_load_explicit(a, m)
+#define ATOMIC_STORE(a, v)                        atomic_store(a, v)
+#define ATOMIC_STORE_EXPLICIT(a, v, m)            atomic_store_explicit(a, v, m)
+#define ATOMIC_CAS_WEAK_EXPLICIT(a, o, n, s, f)   atomic_compare_exchange_weak_explicit(a, o, n, s, f)
+#define ATOMIC_CAS_STRONG_EXPLICIT(a, o, n, s, f) atomic_compare_exchange_strong_explicit(a, o, n, s, f)
 #else
 #include <atomic>
 
-#define ATOMIC(x)                      std::atomic<x>
-#define ATOMIC_LOAD(a)                 std::atomic_load(a)
-#define ATOMIC_LOAD_EXPLICIT(a, m)     std::atomic_load_explicit(a, m)
-#define ATOMIC_STORE(a, v)             std::atomic_store(a, v)
-#define ATOMIC_STORE_EXPLICIT(a, v, m) std::atomic_store_explicit(a, v, m)
-#define ATOMIC_CAS_WEAK_EXPLICIT(a, o, n, s, f) \
-        std::atomic_compare_exchange_weak_explicit(a, o, n, s, f)
-#define ATOMIC_CAS_STRONG_EXPLICIT(a, o, n, s, f) \
-        std::atomic_compare_exchange_strong_explicit(a, o, n, s, f)
+#define ATOMIC(x)                                 std::atomic<x>
+#define ATOMIC_LOAD(a)                            std::atomic_load(a)
+#define ATOMIC_LOAD_EXPLICIT(a, m)                std::atomic_load_explicit(a, m)
+#define ATOMIC_STORE(a, v)                        std::atomic_store(a, v)
+#define ATOMIC_STORE_EXPLICIT(a, v, m)            std::atomic_store_explicit(a, v, m)
+#define ATOMIC_CAS_WEAK_EXPLICIT(a, o, n, s, f)   std::atomic_compare_exchange_weak_explicit(a, o, n, s, f)
+#define ATOMIC_CAS_STRONG_EXPLICIT(a, o, n, s, f) std::atomic_compare_exchange_strong_explicit(a, o, n, s, f)
 constexpr auto memory_order_relaxed = std::memory_order_relaxed;
 constexpr auto memory_order_acquire = std::memory_order_acquire;
 constexpr auto memory_order_release = std::memory_order_release;

@@ -27,7 +27,7 @@ typedef struct {
         square_lo_t  lo;
 } square_t;
 
-static inline void
+HAPI void
 square_init(square_t *square, square_cfg_t square_cfg)
 {
         DECL_PTRS(square, cfg);
@@ -35,7 +35,7 @@ square_init(square_t *square, square_cfg_t square_cfg)
         *cfg = square_cfg;
 }
 
-static inline void
+HAPI void
 square_exec(square_t *square)
 {
         DECL_PTRS(square, cfg, out, lo);

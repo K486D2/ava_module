@@ -7,13 +7,13 @@
 log_t g_log;
 
 #define WRITE_THREAD_NUM 1000
-u64      PRODUCERS_CNTS[WRITE_THREAD_NUM];
+u64 PRODUCERS_CNTS[WRITE_THREAD_NUM];
 
 u8       LOGGER_FLUSH_BUF[128];
 u8       LOGGER_BUF[1024 * 1024];
 mpsc_p_t PRODUCERS[WRITE_THREAD_NUM];
 
-static inline void
+HAPI void
 log_stdout(void *fp, const u8 *src, size_t nbytes)
 {
         fwrite(src, nbytes, 1, fp);
@@ -37,16 +37,9 @@ write_thread_func(void *arg)
 
         while (true) {
 #ifdef _WIN32
-                log_debug(&log,
-                          "Thread %10u, cnt: %10llu\n",
-                          (u32)GetCurrentThreadId(),
-                          PRODUCERS_CNTS[id]++);
+                log_debug(&log, "Thread %10u, cnt: %10llu\n", (u32)GetCurrentThreadId(), PRODUCERS_CNTS[id]++);
 #else
-                log_debug(&g_log,
-                          id,
-                          "Thread %10u, cnt: %10llu\n",
-                          (u32)pthread_self(),
-                          PRODUCERS_CNTS[id]++);
+                log_debug(&g_log, id, "Thread %10u, cnt: %10llu\n", (u32)pthread_self(), PRODUCERS_CNTS[id]++);
 #endif
 
                 delay_ms(1, YIELD);
@@ -58,16 +51,16 @@ int
 main()
 {
         log_cfg_t log_cfg = {
-                .e_mode     = LOG_MODE_SYNC,
-                .e_level    = LOG_LEVEL_DEBUG,
-                .end_sign   = '\n',
-                .fp         = stdout,
-                .buf        = (void *)LOGGER_BUF,
-                .cap        = sizeof(LOGGER_BUF),
-                .flush_buf  = LOGGER_FLUSH_BUF,
-                .flush_cap  = sizeof(LOGGER_FLUSH_BUF),
-                .producers  = (mpsc_p_t *)&PRODUCERS,
-                .nproducers = ARRAY_SIZE(PRODUCERS),
+            .e_mode     = LOG_MODE_SYNC,
+            .e_level    = LOG_LEVEL_DEBUG,
+            .end_sign   = '\n',
+            .fp         = stdout,
+            .buf        = (void *)LOGGER_BUF,
+            .cap        = sizeof(LOGGER_BUF),
+            .flush_buf  = LOGGER_FLUSH_BUF,
+            .flush_cap  = sizeof(LOGGER_FLUSH_BUF),
+            .producers  = (mpsc_p_t *)&PRODUCERS,
+            .nproducers = ARRAY_SIZE(PRODUCERS),
         };
         g_log.ops.f_flush  = log_stdout;
         g_log.ops.f_get_ts = get_mono_ts_us;

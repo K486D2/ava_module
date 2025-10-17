@@ -4,26 +4,28 @@
 #include <stdarg.h>
 #include <stdio.h>
 
+#include "marcodef.h"
+
 // ANSI颜色代码
-#define COLOR_RESET   "\033[0m"
-#define COLOR_BLACK   "\033[30m"
-#define COLOR_RED     "\033[31m"
-#define COLOR_GREEN   "\033[32m"
-#define COLOR_YELLOW  "\033[33m"
-#define COLOR_BLUE    "\033[34m"
-#define COLOR_MAGENTA "\033[35m"
-#define COLOR_CYAN    "\033[36m"
-#define COLOR_WHITE   "\033[37m"
+#define COLOR_RESET     "\033[0m"
+#define COLOR_BLACK     "\033[30m"
+#define COLOR_RED       "\033[31m"
+#define COLOR_GREEN     "\033[32m"
+#define COLOR_YELLOW    "\033[33m"
+#define COLOR_BLUE      "\033[34m"
+#define COLOR_MAGENTA   "\033[35m"
+#define COLOR_CYAN      "\033[36m"
+#define COLOR_WHITE     "\033[37m"
 
 // 背景色代码
-#define BG_BLACK   "\033[40m"
-#define BG_RED     "\033[41m"
-#define BG_GREEN   "\033[42m"
-#define BG_YELLOW  "\033[43m"
-#define BG_BLUE    "\033[44m"
-#define BG_MAGENTA "\033[45m"
-#define BG_CYAN    "\033[46m"
-#define BG_WHITE   "\033[47m"
+#define BG_BLACK        "\033[40m"
+#define BG_RED          "\033[41m"
+#define BG_GREEN        "\033[42m"
+#define BG_YELLOW       "\033[43m"
+#define BG_BLUE         "\033[44m"
+#define BG_MAGENTA      "\033[45m"
+#define BG_CYAN         "\033[46m"
+#define BG_WHITE        "\033[47m"
 
 // 样式代码
 #define STYLE_BOLD      "\033[1m"
@@ -35,7 +37,7 @@
 #define STYLE_HIDDEN    "\033[8m"
 
 // 检测是否支持颜色输出
-static inline int
+HAPI int
 supports_color(void)
 {
 #ifdef _WIN32
@@ -48,7 +50,7 @@ supports_color(void)
 }
 
 // 基础颜色打印函数
-static inline void
+HAPI void
 cprintf(const char *color, const char *fmt, ...)
 {
         va_list args;
@@ -66,7 +68,7 @@ cprintf(const char *color, const char *fmt, ...)
 }
 
 // 便捷的颜色打印函数
-static inline void
+HAPI void
 print_red(const char *fmt, ...)
 {
         va_list args;
@@ -75,7 +77,7 @@ print_red(const char *fmt, ...)
         va_end(args);
 }
 
-static inline void
+HAPI void
 print_green(const char *fmt, ...)
 {
         va_list args;
@@ -84,7 +86,7 @@ print_green(const char *fmt, ...)
         va_end(args);
 }
 
-static inline void
+HAPI void
 print_yellow(const char *fmt, ...)
 {
         va_list args;
@@ -93,7 +95,7 @@ print_yellow(const char *fmt, ...)
         va_end(args);
 }
 
-static inline void
+HAPI void
 print_blue(const char *fmt, ...)
 {
         va_list args;
@@ -102,7 +104,7 @@ print_blue(const char *fmt, ...)
         va_end(args);
 }
 
-static inline void
+HAPI void
 print_magenta(const char *fmt, ...)
 {
         va_list args;
@@ -111,7 +113,7 @@ print_magenta(const char *fmt, ...)
         va_end(args);
 }
 
-static inline void
+HAPI void
 print_cyan(const char *fmt, ...)
 {
         va_list args;
@@ -120,7 +122,7 @@ print_cyan(const char *fmt, ...)
         va_end(args);
 }
 
-static inline void
+HAPI void
 print_bold(const char *fmt, ...)
 {
         va_list args;
@@ -130,7 +132,7 @@ print_bold(const char *fmt, ...)
 }
 
 // 日志级别的颜色打印
-static inline void
+HAPI void
 print_info(const char *fmt, ...)
 {
         va_list args;
@@ -141,7 +143,7 @@ print_info(const char *fmt, ...)
         va_end(args);
 }
 
-static inline void
+HAPI void
 print_success(const char *fmt, ...)
 {
         va_list args;
@@ -152,7 +154,7 @@ print_success(const char *fmt, ...)
         va_end(args);
 }
 
-static inline void
+HAPI void
 print_warning(const char *fmt, ...)
 {
         va_list args;
@@ -163,7 +165,7 @@ print_warning(const char *fmt, ...)
         va_end(args);
 }
 
-static inline void
+HAPI void
 print_error(const char *fmt, ...)
 {
         va_list args;
@@ -174,7 +176,7 @@ print_error(const char *fmt, ...)
         va_end(args);
 }
 
-static inline void
+HAPI void
 print_debug(const char *fmt, ...)
 {
         va_list args;
@@ -186,7 +188,7 @@ print_debug(const char *fmt, ...)
 }
 
 // 带时间戳的日志打印
-static inline void
+HAPI void
 print_info_ts(const char *fmt, ...)
 {
         va_list args;
@@ -197,7 +199,7 @@ print_info_ts(const char *fmt, ...)
         va_end(args);
 }
 
-static inline void
+HAPI void
 print_error_ts(const char *fmt, ...)
 {
         va_list args;
@@ -209,7 +211,7 @@ print_error_ts(const char *fmt, ...)
 }
 
 // 进度条打印
-static inline void
+HAPI void
 print_progress(int percent, const char *label)
 {
         int bar_width = 50;
@@ -230,7 +232,7 @@ print_progress(int percent, const char *label)
 }
 
 // 表格打印辅助函数
-static inline void
+HAPI void
 print_table_header(const char *fmt, ...)
 {
         va_list args;
@@ -240,7 +242,7 @@ print_table_header(const char *fmt, ...)
         va_end(args);
 }
 
-static inline void
+HAPI void
 print_table_row(const char *fmt, ...)
 {
         va_list args;

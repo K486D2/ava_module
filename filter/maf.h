@@ -29,7 +29,7 @@ typedef struct {
         maf_lo_t  lo;
 } maf_filter_t;
 
-static inline void
+HAPI void
 maf_init(maf_filter_t *maf, maf_cfg_t maf_cfg)
 {
         DECL_PTRS(maf, cfg, lo);
@@ -38,7 +38,7 @@ maf_init(maf_filter_t *maf, maf_cfg_t maf_cfg)
         spsc_init(&lo->spsc, cfg->buf, cfg->cap, SPSC_POLICY_REJECT);
 }
 
-static inline void
+HAPI void
 maf_exec(maf_filter_t *maf)
 {
         DECL_PTRS(maf, cfg, in, lo);
@@ -53,7 +53,7 @@ maf_exec(maf_filter_t *maf)
         lo->x_sum /= (f32)cfg->cap;
 }
 
-static inline void
+HAPI void
 maf_exec_in(maf_filter_t *maf, f32 x)
 {
         DECL_PTRS(maf, in);

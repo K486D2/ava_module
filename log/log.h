@@ -10,6 +10,7 @@
 #include <string.h>
 
 #include "ds/mpsc.h"
+#include "util/marcodef.h"
 #include "util/typedef.h"
 #include "util/util.h"
 
@@ -64,17 +65,17 @@ typedef struct {
         log_ops_t ops;
 } log_t;
 
-static inline void log_init(log_t *log, log_cfg_t log_cfg);
-static inline void log_write(log_t *log, usz id, const char *fmt, va_list args);
-static inline void log_flush(log_t *log);
+HAPI void log_init(log_t *log, log_cfg_t log_cfg);
+HAPI void log_write(log_t *log, usz id, const char *fmt, va_list args);
+HAPI void log_flush(log_t *log);
 
-static inline void log_data(log_t *log, usz id, const char *fmt, ...);
-static inline void log_debug(log_t *log, usz id, const char *fmt, ...);
-static inline void log_info(log_t *log, usz id, const char *fmt, ...);
-static inline void log_warn(log_t *log, usz id, const char *fmt, ...);
-static inline void log_error(log_t *log, usz id, const char *fmt, ...);
+HAPI void log_data(log_t *log, usz id, const char *fmt, ...);
+HAPI void log_debug(log_t *log, usz id, const char *fmt, ...);
+HAPI void log_info(log_t *log, usz id, const char *fmt, ...);
+HAPI void log_warn(log_t *log, usz id, const char *fmt, ...);
+HAPI void log_error(log_t *log, usz id, const char *fmt, ...);
 
-static inline void
+HAPI void
 log_init(log_t *log, log_cfg_t log_cfg)
 {
         DECL_PTRS(log, cfg, lo);
@@ -83,7 +84,7 @@ log_init(log_t *log, log_cfg_t log_cfg)
         mpsc_init(&lo->mpsc, cfg->buf, cfg->cap, cfg->producers, cfg->nproducers);
 }
 
-static inline void
+HAPI void
 log_write(log_t *log, usz id, const char *fmt, va_list args)
 {
         DECL_PTRS(log, cfg, ops, lo);
@@ -91,9 +92,9 @@ log_write(log_t *log, usz id, const char *fmt, va_list args)
         va_list args_entry;
         va_copy(args_entry, args);
         log_entry_t entry = {
-                .ts         = ops->f_get_ts(),
-                .id         = id,
-                .msg_nbytes = (usz)vsnprintf(NULL, 0, fmt, args_entry) + 1,
+            .ts         = ops->f_get_ts(),
+            .id         = id,
+            .msg_nbytes = (usz)vsnprintf(NULL, 0, fmt, args_entry) + 1,
         };
         va_end(args_entry);
 
@@ -123,28 +124,26 @@ log_write(log_t *log, usz id, const char *fmt, va_list args)
                 return;
 }
 
-static inline void
+HAPI void
 log_flush(log_t *log)
 {
         DECL_PTRS(log, cfg, ops, lo);
 
         while (!lo->busy) {
-                log_entry_t entry        = { 0 };
+                log_entry_t entry        = {0};
                 usz         entry_nbytes = mpsc_read(&lo->mpsc, &entry, sizeof(entry));
                 if (entry_nbytes == 0)
                         break;
 
-                usz total_nbytes = snprintf(
-                    (char *)cfg->flush_buf, cfg->flush_cap, "[%llu][%llu]", entry.ts, entry.id);
-                total_nbytes
-                    += mpsc_read(&lo->mpsc, cfg->flush_buf + total_nbytes, entry.msg_nbytes);
+                usz total_nbytes  = snprintf((char *)cfg->flush_buf, cfg->flush_cap, "[%llu][%u]", entry.ts, entry.id);
+                total_nbytes     += mpsc_read(&lo->mpsc, cfg->flush_buf + total_nbytes, entry.msg_nbytes);
 
                 ops->f_flush(cfg->fp, cfg->flush_buf, total_nbytes);
                 lo->busy = (cfg->e_mode == LOG_MODE_ASYNC);
         }
 }
 
-static inline void
+HAPI void
 log_data(log_t *log, usz id, const char *fmt, ...)
 {
         DECL_PTRS(log, cfg);
@@ -158,7 +157,7 @@ log_data(log_t *log, usz id, const char *fmt, ...)
         va_end(args);
 }
 
-static inline void
+HAPI void
 log_debug(log_t *log, usz id, const char *fmt, ...)
 {
         DECL_PTRS(log, cfg);
@@ -172,7 +171,7 @@ log_debug(log_t *log, usz id, const char *fmt, ...)
         va_end(args);
 }
 
-static inline void
+HAPI void
 log_info(log_t *log, usz id, const char *fmt, ...)
 {
         DECL_PTRS(log, cfg);
@@ -186,7 +185,7 @@ log_info(log_t *log, usz id, const char *fmt, ...)
         va_end(args);
 }
 
-static inline void
+HAPI void
 log_warn(log_t *log, usz id, const char *fmt, ...)
 {
         DECL_PTRS(log, cfg);
@@ -200,7 +199,7 @@ log_warn(log_t *log, usz id, const char *fmt, ...)
         va_end(args);
 }
 
-static inline void
+HAPI void
 log_error(log_t *log, usz id, const char *fmt, ...)
 {
         DECL_PTRS(log, cfg);

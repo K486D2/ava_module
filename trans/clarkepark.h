@@ -14,7 +14,7 @@
  * @return f32_ab_t 
  */
 // clang-format on
-static inline f32_ab_t
+HAPI f32_ab_t
 clarke(f32_uvw_t f32_abc, f32 mi)
 {
         f32_ab_t f32_ab;
@@ -23,7 +23,7 @@ clarke(f32_uvw_t f32_abc, f32 mi)
         return f32_ab;
 }
 
-static inline f32_uvw_t
+HAPI f32_uvw_t
 inv_clarke(f32_ab_t f32_ab)
 {
         f32_uvw_t f32_uvw;
@@ -35,7 +35,7 @@ inv_clarke(f32_ab_t f32_ab)
         return f32_uvw;
 }
 
-static inline f32_dq_t
+HAPI f32_dq_t
 park(f32_ab_t f32_ab, f32 theta)
 {
         f32_dq_t f32_dq;
@@ -44,7 +44,7 @@ park(f32_ab_t f32_ab, f32 theta)
         return f32_dq;
 }
 
-static inline f32_ab_t
+HAPI f32_ab_t
 inv_park(f32_dq_t f32_dq, f32 theta)
 {
         f32_ab_t f32_ab;

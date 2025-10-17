@@ -32,7 +32,7 @@ typedef struct {
         pid_lo_t  lo;
 } pid_ctl_t;
 
-static inline void
+HAPI void
 pid_init(pid_ctl_t *pid, pid_cfg_t pid_cfg)
 {
         DECL_PTRS(pid, cfg);
@@ -40,12 +40,12 @@ pid_init(pid_ctl_t *pid, pid_cfg_t pid_cfg)
         *cfg = pid_cfg;
 }
 
-static inline void
+HAPI void
 pid_exec(pid_ctl_t *pid)
 {
         DECL_PTRS(pid, cfg, in, out, lo);
 
-        lo->err    = in->ref - in->fdb;
+        lo->err = in->ref - in->fdb;
 
         lo->kp_out = cfg->kp * lo->err;
         INTEGRATOR(lo->ki_out, lo->err, cfg->ki, cfg->fs);
@@ -56,7 +56,7 @@ pid_exec(pid_ctl_t *pid)
         CLAMP(out->val, -cfg->out_max, cfg->out_max);
 }
 
-static inline void
+HAPI void
 pid_exec_in(pid_ctl_t *pid, f32 ref, f32 fdb, f32 ffd)
 {
         DECL_PTRS(pid, in);

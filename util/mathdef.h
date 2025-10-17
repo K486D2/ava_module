@@ -233,7 +233,7 @@
                 (ret).b = (x).b / (y).b; \
         } while (0)
 
-static inline void
+HAPI void
 find_max(const float *arr, size_t n, float *max_val, size_t *max_idx)
 {
         if (n == 0) {
@@ -316,7 +316,7 @@ find_max(const float *arr, size_t n, float *max_val, size_t *max_idx)
 #endif
 }
 
-static inline f32
+HAPI f32
 poly_eval(const f32 *coeffs, u32 order, f32 x)
 {
         f32 result = coeffs[0];

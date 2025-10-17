@@ -1,6 +1,7 @@
 #ifndef LIST_H
 #define LIST_H
 
+#include "util/marcodef.h"
 #include "util/typedef.h"
 
 #define LIST_POISON1 NULL
@@ -11,14 +12,14 @@ typedef struct list_head {
         struct list_head *next;
 } list_head_t;
 
-static inline void
+HAPI void
 list_init(list_head_t *list)
 {
         list->next = list;
         list->prev = list;
 }
 
-static inline void
+HAPI void
 __list_add(list_head_t *new_node, list_head_t *prev, list_head_t *next)
 {
         next->prev     = new_node;
@@ -27,26 +28,26 @@ __list_add(list_head_t *new_node, list_head_t *prev, list_head_t *next)
         prev->next     = new_node;
 }
 
-static inline void
+HAPI void
 list_add(list_head_t *new_node, list_head_t *head)
 {
         __list_add(new_node, head, head->next);
 }
 
-static inline void
+HAPI void
 list_add_tail(list_head_t *new_node, list_head_t *head)
 {
         __list_add(new_node, head->prev, head);
 }
 
-static inline void
+HAPI void
 __list_del(list_head_t *prev, list_head_t *next)
 {
         prev->next = next;
         next->prev = prev;
 }
 
-static inline void
+HAPI void
 list_del(list_head_t *entry)
 {
         __list_del(entry->prev, entry->next);
@@ -54,34 +55,34 @@ list_del(list_head_t *entry)
         entry->prev = LIST_POISON2;
 }
 
-static inline void
+HAPI void
 __list_splice(list_head_t *node, list_head_t *head)
 {
         list_head_t *first = node->next;
         list_head_t *last  = node->prev;
         list_head_t *at    = head->next;
 
-        first->prev        = head;
-        head->next         = first;
+        first->prev = head;
+        head->next  = first;
 
-        last->next         = at;
-        at->prev           = last;
+        last->next = at;
+        at->prev   = last;
 }
 
-static inline bool
+HAPI bool
 list_empty(const list_head_t *list)
 {
         return list->next == list;
 }
 
-static inline void
+HAPI void
 list_splice(list_head_t *node, list_head_t *head)
 {
         if (!list_empty(node))
                 __list_splice(node, head);
 }
 
-static inline void
+HAPI void
 list_replace(list_head_t *old_node, list_head_t *new_node)
 {
         new_node->next       = old_node->next;
@@ -90,21 +91,21 @@ list_replace(list_head_t *old_node, list_head_t *new_node)
         new_node->prev->next = new_node;
 }
 
-static inline void
+HAPI void
 list_replace_init(list_head_t *old_node, list_head_t *new_node)
 {
         list_replace(old_node, new_node);
         list_init(old_node);
 }
 
-static inline void
+HAPI void
 list_move(list_head_t *node, list_head_t *head)
 {
         __list_del(node->prev, node->next);
         list_add(node, head);
 }
 
-static inline void
+HAPI void
 list_move_tail(list_head_t *node, list_head_t *head)
 {
         __list_del(node->prev, node->next);

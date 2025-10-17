@@ -113,7 +113,7 @@ typedef struct sched {
         sched_ops_t ops;
 } sched_t;
 
-static inline u64
+HAPI u64
 sched_hz2tick(sched_t *sched, f32 hz)
 {
         DECL_PTRS(sched, cfg);
@@ -128,7 +128,7 @@ sched_hz2tick(sched_t *sched, f32 hz)
         }
 }
 
-static inline int
+HAPI int
 sched_cfs_task_cmp(const sched_task_t *a, const sched_task_t *b)
 {
         if (a->status.next_exec_ts < b->status.next_exec_ts)
@@ -142,7 +142,7 @@ sched_cfs_task_cmp(const sched_task_t *a, const sched_task_t *b)
         return 0;
 }
 
-static inline void
+HAPI void
 sched_cfs_insert_task(sched_t *sched, sched_task_t *task)
 {
         DECL_PTRS(sched, lo);
@@ -158,13 +158,13 @@ sched_cfs_insert_task(sched_t *sched, sched_task_t *task)
                 sched_task_t *curr = CONTAINER_OF(*new_rb_node, sched_task_t, rb_node);
                 int           cmp  = sched_cfs_task_cmp(task, curr);
                 rb_parent          = *new_rb_node;
-                new_rb_node = (cmp < 0) ? &(*new_rb_node)->rb_left : &(*new_rb_node)->rb_right;
+                new_rb_node        = (cmp < 0) ? &(*new_rb_node)->rb_left : &(*new_rb_node)->rb_right;
         }
         rb_link_node(&task->rb_node, rb_parent, new_rb_node);
         rb_insert_color(&task->rb_node, rb_root);
 }
 
-static inline void
+HAPI void
 sched_cfs_remove_task(sched_t *sched, sched_task_t *task)
 {
         DECL_PTRS(sched, lo);
@@ -176,7 +176,7 @@ sched_cfs_remove_task(sched_t *sched, sched_task_t *task)
         }
 }
 
-static inline sched_task_t *
+HAPI sched_task_t *
 sched_cfs_get_task(sched_t *sched)
 {
         DECL_PTRS(sched, lo);
@@ -188,7 +188,7 @@ sched_cfs_get_task(sched_t *sched)
         return CONTAINER_OF(rb_node, sched_task_t, rb_node);
 }
 
-static inline sched_task_t *
+HAPI sched_task_t *
 sched_fcfs_get_task(sched_t *sched)
 {
         DECL_PTRS(sched, lo);
@@ -205,7 +205,7 @@ sched_fcfs_get_task(sched_t *sched)
         return NULL;
 }
 
-static inline int
+HAPI int
 sched_add_task(sched_t *sched, sched_task_cfg_t task_cfg)
 {
         DECL_PTRS(sched, lo, ops);
@@ -216,13 +216,14 @@ sched_add_task(sched_t *sched, sched_task_cfg_t task_cfg)
         task->status.create_ts    = ops->f_get_ts();
         task->status.next_exec_ts = task->status.create_ts + task->cfg.delay_tick;
 
-        ops->f_insert_task(sched, task);
         lo->ntasks++;
+        if (sched->cfg.e_type == SCHED_TYPE_CFS)
+                ops->f_insert_task(sched, task);
 
         return 0;
 }
 
-static inline int
+HAPI int
 sched_init(sched_t *sched, sched_cfg_t sched_cfg)
 {
         DECL_PTRS(sched, cfg, ops);
@@ -247,16 +248,16 @@ sched_init(sched_t *sched, sched_cfg_t sched_cfg)
         }
 
         // only run on Linux/Windows
-        // sched_thread_init(sched, cfg->cpu_id);
+        sched_thread_init(sched, cfg->cpu_id);
         return 0;
 }
 
-static inline int
+HAPI int
 sched_exec(sched_t *sched)
 {
         DECL_PTRS(sched, ops, lo);
 
-        lo->curr_ts        = ops->f_get_ts();
+        lo->curr_ts = ops->f_get_ts();
 
         sched_task_t *task = ops->f_get_task(sched);
         if (!task || !task->cfg.f_cb)

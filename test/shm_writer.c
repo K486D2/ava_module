@@ -1,15 +1,15 @@
 #include <stdlib.h>
 
-#include "module.h"
+#include "shm/shm.h"
 
 int
 main()
 {
-        shm_t     shm     = { 0 };
+        shm_t     shm     = {0};
         shm_cfg_t shm_cfg = {
-                .name   = "ch1",
-                .access = SHM_READWRITE,
-                .cap    = 1024,
+            .name   = "ch1",
+            .access = SHM_READWRITE,
+            .cap    = 1024,
         };
 
         int ret = shm_init(&shm, shm_cfg);

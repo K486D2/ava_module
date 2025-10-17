@@ -3,6 +3,7 @@
 
 #include <stddef.h>
 
+#include "util/marcodef.h"
 #include "util/typedef.h"
 
 typedef enum {
@@ -26,61 +27,61 @@ typedef struct {
                 NULL \
         }
 
-static inline rb_node_t *
+HAPI rb_node_t *
 rb_parent(const rb_node_t *rb)
 {
         return (rb_node_t *)(rb->__rb_parent_color & ~3);
 }
 
-static inline void
+HAPI void
 rb_set_parent(rb_node_t *rb, rb_node_t *p)
 {
         rb->__rb_parent_color = (usz)p | (rb->__rb_parent_color & 3);
 }
 
-static inline rb_color_e
+HAPI rb_color_e
 rb_color(const rb_node_t *rb)
 {
         return (rb_color_e)(rb->__rb_parent_color & 1);
 }
 
-static inline void
+HAPI void
 rb_set_color(rb_node_t *rb, rb_color_e color)
 {
         rb->__rb_parent_color = (rb->__rb_parent_color & ~1) | color;
 }
 
-static inline bool
+HAPI bool
 rb_is_red(const rb_node_t *rb)
 {
         return rb_color(rb) == RB_RED;
 }
 
-static inline bool
+HAPI bool
 rb_is_black(const rb_node_t *rb)
 {
         return rb_color(rb) == RB_BLACK;
 }
 
-static inline void
+HAPI void
 rb_set_red(rb_node_t *rb)
 {
         rb_set_color(rb, RB_RED);
 }
 
-static inline void
+HAPI void
 rb_set_black(rb_node_t *rb)
 {
         rb_set_color(rb, RB_BLACK);
 }
 
-static inline bool
+HAPI bool
 rb_is_unlinked(const rb_node_t *rb)
 {
         return rb->__rb_parent_color == (usz)rb;
 }
 
-static inline void
+HAPI void
 rb_link_node(rb_node_t *node, rb_node_t *parent, rb_node_t **rb_link)
 {
         node->__rb_parent_color = (usz)parent;
@@ -88,7 +89,7 @@ rb_link_node(rb_node_t *node, rb_node_t *parent, rb_node_t **rb_link)
         *rb_link                       = node;
 }
 
-static inline void
+HAPI void
 __rb_rotate_left(rb_node_t *node, rb_root_t *root)
 {
         rb_node_t *right  = node->rb_right;
@@ -111,7 +112,7 @@ __rb_rotate_left(rb_node_t *node, rb_root_t *root)
         rb_set_parent(node, right);
 }
 
-static inline void
+HAPI void
 __rb_rotate_right(rb_node_t *node, rb_root_t *root)
 {
         rb_node_t *left   = node->rb_left;
@@ -134,7 +135,7 @@ __rb_rotate_right(rb_node_t *node, rb_root_t *root)
         rb_set_parent(node, left);
 }
 
-static inline void
+HAPI void
 rb_insert_color(rb_node_t *node, rb_root_t *root)
 {
         rb_node_t *parent, *gparent, *uncle;
@@ -192,7 +193,7 @@ rb_insert_color(rb_node_t *node, rb_root_t *root)
         rb_set_black(root->rb_node);
 }
 
-static inline void
+HAPI void
 __rb_erase_color(rb_node_t *node, rb_node_t *parent, rb_root_t *root)
 {
         rb_node_t *sibling;
@@ -207,8 +208,8 @@ __rb_erase_color(rb_node_t *node, rb_node_t *parent, rb_root_t *root)
                                 sibling = parent->rb_right;
                         }
 
-                        if ((!sibling->rb_left || rb_is_black(sibling->rb_left))
-                            && (!sibling->rb_right || rb_is_black(sibling->rb_right))) {
+                        if ((!sibling->rb_left || rb_is_black(sibling->rb_left)) &&
+                            (!sibling->rb_right || rb_is_black(sibling->rb_right))) {
                                 rb_set_red(sibling);
                                 node   = parent;
                                 parent = rb_parent(node);
@@ -236,8 +237,8 @@ __rb_erase_color(rb_node_t *node, rb_node_t *parent, rb_root_t *root)
                                 sibling = parent->rb_left;
                         }
 
-                        if ((!sibling->rb_left || rb_is_black(sibling->rb_left))
-                            && (!sibling->rb_right || rb_is_black(sibling->rb_right))) {
+                        if ((!sibling->rb_left || rb_is_black(sibling->rb_left)) &&
+                            (!sibling->rb_right || rb_is_black(sibling->rb_right))) {
                                 rb_set_red(sibling);
                                 node   = parent;
                                 parent = rb_parent(node);
@@ -263,7 +264,7 @@ __rb_erase_color(rb_node_t *node, rb_node_t *parent, rb_root_t *root)
                 rb_set_black(node);
 }
 
-static inline void
+HAPI void
 rb_erase(rb_node_t *node, rb_root_t *root)
 {
         rb_node_t *child, *parent;
@@ -276,7 +277,7 @@ rb_erase(rb_node_t *node, rb_root_t *root)
         else {
                 rb_node_t *old = node, *left;
 
-                node           = node->rb_right;
+                node = node->rb_right;
                 while ((left = node->rb_left))
                         node = left;
 
@@ -331,7 +332,7 @@ color:
                 __rb_erase_color(child, parent, root);
 }
 
-static inline rb_node_t *
+HAPI rb_node_t *
 rb_first(const rb_root_t *root)
 {
         rb_node_t *n = root->rb_node;
@@ -342,7 +343,7 @@ rb_first(const rb_root_t *root)
         return n;
 }
 
-static inline rb_node_t *
+HAPI rb_node_t *
 rb_last(const rb_root_t *root)
 {
         rb_node_t *n = root->rb_node;
@@ -353,7 +354,7 @@ rb_last(const rb_root_t *root)
         return n;
 }
 
-static inline rb_node_t *
+HAPI rb_node_t *
 rb_next(const rb_node_t *node)
 {
         if (node->rb_right) {
@@ -371,7 +372,7 @@ rb_next(const rb_node_t *node)
         return parent;
 }
 
-static inline rb_node_t *
+HAPI rb_node_t *
 rb_prev(const rb_node_t *node)
 {
         if (node->rb_left) {

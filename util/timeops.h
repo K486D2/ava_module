@@ -19,7 +19,7 @@
 
 #define WIN_TO_UNIX_EPOCH 116444736000000000ULL
 
-static inline u64
+HAPI u64
 get_mono_ts_ns(void)
 {
 #ifdef __linux__
@@ -35,25 +35,25 @@ get_mono_ts_ns(void)
         return 0ull;
 }
 
-static inline u64
+HAPI u64
 get_mono_ts_us(void)
 {
         return get_mono_ts_ns() / 1000u;
 }
 
-static inline u64
+HAPI u64
 get_mono_ts_ms(void)
 {
         return get_mono_ts_ns() / 1000000u;
 }
 
-static inline u64
+HAPI u64
 get_mono_ts_s(void)
 {
         return get_mono_ts_ns() / 1000000000u;
 }
 
-static inline u64
+HAPI u64
 get_real_ts_ns(void)
 {
 #ifdef __linux__
@@ -73,19 +73,19 @@ get_real_ts_ns(void)
         return 0ull;
 }
 
-static inline u64
+HAPI u64
 get_real_ts_us(void)
 {
         return get_real_ts_ns() / 1000u;
 }
 
-static inline u64
+HAPI u64
 get_real_ts_ms(void)
 {
         return get_real_ts_ns() / 1000000u;
 }
 
-static inline u64
+HAPI u64
 get_real_ts_s(void)
 {
         return get_real_ts_ns() / 1000000000u;
@@ -96,7 +96,7 @@ typedef enum {
         YIELD,
 } delay_e;
 
-static inline void
+HAPI void
 spin(u32 us)
 {
         u64 start = get_mono_ts_us();
@@ -106,33 +106,33 @@ spin(u32 us)
 }
 
 #ifdef __linux__
-static inline void
+HAPI void
 yield(u32 ms)
 {
         usleep(1000u * ms);
 }
 #elif defined(_WIN32)
 #include <windows.h>
-static inline void
+HAPI void
 yield(u32 ms)
 {
         Sleep(ms);
 }
 #else
-static inline void
+HAPI void
 yield(u32 ms)
 {
         spin(MS_TO_US(ms));
 }
 #endif
 
-static inline void
+HAPI void
 delay_us(u64 us)
 {
         spin(us);
 }
 
-static inline void
+HAPI void
 delay_ms(u64 ms, delay_e e_delay)
 {
         switch (e_delay) {
@@ -147,7 +147,7 @@ delay_ms(u64 ms, delay_e e_delay)
         }
 }
 
-static inline void
+HAPI void
 delay_s(u64 s, delay_e e_delay)
 {
         switch (e_delay) {

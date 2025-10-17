@@ -38,68 +38,59 @@ typedef struct {
 } benchmark_t;
 
 /* 整数运算 */
-#define TEST_INT_ADD(result, iterations)                                   \
-        do {                                                               \
-                MEASURE_TIME(result.cycles_total, "int_add", iterations, { \
-                        volatile int r = int_a + int_b;                    \
-                });                                                        \
-                result.ret           = r;                                  \
-                result.cycles_per_op = result.cycles_total / iterations;   \
-                result.name          = "int_add";                          \
-                cnt++;                                                     \
+#define TEST_INT_ADD(result, iterations)                                                                       \
+        do {                                                                                                   \
+                MEASURE_TIME(result.cycles_total, "int_add", iterations, { volatile int r = int_a + int_b; }); \
+                result.ret           = r;                                                                      \
+                result.cycles_per_op = result.cycles_total / iterations;                                       \
+                result.name          = "int_add";                                                              \
+                cnt++;                                                                                         \
         } while (0)
 
-#define TEST_INT_MUL(result, iterations)                                   \
-        do {                                                               \
-                MEASURE_TIME(result.cycles_total, "int_mul", iterations, { \
-                        volatile int r = int_a * int_b;                    \
-                });                                                        \
-                result.ret           = r;                                  \
-                result.cycles_per_op = result.cycles_total / iterations;   \
-                result.name          = "int_mul";                          \
-                cnt++;                                                     \
+#define TEST_INT_MUL(result, iterations)                                                                       \
+        do {                                                                                                   \
+                MEASURE_TIME(result.cycles_total, "int_mul", iterations, { volatile int r = int_a * int_b; }); \
+                result.ret           = r;                                                                      \
+                result.cycles_per_op = result.cycles_total / iterations;                                       \
+                result.name          = "int_mul";                                                              \
+                cnt++;                                                                                         \
         } while (0)
 
-#define TEST_INT_DIV(result, iterations)                                   \
-        do {                                                               \
-                MEASURE_TIME(result.cycles_total, "int_div", iterations, { \
-                        volatile int r = int_a / int_b;                    \
-                });                                                        \
-                result.ret           = r;                                  \
-                result.cycles_per_op = result.cycles_total / iterations;   \
-                result.name          = "int_div";                          \
-                cnt++;                                                     \
+#define TEST_INT_DIV(result, iterations)                                                                       \
+        do {                                                                                                   \
+                MEASURE_TIME(result.cycles_total, "int_div", iterations, { volatile int r = int_a / int_b; }); \
+                result.ret           = r;                                                                      \
+                result.cycles_per_op = result.cycles_total / iterations;                                       \
+                result.name          = "int_div";                                                              \
+                cnt++;                                                                                         \
         } while (0)
 
 /* 浮点运算 */
-#define TEST_FLOAT_ADD(result, iterations)                                                     \
-        do {                                                                                   \
-                MEASURE_TIME(                                                                  \
-                    result.cycles_total, "float_add", iterations, { r = float_a + float_b; }); \
-                result.ret           = r;                                                      \
-                result.cycles_per_op = result.cycles_total / iterations;                       \
-                result.name          = "float_add";                                            \
-                cnt++;                                                                         \
+#define TEST_FLOAT_ADD(result, iterations)                                                              \
+        do {                                                                                            \
+                MEASURE_TIME(result.cycles_total, "float_add", iterations, { r = float_a + float_b; }); \
+                result.ret           = r;                                                               \
+                result.cycles_per_op = result.cycles_total / iterations;                                \
+                result.name          = "float_add";                                                     \
+                cnt++;                                                                                  \
         } while (0)
 
-#define TEST_FLOAT_MUL(result, iterations)                                                     \
-        do {                                                                                   \
-                MEASURE_TIME(                                                                  \
-                    result.cycles_total, "float_mul", iterations, { r = float_a * float_b; }); \
-                result.ret           = r;                                                      \
-                result.cycles_per_op = result.cycles_total / iterations;                       \
-                result.name          = "float_mul";                                            \
-                cnt++;                                                                         \
+#define TEST_FLOAT_MUL(result, iterations)                                                              \
+        do {                                                                                            \
+                MEASURE_TIME(result.cycles_total, "float_mul", iterations, { r = float_a * float_b; }); \
+                result.ret           = r;                                                               \
+                result.cycles_per_op = result.cycles_total / iterations;                                \
+                result.name          = "float_mul";                                                     \
+                cnt++;                                                                                  \
         } while (0)
 
-#define TEST_FLOAT_DIV(result, iterations)                                                     \
-        do {                                                                                   \
-                MEASURE_TIME(                                                                  \
-                    result.cycles_total, "float_div", iterations, { r = float_a / float_b; }); \
-                result.ret           = r;                                                      \
-                result.cycles_per_op = result.cycles_total / iterations;                       \
-                result.name          = "float_div";                                            \
-                cnt++;                                                                         \
+#define TEST_FLOAT_DIV(result, iterations)                                                              \
+        do {                                                                                            \
+                MEASURE_TIME(result.cycles_total, "float_div", iterations, { r = float_a / float_b; }); \
+                result.ret           = r;                                                               \
+                result.cycles_per_op = result.cycles_total / iterations;                                \
+                result.name          = "float_div";                                                     \
+                cnt++;                                                                                  \
         } while (0)
 
 /* 三角函数 */
@@ -131,99 +122,86 @@ typedef struct {
         } while (0)
 
 #ifdef ARM_MATH
-#define TEST_ARM_SINF(result, iterations)                                                      \
-        do {                                                                                   \
-                MEASURE_TIME(                                                                  \
-                    result.cycles_total, "arm_sinf", iterations, { r = arm_sin_f32(angle); }); \
-                result.ret           = r;                                                      \
-                result.cycles_per_op = result.cycles_total / iterations;                       \
-                result.name          = "arm_sinf";                                             \
-                cnt++;                                                                         \
+#define TEST_ARM_SINF(result, iterations)                                                               \
+        do {                                                                                            \
+                MEASURE_TIME(result.cycles_total, "arm_sinf", iterations, { r = arm_sin_f32(angle); }); \
+                result.ret           = r;                                                               \
+                result.cycles_per_op = result.cycles_total / iterations;                                \
+                result.name          = "arm_sinf";                                                      \
+                cnt++;                                                                                  \
         } while (0)
 
-#define TEST_ARM_COSF(result, iterations)                                                      \
-        do {                                                                                   \
-                MEASURE_TIME(                                                                  \
-                    result.cycles_total, "arm_cosf", iterations, { r = arm_cos_f32(angle); }); \
-                result.ret           = r;                                                      \
-                result.cycles_per_op = result.cycles_total / iterations;                       \
-                result.name          = "arm_cosf";                                             \
-                cnt++;                                                                         \
+#define TEST_ARM_COSF(result, iterations)                                                               \
+        do {                                                                                            \
+                MEASURE_TIME(result.cycles_total, "arm_cosf", iterations, { r = arm_cos_f32(angle); }); \
+                result.ret           = r;                                                               \
+                result.cycles_per_op = result.cycles_total / iterations;                                \
+                result.name          = "arm_cosf";                                                      \
+                cnt++;                                                                                  \
         } while (0)
 #endif
 
-#define TEST_FAST_SINF(result, iterations)                                                    \
-        do {                                                                                  \
-                MEASURE_TIME(                                                                 \
-                    result.cycles_total, "fast_sinf", iterations, { r = fast_sinf(angle); }); \
-                result.ret           = r;                                                     \
-                result.cycles_per_op = result.cycles_total / iterations;                      \
-                result.name          = "fast_sinf";                                           \
-                cnt++;                                                                        \
+#define TEST_FAST_SINF(result, iterations)                                                             \
+        do {                                                                                           \
+                MEASURE_TIME(result.cycles_total, "fast_sinf", iterations, { r = fast_sinf(angle); }); \
+                result.ret           = r;                                                              \
+                result.cycles_per_op = result.cycles_total / iterations;                               \
+                result.name          = "fast_sinf";                                                    \
+                cnt++;                                                                                 \
         } while (0)
 
-#define TEST_FAST_COSF(result, iterations)                                                    \
-        do {                                                                                  \
-                MEASURE_TIME(                                                                 \
-                    result.cycles_total, "fast_cosf", iterations, { r = fast_cosf(angle); }); \
-                result.ret           = r;                                                     \
-                result.cycles_per_op = result.cycles_total / iterations;                      \
-                result.name          = "fast_cosf";                                           \
-                cnt++;                                                                        \
+#define TEST_FAST_COSF(result, iterations)                                                             \
+        do {                                                                                           \
+                MEASURE_TIME(result.cycles_total, "fast_cosf", iterations, { r = fast_cosf(angle); }); \
+                result.ret           = r;                                                              \
+                result.cycles_per_op = result.cycles_total / iterations;                               \
+                result.name          = "fast_cosf";                                                    \
+                cnt++;                                                                                 \
         } while (0)
 
-#define TEST_FAST_TANF(result, iterations)                                                    \
-        do {                                                                                  \
-                MEASURE_TIME(                                                                 \
-                    result.cycles_total, "fast_tanf", iterations, { r = fast_tanf(angle); }); \
-                result.ret           = r;                                                     \
-                result.cycles_per_op = result.cycles_total / iterations;                      \
-                result.name          = "fast_tanf";                                           \
-                cnt++;                                                                        \
+#define TEST_FAST_TANF(result, iterations)                                                             \
+        do {                                                                                           \
+                MEASURE_TIME(result.cycles_total, "fast_tanf", iterations, { r = fast_tanf(angle); }); \
+                result.ret           = r;                                                              \
+                result.cycles_per_op = result.cycles_total / iterations;                               \
+                result.name          = "fast_tanf";                                                    \
+                cnt++;                                                                                 \
         } while (0)
 
-#define TEST_ATAN2F_QUAD1(result, iterations)                                   \
-        do {                                                                    \
-                MEASURE_TIME(result.cycles_total, "atan2f_quad1", iterations, { \
-                        r = atan2f(y_val1, x_val1);                             \
-                });                                                             \
-                result.ret           = r;                                       \
-                result.cycles_per_op = result.cycles_total / iterations;        \
-                result.name          = "atan2f_quad1";                          \
-                cnt++;                                                          \
+#define TEST_ATAN2F_QUAD1(result, iterations)                                                                   \
+        do {                                                                                                    \
+                MEASURE_TIME(result.cycles_total, "atan2f_quad1", iterations, { r = atan2f(y_val1, x_val1); }); \
+                result.ret           = r;                                                                       \
+                result.cycles_per_op = result.cycles_total / iterations;                                        \
+                result.name          = "atan2f_quad1";                                                          \
+                cnt++;                                                                                          \
         } while (0)
 
-#define TEST_ATAN2F_QUAD2(result, iterations)                                   \
-        do {                                                                    \
-                MEASURE_TIME(result.cycles_total, "atan2f_quad2", iterations, { \
-                        r = atan2f(y_val2, x_val2);                             \
-                });                                                             \
-                result.ret           = r;                                       \
-                result.cycles_per_op = result.cycles_total / iterations;        \
-                result.name          = "atan2f_quad2";                          \
-                cnt++;                                                          \
+#define TEST_ATAN2F_QUAD2(result, iterations)                                                                   \
+        do {                                                                                                    \
+                MEASURE_TIME(result.cycles_total, "atan2f_quad2", iterations, { r = atan2f(y_val2, x_val2); }); \
+                result.ret           = r;                                                                       \
+                result.cycles_per_op = result.cycles_total / iterations;                                        \
+                result.name          = "atan2f_quad2";                                                          \
+                cnt++;                                                                                          \
         } while (0)
 
-#define TEST_ATAN2F_QUAD3(result, iterations)                                   \
-        do {                                                                    \
-                MEASURE_TIME(result.cycles_total, "atan2f_quad3", iterations, { \
-                        r = atan2f(y_val3, x_val3);                             \
-                });                                                             \
-                result.ret           = r;                                       \
-                result.cycles_per_op = result.cycles_total / iterations;        \
-                result.name          = "atan2f_quad3";                          \
-                cnt++;                                                          \
+#define TEST_ATAN2F_QUAD3(result, iterations)                                                                   \
+        do {                                                                                                    \
+                MEASURE_TIME(result.cycles_total, "atan2f_quad3", iterations, { r = atan2f(y_val3, x_val3); }); \
+                result.ret           = r;                                                                       \
+                result.cycles_per_op = result.cycles_total / iterations;                                        \
+                result.name          = "atan2f_quad3";                                                          \
+                cnt++;                                                                                          \
         } while (0)
 
-#define TEST_ATAN2F_QUAD4(result, iterations)                                   \
-        do {                                                                    \
-                MEASURE_TIME(result.cycles_total, "atan2f_quad4", iterations, { \
-                        r = atan2f(y_val4, x_val4);                             \
-                });                                                             \
-                result.ret           = r;                                       \
-                result.cycles_per_op = result.cycles_total / iterations;        \
-                result.name          = "atan2f_quad4";                          \
-                cnt++;                                                          \
+#define TEST_ATAN2F_QUAD4(result, iterations)                                                                   \
+        do {                                                                                                    \
+                MEASURE_TIME(result.cycles_total, "atan2f_quad4", iterations, { r = atan2f(y_val4, x_val4); }); \
+                result.ret           = r;                                                                       \
+                result.cycles_per_op = result.cycles_total / iterations;                                        \
+                result.name          = "atan2f_quad4";                                                          \
+                cnt++;                                                                                          \
         } while (0)
 
 /* 其他数学函数 */
@@ -254,14 +232,13 @@ typedef struct {
                 cnt++;                                                                          \
         } while (0)
 
-#define TEST_FAST_EXPF(result, iterations)                                                       \
-        do {                                                                                     \
-                MEASURE_TIME(                                                                    \
-                    result.cycles_total, "fast_expf", iterations, { r = fast_expf(sqrt_val); }); \
-                result.ret           = r;                                                        \
-                result.cycles_per_op = result.cycles_total / iterations;                         \
-                result.name          = "fast_expf";                                              \
-                cnt++;                                                                           \
+#define TEST_FAST_EXPF(result, iterations)                                                                \
+        do {                                                                                              \
+                MEASURE_TIME(result.cycles_total, "fast_expf", iterations, { r = fast_expf(sqrt_val); }); \
+                result.ret           = r;                                                                 \
+                result.cycles_per_op = result.cycles_total / iterations;                                  \
+                result.name          = "fast_expf";                                                       \
+                cnt++;                                                                                    \
         } while (0)
 
 #define RUN_MATH_BENCHMARKS(results, iterations)                               \

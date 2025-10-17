@@ -21,25 +21,25 @@ typedef struct {
         ATOMIC(usz) rp;         // 读取位置
 } spsc_t;
 
-static inline int  spsc_init(spsc_t *spsc, void *buf, usz cap, spsc_policy_e e_policy);
-static inline int  spsc_init_buf(spsc_t *spsc, usz cap, spsc_policy_e e_policy);
-static inline void spsc_reset(spsc_t *spsc);
-static inline bool spsc_empty(spsc_t *spsc);
-static inline bool spsc_full(spsc_t *spsc);
-static inline usz  spsc_avail(spsc_t *spsc);
-static inline usz  spsc_free(spsc_t *spsc);
-static inline usz  spsc_policy(spsc_t *spsc, usz wp, usz rp, usz nbytes);
+HAPI int  spsc_init(spsc_t *spsc, void *buf, usz cap, spsc_policy_e e_policy);
+HAPI int  spsc_init_buf(spsc_t *spsc, usz cap, spsc_policy_e e_policy);
+HAPI void spsc_reset(spsc_t *spsc);
+HAPI bool spsc_empty(spsc_t *spsc);
+HAPI bool spsc_full(spsc_t *spsc);
+HAPI usz  spsc_avail(spsc_t *spsc);
+HAPI usz  spsc_free(spsc_t *spsc);
+HAPI usz  spsc_policy(spsc_t *spsc, usz wp, usz rp, usz nbytes);
 
-static inline usz  spsc_write(spsc_t *spsc, const void *src, usz nbytes);
-static inline usz  spsc_read(spsc_t *spsc, void *dst, usz nbytes);
-static inline usz  spsc_write_buf(spsc_t *spsc, void *buf, const void *src, usz nbytes);
-static inline usz  spsc_read_buf(spsc_t *spsc, void *buf, void *dst, usz nbytes);
+HAPI usz spsc_write(spsc_t *spsc, const void *src, usz nbytes);
+HAPI usz spsc_read(spsc_t *spsc, void *dst, usz nbytes);
+HAPI usz spsc_write_buf(spsc_t *spsc, void *buf, const void *src, usz nbytes);
+HAPI usz spsc_read_buf(spsc_t *spsc, void *buf, void *dst, usz nbytes);
 
 /* -------------------------------------------------------------------------- */
 /*                                     API                                    */
 /* -------------------------------------------------------------------------- */
 
-static inline int
+HAPI int
 spsc_init(spsc_t *spsc, void *buf, usz cap, spsc_policy_e e_policy)
 {
         int ret = spsc_init_buf(spsc, cap, e_policy);
@@ -50,7 +50,7 @@ spsc_init(spsc_t *spsc, void *buf, usz cap, spsc_policy_e e_policy)
         return 0;
 }
 
-static inline int
+HAPI int
 spsc_init_buf(spsc_t *spsc, usz cap, spsc_policy_e e_policy)
 {
         if (!IS_POWER_OF_2(cap))
@@ -63,38 +63,38 @@ spsc_init_buf(spsc_t *spsc, usz cap, spsc_policy_e e_policy)
         return 0;
 }
 
-static inline void
+HAPI void
 spsc_reset(spsc_t *spsc)
 {
         ATOMIC_STORE(&spsc->rp, 0);
         ATOMIC_STORE(&spsc->wp, 0);
 }
 
-static inline bool
+HAPI bool
 spsc_empty(spsc_t *spsc)
 {
         return spsc_avail(spsc) == 0;
 }
 
-static inline bool
+HAPI bool
 spsc_full(spsc_t *spsc)
 {
         return spsc_free(spsc) == 0;
 }
 
-static inline usz
+HAPI usz
 spsc_avail(spsc_t *spsc)
 {
         return ATOMIC_LOAD(&spsc->wp) - ATOMIC_LOAD(&spsc->rp);
 }
 
-static inline usz
+HAPI usz
 spsc_free(spsc_t *spsc)
 {
         return spsc->cap - spsc_avail(spsc);
 }
 
-static inline usz
+HAPI usz
 spsc_policy(spsc_t *spsc, usz wp, usz rp, usz nbytes)
 {
         usz free = spsc->cap - (wp - rp);
@@ -116,19 +116,19 @@ spsc_policy(spsc_t *spsc, usz wp, usz rp, usz nbytes)
         return 0;
 }
 
-static inline usz
+HAPI usz
 spsc_write(spsc_t *spsc, const void *src, usz nbytes)
 {
         return spsc_write_buf(spsc, spsc->buf, src, nbytes);
 }
 
-static inline usz
+HAPI usz
 spsc_read(spsc_t *spsc, void *dst, usz nbytes)
 {
         return spsc_read_buf(spsc, spsc->buf, dst, nbytes);
 }
 
-static inline usz
+HAPI usz
 spsc_write_buf(spsc_t *spsc, void *buf, const void *src, usz nbytes)
 {
         usz wp = ATOMIC_LOAD_EXPLICIT(&spsc->wp, memory_order_relaxed);
@@ -148,11 +148,11 @@ spsc_write_buf(spsc_t *spsc, void *buf, const void *src, usz nbytes)
         return nbytes;
 }
 
-static inline usz
+HAPI usz
 spsc_read_buf(spsc_t *spsc, void *buf, void *dst, usz nbytes)
 {
-        usz rp    = ATOMIC_LOAD_EXPLICIT(&spsc->rp, memory_order_relaxed);
-        usz wp    = ATOMIC_LOAD_EXPLICIT(&spsc->wp, memory_order_acquire);
+        usz rp = ATOMIC_LOAD_EXPLICIT(&spsc->rp, memory_order_relaxed);
+        usz wp = ATOMIC_LOAD_EXPLICIT(&spsc->wp, memory_order_acquire);
 
         usz avail = wp - rp;
         if (nbytes > avail)

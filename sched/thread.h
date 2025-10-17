@@ -6,13 +6,13 @@
 #include "util/typedef.h"
 
 struct sched;
-static inline int sched_exec(struct sched *sched);
+HAPI int sched_exec(struct sched *sched);
 
 #ifdef __linux__
 #include <pthread.h>
 #include <sched.h>
 
-static inline void *
+HAPI void *
 sched_thread_exec(void *arg)
 {
         struct sched *t = (struct sched *)arg;
@@ -21,7 +21,7 @@ sched_thread_exec(void *arg)
         return NULL;
 }
 
-static inline void
+HAPI void
 sched_bind_thread_to_cpu(pthread_t thread_tid, int cpu_id)
 {
         cpu_set_t cpuset;
@@ -35,8 +35,8 @@ sched_bind_thread_to_cpu(pthread_t thread_tid, int cpu_id)
 #elif defined(_WIN32)
 #include <windows.h>
 
-static inline DWORD WINAPI sched_thread_exec(LPVOID arg);
-static inline void
+HAPI DWORD WINAPI sched_thread_exec(LPVOID arg);
+HAPI void
 sched_bind_thread_to_cpu(HANDLE thread_handle, int cpu_id)
 {
         DWORD_PTR mask = 1u << cpu_id;
@@ -46,7 +46,7 @@ sched_bind_thread_to_cpu(HANDLE thread_handle, int cpu_id)
         printf("[SCHED]bind thread to CPU %d success\n", cpu_id);
 }
 
-static inline DWORD WINAPI
+HAPI DWORD WINAPI
 sched_thread_exec(LPVOID arg)
 {
         struct sched *t = (struct sched *)arg;
@@ -56,7 +56,7 @@ sched_thread_exec(LPVOID arg)
 }
 #endif
 
-static inline void
+HAPI void
 sched_thread_init(void *arg, int cpu_id)
 {
 #ifdef __linux__

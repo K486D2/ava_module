@@ -119,34 +119,34 @@ typedef struct {
 } foc_out_t;
 
 typedef struct {
-        f32            elapsed_us;
-        u32            exec_cnt;
-        u32            adc_cali_cnt, theta_cali_cnt, theta_cali_hold_cnt;
-        f32            theta_offset_sum;
+        f32 elapsed_us;
+        u32 exec_cnt;
+        u32 adc_cali_cnt, theta_cali_cnt, theta_cali_hold_cnt;
+        f32 theta_offset_sum;
 
         foc_ref_pvct_t ref_pvct;
         foc_fdb_pvct_t fdb_pvct;
 
-        f32_dq_t       ref_i_dq, comp_i_dq;
-        f32_dq_t       ffd_v_dq;
+        f32_dq_t ref_i_dq, comp_i_dq;
+        f32_dq_t ffd_v_dq;
 
-        foc_fault_t    fault;
+        foc_fault_t fault;
 
-        foc_state_e    e_state;
-        foc_theta_e    e_theta;
-        foc_mode_e     e_mode, e_last_mode;
-        foc_obs_e      e_obs;
-        foc_cali_e     e_cali;
+        foc_state_e e_state;
+        foc_theta_e e_theta;
+        foc_mode_e  e_mode, e_last_mode;
+        foc_obs_e   e_obs;
+        foc_cali_e  e_cali;
 
-        pid_ctl_t      id_pid, iq_pid;
-        pid_ctl_t      vel_pid, pos_pid, pd_pid;
+        pid_ctl_t id_pid, iq_pid;
+        pid_ctl_t vel_pid, pos_pid, pd_pid;
 
-        u32            cur_div_cnt, vel_div_cnt, pos_div_cnt, pd_div_cnt;
+        u32 cur_div_cnt, vel_div_cnt, pos_div_cnt, pd_div_cnt;
 
-        pll_filter_t   pll;
-        smo_obs_t      smo;
-        hfi_obs_t      hfi;
-        lbg_obs_t      lbg;
+        pll_filter_t pll;
+        smo_obs_t    smo;
+        hfi_obs_t    hfi;
+        lbg_obs_t    lbg;
 } foc_lo_t;
 
 typedef adc_raw_t (*foc_get_adc_f)(void);

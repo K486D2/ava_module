@@ -38,19 +38,19 @@ typedef struct {
         pll_lo_t  lo;
 } pll_filter_t;
 
-static inline void
+HAPI void
 pll_init(pll_filter_t *pll, pll_cfg_t pll_cfg)
 {
         DECL_PTRS(pll, cfg);
 
-        *cfg            = pll_cfg;
+        *cfg = pll_cfg;
 
         cfg->kp         = 2.0f * cfg->wc * cfg->damp;
         cfg->ki         = SQ(cfg->wc);
         cfg->ffd_lpf_fc = 0.5f * cfg->lpf_fc;
 }
 
-static inline void
+HAPI void
 pll_exec(pll_filter_t *pll)
 {
         CFG_CHECK(pll, pll_init);
@@ -66,7 +66,7 @@ pll_exec(pll_filter_t *pll)
         WARP_TAU(out->theta);
 }
 
-static inline void
+HAPI void
 pll_exec_ab_in(pll_filter_t *pll, f32_ab_t ab)
 {
         DECL_PTRS(pll, in, out, lo);
@@ -79,7 +79,7 @@ pll_exec_ab_in(pll_filter_t *pll, f32_ab_t ab)
         pll_exec(pll);
 }
 
-static inline void
+HAPI void
 pll_exec_theta_in(pll_filter_t *pll, f32 theta)
 {
         DECL_PTRS(pll, cfg, in, out, lo);

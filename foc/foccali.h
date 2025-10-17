@@ -3,7 +3,7 @@
 
 #include "focstate.h"
 
-static inline int
+HAPI int
 foc_adc_cali(foc_t *foc)
 {
         DECL_PTRS(foc, cfg, ops, in, lo);
@@ -22,7 +22,7 @@ foc_adc_cali(foc_t *foc)
         return -MEBUSY;
 }
 
-static inline void
+HAPI void
 foc_cali(foc_t *foc)
 {
         DECL_PTRS(foc, cfg, in, lo);
@@ -41,8 +41,7 @@ foc_cali(foc_t *foc)
                         foc_enable(foc);
                         if (in->rotor.force_theta >= TAU) {
                                 in->rotor.force_theta = TAU;
-                                if (++lo->theta_cali_hold_cnt
-                                    >= cfg->periph_cfg.theta_cali_cnt_max) {
+                                if (++lo->theta_cali_hold_cnt >= cfg->periph_cfg.theta_cali_cnt_max) {
                                         lo->theta_offset_sum    += in->rotor.sensor_theta;
                                         lo->theta_cali_hold_cnt  = 0;
                                         if (++lo->theta_cali_cnt >= cfg->motor_cfg.npp)
@@ -57,8 +56,7 @@ foc_cali(foc_t *foc)
                         foc_enable(foc);
                         if (in->rotor.force_theta <= 0.0f) {
                                 in->rotor.force_theta = 0.0f;
-                                if (++lo->theta_cali_hold_cnt
-                                    >= cfg->periph_cfg.theta_cali_cnt_max) {
+                                if (++lo->theta_cali_hold_cnt >= cfg->periph_cfg.theta_cali_cnt_max) {
                                         lo->theta_offset_sum    += in->rotor.sensor_theta;
                                         lo->theta_cali_hold_cnt  = 0;
                                         if (++lo->theta_cali_cnt >= cfg->motor_cfg.npp * 2)

@@ -39,10 +39,10 @@ typedef struct {
         f32 hfi_theta_err_integ;
 
         // 极性辨识
-        polar_idf_e  e_polar_idf;
-        u32          polar_cnt, polar_cnt_max;
-        f32          id_pos, id_neg;
-        f32          polar_offset;
+        polar_idf_e e_polar_idf;
+        u32         polar_cnt, polar_cnt_max;
+        f32         id_pos, id_neg;
+        f32         polar_offset;
 
         iir_filter_t id_bpf, iq_bpf;
         pll_filter_t pll;
@@ -55,12 +55,12 @@ typedef struct {
         hfi_lo_t  lo;
 } hfi_obs_t;
 
-static inline void
+HAPI void
 hfi_init(hfi_obs_t *hfi, hfi_cfg_t hfi_cfg)
 {
         DECL_PTRS(hfi, cfg, lo);
 
-        *cfg           = hfi_cfg;
+        *cfg = hfi_cfg;
 
         lo->pll.cfg.fs = lo->id_bpf.cfg.fs = lo->iq_bpf.cfg.fs = cfg->fs;
         lo->polar_cnt_max                                      = (u32)(cfg->fs / 3.0f);
@@ -70,7 +70,7 @@ hfi_init(hfi_obs_t *hfi, hfi_cfg_t hfi_cfg)
         iir_init(&lo->iq_bpf, lo->iq_bpf.cfg);
 }
 
-static inline void
+HAPI void
 hfi_polar_idf(hfi_obs_t *hfi)
 {
         DECL_PTRS(hfi, cfg, out, lo);
@@ -107,7 +107,7 @@ hfi_polar_idf(hfi_obs_t *hfi)
         lo->polar_cnt++;
 }
 
-static inline void
+HAPI void
 hfi_exec(hfi_obs_t *hfi)
 {
         DECL_PTRS(hfi, cfg, in, out, lo);
@@ -141,7 +141,7 @@ hfi_exec(hfi_obs_t *hfi)
         out->est_omega = pll->out.omega;
 }
 
-static inline void
+HAPI void
 hfi_exec_in(hfi_obs_t *hfi, f32_dq_t i_dq)
 {
         DECL_PTRS(hfi, in);

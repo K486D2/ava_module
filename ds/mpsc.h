@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 
+#include "util/marcodef.h"
 #include "util/typedef.h"
 
 #ifdef MCU
@@ -34,18 +35,18 @@ typedef struct {
         mpsc_p_t *producers;  // 生产者状态数组
 } mpsc_t;
 
-static inline void mpsc_init(mpsc_t *mpsc, void *buf, usz cap, mpsc_p_t *producers, usz nproducers);
-static inline isz  mpsc_write(mpsc_t *mpsc, mpsc_p_t *p, const void *src, usz nbytes);
-static inline usz  mpsc_read(mpsc_t *mpsc, void *dst, usz nbytes);
+HAPI void mpsc_init(mpsc_t *mpsc, void *buf, usz cap, mpsc_p_t *producers, usz nproducers);
+HAPI isz  mpsc_write(mpsc_t *mpsc, mpsc_p_t *p, const void *src, usz nbytes);
+HAPI usz  mpsc_read(mpsc_t *mpsc, void *dst, usz nbytes);
 
-static inline mpsc_p_t *mpsc_reg(mpsc_t *mpsc, usz id);
-static inline void      mpsc_unreg(mpsc_p_t *p);
-static inline isz       mpsc_acquire(mpsc_t *mpsc, mpsc_p_t *p, usz nbytes);
-static inline void      mpsc_push(mpsc_p_t *p);
-static inline usz       mpsc_pop(mpsc_t *mpsc, usz *off);
-static inline void      mpsc_release(mpsc_t *mpsc, usz nbytes);
+HAPI mpsc_p_t *mpsc_reg(mpsc_t *mpsc, usz id);
+HAPI void      mpsc_unreg(mpsc_p_t *p);
+HAPI isz       mpsc_acquire(mpsc_t *mpsc, mpsc_p_t *p, usz nbytes);
+HAPI void      mpsc_push(mpsc_p_t *p);
+HAPI usz       mpsc_pop(mpsc_t *mpsc, usz *off);
+HAPI void      mpsc_release(mpsc_t *mpsc, usz nbytes);
 
-static inline void
+HAPI void
 mpsc_init(mpsc_t *mpsc, void *buf, usz cap, mpsc_p_t *producers, usz nproducers)
 {
         mpsc->buf        = buf;
@@ -55,7 +56,7 @@ mpsc_init(mpsc_t *mpsc, void *buf, usz cap, mpsc_p_t *producers, usz nproducers)
         mpsc->producers  = producers;
 }
 
-static inline mpsc_p_t *
+HAPI mpsc_p_t *
 mpsc_reg(mpsc_t *mpsc, usz id)
 {
         mpsc_p_t *p = &mpsc->producers[id];
@@ -64,13 +65,13 @@ mpsc_reg(mpsc_t *mpsc, usz id)
         return p;
 }
 
-static inline void
+HAPI void
 mpsc_unreg(mpsc_p_t *p)
 {
         p->flag = false;
 }
 
-static inline usz
+HAPI usz
 mpsc_get_wp(mpsc_t *mpsc)
 {
         u32 cnt = SPINLOCK_BACKOFF_MIN;
@@ -85,7 +86,7 @@ retry:
         return wp;
 }
 
-static inline usz
+HAPI usz
 mpsc_get_reserve_pos(mpsc_p_t *p)
 {
         u32 cnt = SPINLOCK_BACKOFF_MIN;
@@ -108,7 +109,7 @@ retry:
  * @param nbytes
  * @return 写入偏移 (逻辑 offset) 或者 -1 (表示空间不足)
  */
-static inline isz
+HAPI isz
 mpsc_acquire(mpsc_t *mpsc, mpsc_p_t *p, usz nbytes)
 {
         usz wp, off, target;
@@ -121,8 +122,7 @@ mpsc_acquire(mpsc_t *mpsc, mpsc_p_t *p, usz nbytes)
                 off = wp & MPSC_OFF_MASK;
 
                 // 标记正在申请写入
-                ATOMIC_STORE_EXPLICIT(
-                    &p->reserve_pos, off | MPSC_WRAP_LOCK_BIT, memory_order_relaxed);
+                ATOMIC_STORE_EXPLICIT(&p->reserve_pos, off | MPSC_WRAP_LOCK_BIT, memory_order_relaxed);
 
                 // 尝试申请的终点位置
                 target = off + nbytes;
@@ -136,8 +136,7 @@ mpsc_acquire(mpsc_t *mpsc, mpsc_p_t *p, usz nbytes)
                 if (target >= mpsc->cap) {
                         target = (target > mpsc->cap) ? (MPSC_WRAP_LOCK_BIT | nbytes) : 0;
                         if ((target & MPSC_OFF_MASK) >= rp) {
-                                ATOMIC_STORE_EXPLICIT(
-                                    &p->reserve_pos, MPSC_OFF_MAX, memory_order_release);
+                                ATOMIC_STORE_EXPLICIT(&p->reserve_pos, MPSC_OFF_MAX, memory_order_release);
                                 return -1;
                         }
                         target |= MPSC_WRAP_INCR(wp & MPSC_WRAP_COUNTER);
@@ -146,26 +145,24 @@ mpsc_acquire(mpsc_t *mpsc, mpsc_p_t *p, usz nbytes)
         } while (!atomic_compare_exchange_weak(&mpsc->wp, &wp, target));
 
         // 清除 wrap lock bit，标记 reserve_pos 申请完成
-        ATOMIC_STORE_EXPLICIT(
-            &p->reserve_pos, p->reserve_pos & ~MPSC_WRAP_LOCK_BIT, memory_order_relaxed);
+        ATOMIC_STORE_EXPLICIT(&p->reserve_pos, p->reserve_pos & ~MPSC_WRAP_LOCK_BIT, memory_order_relaxed);
 
         // 如果申请触发 wrap
         if (target & MPSC_WRAP_LOCK_BIT) {
                 mpsc->warp_end = off;
-                ATOMIC_STORE_EXPLICIT(
-                    &mpsc->wp, (target & ~MPSC_WRAP_LOCK_BIT), memory_order_release);
+                ATOMIC_STORE_EXPLICIT(&mpsc->wp, (target & ~MPSC_WRAP_LOCK_BIT), memory_order_release);
                 off = 0;
         }
         return (isz)off;
 }
 
-static inline void
+HAPI void
 mpsc_push(mpsc_p_t *p)
 {
         ATOMIC_STORE_EXPLICIT(&p->reserve_pos, MPSC_OFF_MAX, memory_order_release);
 }
 
-static inline usz
+HAPI usz
 mpsc_pop(mpsc_t *mpsc, usz *off)
 {
         usz rp = ATOMIC_LOAD_EXPLICIT(&mpsc->rp, memory_order_relaxed);
@@ -213,14 +210,14 @@ retry:
         return write_nbytes;
 }
 
-static inline void
+HAPI void
 mpsc_release(mpsc_t *mpsc, usz nbytes)
 {
         usz write_nbytes = mpsc->rp + nbytes;
         mpsc->rp         = (write_nbytes == mpsc->cap) ? 0 : write_nbytes;
 }
 
-static inline isz
+HAPI isz
 mpsc_write(mpsc_t *mpsc, mpsc_p_t *p, const void *src, usz nbytes)
 {
         isz off = mpsc_acquire(mpsc, p, nbytes);
@@ -239,7 +236,7 @@ mpsc_write(mpsc_t *mpsc, mpsc_p_t *p, const void *src, usz nbytes)
         return off;
 }
 
-static inline usz
+HAPI usz
 mpsc_read(mpsc_t *mpsc, void *dst, usz nbytes)
 {
         usz off, avail_nbytes = mpsc_pop(mpsc, &off);

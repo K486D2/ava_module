@@ -55,12 +55,12 @@
 
 #include "stdint.h"
 
-#define JLINK_HSS_FLAG_TIMESTAMP_US         (1uL << 0)
+#define JLINK_HSS_FLAG_TIMESTAMP_US          (1uL << 0)
 
-#define JLINKARM_TIF_JTAG                   0
-#define JLINKARM_TIF_SWD                    1
+#define JLINKARM_TIF_JTAG                    0
+#define JLINKARM_TIF_SWD                     1
 
-#define JLINKARM_DEVICE_MAX_NUM_FLASH_BANKS 16
+#define JLINKARM_DEVICE_MAX_NUM_FLASH_BANKS  16
 
 /*********************************************************************
  *
@@ -78,10 +78,9 @@
  *
  *       SWO Interfaces
  */
-#define JLINKARM_SWO_IF_UART       0
-#define JLINKARM_SWO_IF_MANCHESTER 1 // Not supported in current version
-#define JLINKARM_SWO_IF_TRACE \
-        2 // Only used internally, in case SWO ITM data is merged into trace stream
+#define JLINKARM_SWO_IF_UART                 0
+#define JLINKARM_SWO_IF_MANCHESTER           1 // Not supported in current version
+#define JLINKARM_SWO_IF_TRACE                2 // Only used internally, in case SWO ITM data is merged into trace stream
 
 #if defined(__cplusplus)
 extern "C" { // Make sure we have C-declarations in C++ programs
@@ -90,23 +89,23 @@ extern "C" { // Make sure we have C-declarations in C++ programs
 typedef void JLINKARM_LOG(const char *sErr);
 
 typedef struct {
-        uint32_t SerialNumber;  // This is the serial number reported in the discovery
-                                // process, which is the "true serial number" for newer
-                                // J-Links and 123456 for older J-Links.
-        unsigned Connection;    // Either JLINKARM_HOSTIF_USB = 1 or JLINKARM_HOSTIF_IP = 2
-        uint32_t USBAddr;       // USB Addr. Default is 0, values of 0..3 are permitted
-                                // (Only filled if for J-Links connected via USB)
-        uint8_t aIPAddr[16];    // IP Addr. in case emulator is connected via IP. For IP4
-                                // (current version), only the first 4 bytes are used.
-        int Time;               // J-Link via IP only: Time period [ms] after which we have received
-                                // the UDP discover answer from emulator (-1 if emulator is
-                                // connected over USB)
-        uint64_t Time_us;       // J-Link via IP only: Time period [us] after which we have
-                                // received the UDP discover answer from emulator (-1 if
-                                // emulator is connected over USB)
-        uint32_t HWVersion;     // J-Link via IP only: Hardware version of J-Link
-        uint8_t  abMACAddr[6];  // J-Link via IP only: MAC Addr
-        char     acProduct[32]; // Product name
+        uint32_t SerialNumber;           // This is the serial number reported in the discovery
+                                         // process, which is the "true serial number" for newer
+                                         // J-Links and 123456 for older J-Links.
+        unsigned Connection;             // Either JLINKARM_HOSTIF_USB = 1 or JLINKARM_HOSTIF_IP = 2
+        uint32_t USBAddr;                // USB Addr. Default is 0, values of 0..3 are permitted
+                                         // (Only filled if for J-Links connected via USB)
+        uint8_t aIPAddr[16];             // IP Addr. in case emulator is connected via IP. For IP4
+                                         // (current version), only the first 4 bytes are used.
+        int Time;                        // J-Link via IP only: Time period [ms] after which we have received
+                                         // the UDP discover answer from emulator (-1 if emulator is
+                                         // connected over USB)
+        uint64_t Time_us;                // J-Link via IP only: Time period [us] after which we have
+                                         // received the UDP discover answer from emulator (-1 if
+                                         // emulator is connected over USB)
+        uint32_t HWVersion;              // J-Link via IP only: Hardware version of J-Link
+        uint8_t  abMACAddr[6];           // J-Link via IP only: MAC Addr
+        char     acProduct[32];          // Product name
         char     acNickName[32];         // J-Link via IP only: Nickname of J-Link
         char     acFWString[112];        // J-Link via IP only: Firmware string of J-Link
         char     IsDHCPAssignedIP;       // J-Link via IP only: Is J-Link configured for IP
@@ -221,12 +220,12 @@ typedef struct {
                                                             // for J-Flash. Other
                                                             // applications can
                                                             // safely ignore this
-        const char *sNote;         // Contains a link to a device specific wiki article (if
-                                   // available). Can be used as additional user / display
-                                   // information.
-        const char *sDeviceFamily; // The device family of a specific device is not
-                                   // fixed and may change. Can be used as additional
-                                   // user / display information.
+        const char *sNote;                                  // Contains a link to a device specific wiki article (if
+                                                            // available). Can be used as additional user / display
+                                                            // information.
+        const char *sDeviceFamily;                          // The device family of a specific device is not
+                                                            // fixed and may change. Can be used as additional
+                                                            // user / display information.
         //
         // Supported since V7.68.
         //
@@ -244,21 +243,16 @@ char        JLINKARM_IsOpen(void);
 int32_t     JLINKARM_Connect(void);
 int32_t     JLINKARM_ReadMemEx(uint32_t Addr, uint32_t NumBytes, void *pData, uint32_t Flags);
 int32_t     JLINKARM_WriteMemEx(uint32_t Addr, uint32_t NumBytes, const void *p, uint32_t Flags);
-int32_t
-JLINKARM_EMU_GetList(int32_t HostIFs, JLINKARM_EMU_CONNECT_INFO *paConnectInfo, int32_t MaxInfos);
-int32_t  JLINKARM_EMU_SelectByUSBSN(uint32_t SerialNo);
-int32_t  JLINKARM_ExecCommand(const char *pIn, char *pOut, int32_t BufferSize);
-int32_t  JLINKARM_TIF_Select(int32_t int32_terface);
-void     JLINKARM_SetSpeed(uint32_t Speed);
-uint16_t JLINKARM_GetSpeed(void);
-int32_t
-JLINKARM_DEVICE_SelectDialog(void *hParent, uint32_t Flags, JLINKARM_DEVICE_SELECT_INFO *pInfo);
-int32_t JLINKARM_DEVICE_GetInfo(int32_t DeviceIndex, JLINKARM_DEVICE_INFO *pDeviceInfo);
+int32_t     JLINKARM_EMU_GetList(int32_t HostIFs, JLINKARM_EMU_CONNECT_INFO *paConnectInfo, int32_t MaxInfos);
+int32_t     JLINKARM_EMU_SelectByUSBSN(uint32_t SerialNo);
+int32_t     JLINKARM_ExecCommand(const char *pIn, char *pOut, int32_t BufferSize);
+int32_t     JLINKARM_TIF_Select(int32_t int32_terface);
+void        JLINKARM_SetSpeed(uint32_t Speed);
+uint16_t    JLINKARM_GetSpeed(void);
+int32_t     JLINKARM_DEVICE_SelectDialog(void *hParent, uint32_t Flags, JLINKARM_DEVICE_SELECT_INFO *pInfo);
+int32_t     JLINKARM_DEVICE_GetInfo(int32_t DeviceIndex, JLINKARM_DEVICE_INFO *pDeviceInfo);
 
-int32_t JLINK_HSS_Start(JLINK_HSS_MEM_BLOCK_DESC *paDesc,
-                        int32_t                   NumBlocks,
-                        int32_t                   Period_us,
-                        int32_t                   Flags);
+int32_t JLINK_HSS_Start(JLINK_HSS_MEM_BLOCK_DESC *paDesc, int32_t NumBlocks, int32_t Period_us, int32_t Flags);
 int32_t JLINK_HSS_Stop(void);
 int32_t JLINK_HSS_Read(void *pBuffer, uint32_t BufferSize);
 
@@ -266,12 +260,8 @@ int32_t JLINKARM_SWO_Control(uint32_t Cmd, void *pData);
 
 int32_t JLINKARM_SWO_Config(const char *sConfig);
 int32_t JLINKARM_SWO_DisableTarget(uint32_t PortMask);
-int32_t
-JLINKARM_SWO_EnableTarget(uint32_t CPUSpeed, uint32_t SWOSpeed, int32_t Mode, uint32_t PortMask);
-int32_t JLINKARM_SWO_GetCompatibleSpeeds(uint32_t  CPUSpeed,
-                                         uint32_t  MaxSWOSpeed,
-                                         uint32_t *paSWOSpeed,
-                                         uint32_t  NumEntries);
+int32_t JLINKARM_SWO_EnableTarget(uint32_t CPUSpeed, uint32_t SWOSpeed, int32_t Mode, uint32_t PortMask);
+int32_t JLINKARM_SWO_GetCompatibleSpeeds(uint32_t CPUSpeed, uint32_t MaxSWOSpeed, uint32_t *paSWOSpeed, uint32_t NumEntries);
 int32_t JLINKARM_SWO_Read(uint8_t *pData, uint32_t Offset, uint32_t *pNumBytes);
 
 #if defined(__cplusplus)

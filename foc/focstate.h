@@ -4,7 +4,7 @@
 #include "focctl.h"
 #include "focobs.h"
 
-static inline void
+HAPI void
 foc_svpwm(foc_t *foc)
 {
         DECL_PTRS(foc, cfg, out);
@@ -27,12 +27,11 @@ foc_svpwm(foc_t *foc)
         UVW_ADD(out->svpwm.f32_pwm_duty, out->f32_v_uvw, -out->svpwm.v_avg);
 
         UVW_ADD_IP(out->svpwm.f32_pwm_duty, 0.5f);
-        UVW_CLAMP(
-            out->svpwm.f32_pwm_duty, cfg->periph_cfg.f32_pwm_min, cfg->periph_cfg.f32_pwm_max);
+        UVW_CLAMP(out->svpwm.f32_pwm_duty, cfg->periph_cfg.f32_pwm_min, cfg->periph_cfg.f32_pwm_max);
         UVW_MUL(out->svpwm.u32_pwm_duty, out->svpwm.f32_pwm_duty, cfg->periph_cfg.pwm_full_cnt);
 }
 
-static inline void
+HAPI void
 foc_select_theta(foc_t *foc)
 {
         DECL_PTRS(foc, in, lo);
@@ -60,13 +59,13 @@ foc_select_theta(foc_t *foc)
         }
 }
 
-static inline void
+HAPI void
 foc_ready(foc_t *foc)
 {
         ARG_UNUSED(foc);
 }
 
-static inline void
+HAPI void
 foc_disable(foc_t *foc)
 {
         DECL_PTRS(foc, ops, in);
@@ -84,7 +83,7 @@ foc_disable(foc_t *foc)
         RESET_OUT(&foc->lo.hfi);
 }
 
-static inline void
+HAPI void
 foc_enable(foc_t *foc)
 {
         DECL_PTRS(foc, cfg, ops, in, out, lo);
@@ -110,10 +109,8 @@ foc_enable(foc_t *foc)
         in->i_dq = park(in->i_ab, in->rotor.theta);
 
         // 电磁力矩计算
-        lo->fdb_pvct.elec_tor = CPYSGN(poly_eval(cfg->motor_cfg.cur2tor,
-                                                 ARRAY_SIZE(cfg->motor_cfg.cur2tor) - 1,
-                                                 ABS(in->i_dq.q)),
-                                       in->i_dq.q);
+        lo->fdb_pvct.elec_tor =
+            CPYSGN(poly_eval(cfg->motor_cfg.cur2tor, ARRAY_SIZE(cfg->motor_cfg.cur2tor) - 1, ABS(in->i_dq.q)), in->i_dq.q);
 
         // 无感观测器(idq)
         foc_obs_i_dq(foc);

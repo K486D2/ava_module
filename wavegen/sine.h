@@ -26,7 +26,7 @@ typedef struct {
         sine_lo_t  lo;
 } sine_t;
 
-static inline void
+HAPI void
 sine_init(sine_t *sine, sine_cfg_t sine_cfg)
 {
         DECL_PTRS(sine, cfg);
@@ -34,7 +34,7 @@ sine_init(sine_t *sine, sine_cfg_t sine_cfg)
         *cfg = sine_cfg;
 }
 
-static inline void
+HAPI void
 sine_exec(sine_t *sine)
 {
         DECL_PTRS(sine, cfg, out, lo);

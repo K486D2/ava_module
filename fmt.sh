@@ -1,9 +1,6 @@
 #!/bin/bash
 
-# ====================================================
 # 自动遍历当前目录及子目录，统一换行符为 LF 并执行 clang-format
-# 兼容 bash 和 zsh
-# ====================================================
 
 # 检查 dos2unix 和 clang-format 是否存在
 command -v clang-format >/dev/null 2>&1 || { echo "[错误] 未找到 clang-format"; exit 1; }
@@ -17,7 +14,7 @@ find_files() {
 # 主处理函数
 process_file() {
     local file="$1"
-    echo "处理文件: $file"
+    echo "格式化文件: $file"
 
     # 转换 CRLF -> LF
     if command -v dos2unix >/dev/null 2>&1; then
@@ -35,4 +32,4 @@ while IFS= read -r file; do
     process_file "$file"
 done < <(find_files)
 
-echo "所有文件处理完成"
+echo "所有文件格式化完成"

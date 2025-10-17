@@ -25,12 +25,12 @@ typedef struct {
 typedef struct {
         lbg_cfg_t cfg;
 
-        f32       g1;
-        f32       kp, ki;
+        f32 g1;
+        f32 kp, ki;
 
-        f32       theta_err, mech_theta_err;
-        f32       ki_out;
-        f32       est_omega;
+        f32 theta_err, mech_theta_err;
+        f32 ki_out;
+        f32 est_omega;
 } lbg_lo_t;
 
 typedef struct {
@@ -47,9 +47,9 @@ lbg_init(lbg_obs_t *lbg, lbg_cfg_t lbg_cfg)
 
         *cfg = lo->cfg = lbg_cfg;
 
-        lo->g1         = 2.0f * cfg->wc;
-        lo->kp         = 2.0f * SQ(cfg->wc) * cfg->motor.j * cfg->damp;
-        lo->ki         = SQ(cfg->wc) * cfg->wc * cfg->motor.j;
+        lo->g1 = 2.0f * cfg->wc;
+        lo->kp = 2.0f * SQ(cfg->wc) * cfg->motor.j * cfg->damp;
+        lo->ki = SQ(cfg->wc) * cfg->wc * cfg->motor.j;
 }
 
 static void
@@ -70,7 +70,7 @@ lbg_exec(lbg_obs_t *lbg)
         CLAMP(lo->ki_out, -cfg->motor.max_tor, cfg->motor.max_tor);
         out->est_load_tor = -lo->ki_out;
 
-        out->sum_tor      = in->elec_tor + lo->kp * lo->mech_theta_err + lo->ki_out;
+        out->sum_tor = in->elec_tor + lo->kp * lo->mech_theta_err + lo->ki_out;
 
         INTEGRATOR(lo->est_omega, out->sum_tor, 1.0f / cfg->motor.j, cfg->fs);
         out->est_omega = lo->g1 * lo->mech_theta_err + lo->est_omega;

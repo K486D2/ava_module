@@ -3,7 +3,7 @@
 
 #include "focdef.h"
 
-static inline void
+HAPI void
 foc_obs_i_ab(foc_t *foc)
 {
         DECL_PTRS(foc, in, out, lo);
@@ -21,7 +21,7 @@ foc_obs_i_ab(foc_t *foc)
         }
 }
 
-static inline void
+HAPI void
 foc_obs_i_dq(foc_t *foc)
 {
         DECL_PTRS(foc, cfg, in, out, lo);
@@ -52,7 +52,7 @@ foc_obs_i_dq(foc_t *foc)
         }
 }
 
-static inline void
+HAPI void
 foc_obs_v_dq(foc_t *foc)
 {
         DECL_PTRS(foc, out, lo);

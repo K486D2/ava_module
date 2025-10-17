@@ -48,7 +48,7 @@ typedef struct {
         iir_lo_t  lo;
 } iir_filter_t;
 
-static inline int
+HAPI int
 iir_init(iir_filter_t *iir, iir_cfg_t iir_cfg)
 {
         ARG_CHECK(iir);
@@ -126,7 +126,7 @@ iir_init(iir_filter_t *iir, iir_cfg_t iir_cfg)
         return 0;
 }
 
-static inline int
+HAPI int
 iir_exec(iir_filter_t *iir)
 {
         ARG_CHECK(iir);
@@ -140,9 +140,8 @@ iir_exec(iir_filter_t *iir)
                         lo->y1 = out->y;
                 } break;
                 case IIR_2: {
-                        out->y = lo->normal_a0 * in->x + lo->normal_a1 * lo->x1
-                                 + lo->normal_a2 * lo->x2 - lo->normal_a3 * lo->y1
-                                 - lo->normal_a4 * lo->y2;
+                        out->y = lo->normal_a0 * in->x + lo->normal_a1 * lo->x1 + lo->normal_a2 * lo->x2 -
+                                 lo->normal_a3 * lo->y1 - lo->normal_a4 * lo->y2;
                         lo->x2 = lo->x1;
                         lo->x1 = in->x;
                         lo->y2 = lo->y1;
@@ -155,7 +154,7 @@ iir_exec(iir_filter_t *iir)
         return 0;
 }
 
-static inline int
+HAPI int
 iir_exec_in(iir_filter_t *iir, f32 x)
 {
         ARG_CHECK(iir);
