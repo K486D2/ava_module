@@ -14,8 +14,7 @@
 #include "util/mathdef.h"
 #include "util/util.h"
 
-typedef enum
-{
+typedef enum {
         FFT_POINT_32      = 32,
         FFT_POINT_64      = 64,
         FFT_POINT_128     = 128,
@@ -34,8 +33,7 @@ typedef enum
         FFT_POINT_1048576 = 1048576,
 } fft_size_e;
 
-typedef struct
-{
+typedef struct {
         f32    fs;
         u8     flag;
         size_t point_num;
@@ -49,13 +47,11 @@ typedef struct
         f32 *mag_buf;
 } fft_cfg_t;
 
-typedef struct
-{
+typedef struct {
         f32 *buf;
 } fft_in_t;
 
-typedef struct
-{
+typedef struct {
         f32    fr;
         f32    ft;
         size_t out_idx;
@@ -63,8 +59,7 @@ typedef struct
         f32    max_mag;
 } fft_out_t;
 
-typedef struct
-{
+typedef struct {
         u32    elapsed_us;
         spsc_t spsc;
         bool   neet_exec;
@@ -77,15 +72,15 @@ typedef struct
 #endif
 } fft_lo_t;
 
-typedef struct
-{
+typedef struct {
         fft_cfg_t cfg;
         fft_in_t  in;
         fft_out_t out;
         fft_lo_t  lo;
 } fft_t;
 
-static inline void fft_init(fft_t *fft, fft_cfg_t fft_cfg)
+static inline void
+fft_init(fft_t *fft, fft_cfg_t fft_cfg)
 {
         DECL_PTRS(fft, cfg, in, out, lo);
 
@@ -97,7 +92,7 @@ static inline void fft_init(fft_t *fft, fft_cfg_t fft_cfg)
         lo->buf      = cfg->out_buf;
         out->mag_buf = cfg->mag_buf;
 
-        out->fr = cfg->fs / (f32)cfg->point_num;
+        out->fr      = cfg->fs / (f32)cfg->point_num;
 
 #if defined(__linux__) || defined(_WIN32)
         lo->p = fftwf_plan_dft_r2c_1d(cfg->point_num, in->buf, lo->buf, FFTW_ESTIMATE);
@@ -106,7 +101,8 @@ static inline void fft_init(fft_t *fft, fft_cfg_t fft_cfg)
 #endif
 }
 
-static inline void fft_exec(fft_t *fft)
+static inline void
+fft_exec(fft_t *fft)
 {
         DECL_PTRS(fft, cfg, in, out, lo);
 
@@ -120,8 +116,8 @@ static inline void fft_exec(fft_t *fft)
 #if defined(__linux__) || defined(_WIN32)
         fftwf_execute(lo->p);
         for (size_t i = 0; i < cfg->point_num / 2 + 1; i++)
-                out->mag_buf[i] =
-                    SQRT(lo->buf[i][0] * lo->buf[i][0] + lo->buf[i][1] * lo->buf[i][1]);
+                out->mag_buf[i]
+                    = SQRT(lo->buf[i][0] * lo->buf[i][0] + lo->buf[i][1] * lo->buf[i][1]);
         find_max(&out->mag_buf[1], cfg->point_num >> 1, &out->max_mag, &out->out_idx);
 #elif defined(ARM_MATH)
         arm_hanning_f32(lo->buf, cfg->point_num);
@@ -130,14 +126,15 @@ static inline void fft_exec(fft_t *fft)
         arm_max_f32(&out->mag_buf[1], cfg->point_num >> 1, &out->max_mag, &out->out_idx);
 #endif
 
-        out->ft = out->out_idx * cfg->fs / (f32)cfg->point_num;
+        out->ft        = out->out_idx * cfg->fs / (f32)cfg->point_num;
 
-        lo->neet_exec = false;
+        lo->neet_exec  = false;
 
         lo->elapsed_us = (u32)(get_mono_ts_us() - start);
 }
 
-static inline void fft_destroy(fft_t *fft)
+static inline void
+fft_destroy(fft_t *fft)
 {
         DECL_PTRS(fft, lo);
 
@@ -146,7 +143,8 @@ static inline void fft_destroy(fft_t *fft)
 #endif
 }
 
-static inline void fft_exec_in(fft_t *fft, f32 val)
+static inline void
+fft_exec_in(fft_t *fft, f32 val)
 {
         DECL_PTRS(fft, lo);
 

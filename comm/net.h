@@ -26,28 +26,24 @@ typedef SOCKET socket_t;
 #define MAX_RESP_BUF_SIZE 1024
 #define MAX_IP_NUM        255
 
-typedef enum
-{
+typedef enum {
         NET_TYPE_NULL,
         NET_TYPE_UDP,
         NET_TYPE_TCP,
 } net_type_e;
 
-typedef enum
-{
+typedef enum {
         NET_RECV_YIELD,
         NET_RECV_SPIN,
 } net_recv_e;
 
-typedef enum
-{
+typedef enum {
         NET_LOG_SEND,
         NET_LOG_RECV,
 } net_log_type_e;
 
 #pragma pack(push, 1)
-typedef struct
-{
+typedef struct {
         u64 ts;          // 时间戳
         u8  type;        // 事件类型
         u32 remote_ip;   // 设备IP
@@ -58,15 +54,13 @@ typedef struct
 
 typedef void (*net_logger_f)(FILE *file, const net_log_meta_t *log_meta, const void *log_data);
 
-typedef enum
-{
+typedef enum {
         SEND,
         RECV,
         SEND_RECV,
 } net_flag_e;
 
-typedef struct
-{
+typedef struct {
         list_head_t  node;
         char         remote_ip[MAX_IP_SIZE], local_ip[MAX_IP_SIZE];
         u16          remote_port, local_port;
@@ -75,35 +69,33 @@ typedef struct
         net_recv_e   recv_mode;
 } net_ch_t;
 
-typedef struct
-{
+typedef struct {
         net_type_e type;
 } net_cfg_t;
 
-typedef struct
-{
+typedef struct {
         net_ch_t       ch;
         net_log_meta_t log_meta;
 } net_lo_t;
 
-typedef struct net
-{
+typedef struct net {
         net_cfg_t cfg;
         net_lo_t  lo;
 } net_t;
 
-#define DECL_NET_PTRS(net)                                                                         \
-        net_cfg_t *cfg = &net->cfg;                                                                \
-        net_lo_t  *lo  = &net->lo;                                                                 \
-        ARG_UNUSED(net);                                                                           \
-        ARG_UNUSED(cfg);                                                                           \
+#define DECL_NET_PTRS(net)          \
+        net_cfg_t *cfg = &net->cfg; \
+        net_lo_t  *lo  = &net->lo;  \
+        ARG_UNUSED(net);            \
+        ARG_UNUSED(cfg);            \
         ARG_UNUSED(lo);
 
-#define DECL_NET_PTR_RENAME(net, name)                                                             \
-        net_t *name = (net);                                                                       \
+#define DECL_NET_PTR_RENAME(net, name) \
+        net_t *name = (net);           \
         ARG_UNUSED(name);
 
-static inline int net_init(net_t *net, net_cfg_t net_cfg)
+static inline int
+net_init(net_t *net, net_cfg_t net_cfg)
 {
         DECL_PTRS(net, cfg, lo);
 
@@ -118,7 +110,8 @@ static inline int net_init(net_t *net, net_cfg_t net_cfg)
         return 0;
 }
 
-static inline int net_set_nonblock(net_ch_t *ch)
+static inline int
+net_set_nonblock(net_ch_t *ch)
 {
 #ifdef __linux__
         int flags = fcntl(ch->sock, F_GETFL, 0);
@@ -135,12 +128,12 @@ static inline int net_set_nonblock(net_ch_t *ch)
 #endif
 }
 
-static inline int net_add_ch(net_t *net, net_ch_t *ch)
+static inline int
+net_add_ch(net_t *net, net_ch_t *ch)
 {
         DECL_PTRS(net, cfg, lo);
 
-        switch (cfg->type)
-        {
+        switch (cfg->type) {
                 case NET_TYPE_UDP:
                         ch->sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
                         break;
@@ -156,14 +149,13 @@ static inline int net_add_ch(net_t *net, net_ch_t *ch)
         if (ret < 0)
                 return ret;
 
-        struct sockaddr_in remote_addr = {0};
+        struct sockaddr_in remote_addr = { 0 };
         remote_addr.sin_family         = AF_INET;
         remote_addr.sin_port           = htons(ch->remote_port);
         remote_addr.sin_addr.s_addr    = inet_addr(ch->remote_ip);
 
-        if (strlen(ch->local_ip) != 0 && ch->local_port != 0)
-        {
-                struct sockaddr_in local_addr = {0};
+        if (strlen(ch->local_ip) != 0 && ch->local_port != 0) {
+                struct sockaddr_in local_addr = { 0 };
                 local_addr.sin_family         = AF_INET;
                 local_addr.sin_port           = htons(ch->local_port);
                 local_addr.sin_addr.s_addr    = inet_addr(ch->local_ip);
@@ -185,7 +177,8 @@ cleanup:
         return ret;
 }
 
-static inline int net_send(net_ch_t *ch, void *tx_buf, u32 size)
+static inline int
+net_send(net_ch_t *ch, void *tx_buf, u32 size)
 {
 #ifdef __linux__
         int ret = send(ch->sock, tx_buf, size, 0);
@@ -195,11 +188,12 @@ static inline int net_send(net_ch_t *ch, void *tx_buf, u32 size)
         return ret;
 }
 
-static inline int net_recv_yield(net_ch_t *ch, void *rx_buf, u32 size, u32 timeout_ms)
+static inline int
+net_recv_yield(net_ch_t *ch, void *rx_buf, u32 size, u32 timeout_ms)
 {
         struct timeval tv = {
-            .tv_sec  = (i32)timeout_ms / 1000,                      // 秒
-            .tv_usec = (i32)(timeout_ms - tv.tv_sec * 1000) * 1000, // 微秒
+                .tv_sec  = (i32)timeout_ms / 1000,                      // 秒
+                .tv_usec = (i32)(timeout_ms - tv.tv_sec * 1000) * 1000, // 微秒
         };
 
 #ifdef __linux__
@@ -212,12 +206,12 @@ static inline int net_recv_yield(net_ch_t *ch, void *rx_buf, u32 size, u32 timeo
         return ret;
 }
 
-static inline int net_recv_spin(net_ch_t *ch, void *rx_buf, u32 size, u32 timeout_ms)
+static inline int
+net_recv_spin(net_ch_t *ch, void *rx_buf, u32 size, u32 timeout_ms)
 {
         u64 start_ts_ns = get_mono_ts_ns();
         u64 curr_ts_ns  = 0;
-        while (curr_ts_ns < start_ts_ns + (u64)(timeout_ms * 1e6))
-        {
+        while (curr_ts_ns < start_ts_ns + (u64)(timeout_ms * 1e6)) {
 #ifdef __linux__
                 int ret = recv(ch->sock, rx_buf, size, 0);
 #elif defined(_WIN32)
@@ -230,11 +224,11 @@ static inline int net_recv_spin(net_ch_t *ch, void *rx_buf, u32 size, u32 timeou
         return -METIMEOUT;
 }
 
-static inline int net_recv(net_ch_t *ch, void *rx_buf, u32 size, u32 timeout_ms)
+static inline int
+net_recv(net_ch_t *ch, void *rx_buf, u32 size, u32 timeout_ms)
 {
         int ret;
-        switch (ch->recv_mode)
-        {
+        switch (ch->recv_mode) {
                 case NET_RECV_YIELD:
                         ret = net_recv_yield(ch, rx_buf, size, timeout_ms);
                         break;
@@ -260,8 +254,7 @@ net_send_recv(net_ch_t *ch, void *tx_buf, u32 tx_size, void *rx_buf, u32 rx_size
         return ret;
 }
 
-typedef struct
-{
+typedef struct {
         char remote_ip[MAX_IP_SIZE];
         char resp[MAX_RESP_BUF_SIZE];
 } net_broadcast_t;

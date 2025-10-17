@@ -14,7 +14,8 @@
  * @return f32_ab_t 
  */
 // clang-format on
-static inline f32_ab_t clarke(f32_uvw_t f32_abc, f32 mi)
+static inline f32_ab_t
+clarke(f32_uvw_t f32_abc, f32 mi)
 {
         f32_ab_t f32_ab;
         f32_ab.a = mi * (f32_abc.u - 0.5f * (f32_abc.v + f32_abc.w));
@@ -22,7 +23,8 @@ static inline f32_ab_t clarke(f32_uvw_t f32_abc, f32 mi)
         return f32_ab;
 }
 
-static inline f32_uvw_t inv_clarke(f32_ab_t f32_ab)
+static inline f32_uvw_t
+inv_clarke(f32_ab_t f32_ab)
 {
         f32_uvw_t f32_uvw;
         f32       f32_a = -(f32_ab.a * 0.5f);
@@ -33,7 +35,8 @@ static inline f32_uvw_t inv_clarke(f32_ab_t f32_ab)
         return f32_uvw;
 }
 
-static inline f32_dq_t park(f32_ab_t f32_ab, f32 theta)
+static inline f32_dq_t
+park(f32_ab_t f32_ab, f32 theta)
 {
         f32_dq_t f32_dq;
         f32_dq.d = COS(theta) * f32_ab.a + SIN(theta) * f32_ab.b;
@@ -41,7 +44,8 @@ static inline f32_dq_t park(f32_ab_t f32_ab, f32 theta)
         return f32_dq;
 }
 
-static inline f32_ab_t inv_park(f32_dq_t f32_dq, f32 theta)
+static inline f32_ab_t
+inv_park(f32_dq_t f32_dq, f32 theta)
 {
         f32_ab_t f32_ab;
         f32_ab.a = COS(theta) * f32_dq.d - SIN(theta) * f32_dq.q;

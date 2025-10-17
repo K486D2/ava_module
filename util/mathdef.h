@@ -78,24 +78,24 @@
 
 #define SGN(x)                         ((x) == 0.0F ? 0.0F : (x) > 0.0F ? 1.0F : -1.0F)
 
-#define SQ(x)                          ((x) * (x))       // 平方
-#define K(x)                           ((x)*1000U)       // 乘以 1K
-#define M(x)                           ((x)*1000000U)    // 乘以 1M
-#define G(x)                           ((x)*1000000000U) // 乘以 1G
+#define SQ(x)                          ((x) * (x))         // 平方
+#define K(x)                           ((x) * 1000U)       // 乘以 1K
+#define M(x)                           ((x) * 1000000U)    // 乘以 1M
+#define G(x)                           ((x) * 1000000000U) // 乘以 1G
 
-#define RAD_TO_DEG(rad)                ((rad)*57.2957795F)
+#define RAD_TO_DEG(rad)                ((rad) * 57.2957795F)
 #define DEG_TO_RAD(deg)                ((deg) / 57.2957795F)
 
 #define US_TO_S(us)                    ((us) / 1000000.0F)
-#define S_TO_US(s)                     ((s)*1000000U)
+#define S_TO_US(s)                     ((s) * 1000000U)
 #define US_TO_MS(us)                   ((us) / 1000.0F)
-#define MS_TO_US(ms)                   ((ms)*1000U)
+#define MS_TO_US(ms)                   ((ms) * 1000U)
 #define MS_TO_S(ms)                    ((ms) / 1000.0F)
-#define S_TO_MS(s)                     ((s)*1000U)
+#define S_TO_MS(s)                     ((s) * 1000U)
 
 #define HZ_TO_S(hz)                    (1.0F / (hz))
-#define HZ_TO_MS(hz)                   (1.0F / (hz)*1000U)
-#define HZ_TO_US(hz)                   (1.0F / (hz)*1000000U)
+#define HZ_TO_MS(hz)                   (1.0F / (hz) * 1000U)
+#define HZ_TO_US(hz)                   (1.0F / (hz) * 1000000U)
 
 #define MECH_TO_ELEC(theta, npp)       ((theta) * (npp))
 #define ELEC_TO_MECH(theta, npp)       ((theta) / (npp))
@@ -105,135 +105,137 @@
 
 #define INTEGRATOR(ret, val, gain, fs) (ret) += (gain) * (val) / (fs)
 
-#define DERIVATIVE(ret, val, prev_val, gain, fs)                                                   \
-        do {                                                                                       \
-                (ret)      = (gain) * ((val) - (prev_val)) * (fs);                                 \
-                (prev_val) = (val);                                                                \
+#define DERIVATIVE(ret, val, prev_val, gain, fs)                   \
+        do {                                                       \
+                (ret)      = (gain) * ((val) - (prev_val)) * (fs); \
+                (prev_val) = (val);                                \
         } while (0)
 
-#define THETA_DERIVATIVE(ret, theta, prev_theta, gain, fs)                                         \
-        do {                                                                                       \
-                f32 theta_diff = (theta) - (prev_theta);                                           \
-                WARP_PI(theta_diff);                                                               \
-                (ret)        = (gain) * (theta_diff) * (fs);                                       \
-                (prev_theta) = (theta);                                                            \
+#define THETA_DERIVATIVE(ret, theta, prev_theta, gain, fs)   \
+        do {                                                 \
+                f32 theta_diff = (theta) - (prev_theta);     \
+                WARP_PI(theta_diff);                         \
+                (ret)        = (gain) * (theta_diff) * (fs); \
+                (prev_theta) = (theta);                      \
         } while (0)
 
-#define LOWPASS(ret, val, fc, fs)                                                                  \
-        do {                                                                                       \
-                f32 rc    = 1.0F / (TAU * fc);                                                     \
-                f32 alpha = 1.0F / (1.0F + rc * fs);                                               \
-                (ret)     = (alpha) * (val) + (1.0F - alpha) * (ret);                              \
+#define LOWPASS(ret, val, fc, fs)                                     \
+        do {                                                          \
+                f32 rc    = 1.0F / (TAU * fc);                        \
+                f32 alpha = 1.0F / (1.0F + rc * fs);                  \
+                (ret)     = (alpha) * (val) + (1.0F - alpha) * (ret); \
         } while (0)
 
 #define CLAMP(ret, min, max) (ret) = ((ret) <= (min)) ? (min) : MIN(ret, max)
 
-#define UVW_CLAMP(ret, min, max)                                                                   \
-        do {                                                                                       \
-                CLAMP((ret).u, (min), (max));                                                      \
-                CLAMP((ret).v, (min), (max));                                                      \
-                CLAMP((ret).w, (min), (max));                                                      \
+#define UVW_CLAMP(ret, min, max)              \
+        do {                                  \
+                CLAMP((ret).u, (min), (max)); \
+                CLAMP((ret).v, (min), (max)); \
+                CLAMP((ret).w, (min), (max)); \
         } while (0)
 
-#define WARP_PI(rad)                                                                               \
-        do {                                                                                       \
-                if (ABS(rad) > TAU)                                                                \
-                        (rad) = MOD((rad), TAU);                                                   \
-                if ((rad) > PI)                                                                    \
-                        (rad) -= TAU;                                                              \
-                else if ((rad) < -PI)                                                              \
-                        (rad) += TAU;                                                              \
+#define WARP_PI(rad)                             \
+        do {                                     \
+                if (ABS(rad) > TAU)              \
+                        (rad) = MOD((rad), TAU); \
+                if ((rad) > PI)                  \
+                        (rad) -= TAU;            \
+                else if ((rad) < -PI)            \
+                        (rad) += TAU;            \
         } while (0)
 
-#define WARP_TAU(rad)                                                                              \
-        do {                                                                                       \
-                if (ABS(rad) > TAU)                                                                \
-                        (rad) = MOD((rad), TAU);                                                   \
-                if ((rad) < 0.0F)                                                                  \
-                        (rad) += TAU;                                                              \
+#define WARP_TAU(rad)                            \
+        do {                                     \
+                if (ABS(rad) > TAU)              \
+                        (rad) = MOD((rad), TAU); \
+                if ((rad) < 0.0F)                \
+                        (rad) += TAU;            \
         } while (0)
 
-#define UVW_ADD_VEC_IP(x, y)                                                                       \
-        do {                                                                                       \
-                (x).u = (x).u + (y).u;                                                             \
-                (x).v = (x).v + (y).v;                                                             \
-                (x).w = (x).w + (y).w;                                                             \
+#define UVW_ADD_VEC_IP(x, y)           \
+        do {                           \
+                (x).u = (x).u + (y).u; \
+                (x).v = (x).v + (y).v; \
+                (x).w = (x).w + (y).w; \
         } while (0)
 
-#define UVW_SUB_VEC_IP(x, y)                                                                       \
-        do {                                                                                       \
-                (x).u = (x).u - (y).u;                                                             \
-                (x).v = (x).v - (y).v;                                                             \
-                (x).w = (x).w - (y).w;                                                             \
+#define UVW_SUB_VEC_IP(x, y)           \
+        do {                           \
+                (x).u = (x).u - (y).u; \
+                (x).v = (x).v - (y).v; \
+                (x).w = (x).w - (y).w; \
         } while (0)
 
-#define UVW_MUL_VEC_IP(x, y)                                                                       \
-        do {                                                                                       \
-                (x).u = (x).u * (y).u;                                                             \
-                (x).v = (x).v * (y).v;                                                             \
-                (x).w = (x).w * (y).w;                                                             \
+#define UVW_MUL_VEC_IP(x, y)           \
+        do {                           \
+                (x).u = (x).u * (y).u; \
+                (x).v = (x).v * (y).v; \
+                (x).w = (x).w * (y).w; \
         } while (0)
 
-#define UVW_DIV_VEC_IP(x, y)                                                                       \
-        do {                                                                                       \
-                (x).u = (x).u / (y).u;                                                             \
-                (x).v = (x).v / (y).v;                                                             \
-                (x).w = (x).w / (y).w;                                                             \
+#define UVW_DIV_VEC_IP(x, y)           \
+        do {                           \
+                (x).u = (x).u / (y).u; \
+                (x).v = (x).v / (y).v; \
+                (x).w = (x).w / (y).w; \
         } while (0)
 
-#define UVW_ADD_IP(x, y)                                                                           \
-        do {                                                                                       \
-                (x).u = (x).u + (y);                                                               \
-                (x).v = (x).v + (y);                                                               \
-                (x).w = (x).w + (y);                                                               \
+#define UVW_ADD_IP(x, y)             \
+        do {                         \
+                (x).u = (x).u + (y); \
+                (x).v = (x).v + (y); \
+                (x).w = (x).w + (y); \
         } while (0)
 
-#define UVW_MUL_IP(x, y)                                                                           \
-        do {                                                                                       \
-                (x).u = (x).u * (y);                                                               \
-                (x).v = (x).v * (y);                                                               \
-                (x).w = (x).w * (y);                                                               \
+#define UVW_MUL_IP(x, y)             \
+        do {                         \
+                (x).u = (x).u * (y); \
+                (x).v = (x).v * (y); \
+                (x).w = (x).w * (y); \
         } while (0)
 
-#define UVW_ADD(ret, x, y)                                                                         \
-        do {                                                                                       \
-                (ret).u = (x).u + (y);                                                             \
-                (ret).v = (x).v + (y);                                                             \
-                (ret).w = (x).w + (y);                                                             \
+#define UVW_ADD(ret, x, y)             \
+        do {                           \
+                (ret).u = (x).u + (y); \
+                (ret).v = (x).v + (y); \
+                (ret).w = (x).w + (y); \
         } while (0)
 
-#define UVW_MUL(ret, x, y)                                                                         \
-        do {                                                                                       \
-                (ret).u = (x).u * (y);                                                             \
-                (ret).v = (x).v * (y);                                                             \
-                (ret).w = (x).w * (y);                                                             \
+#define UVW_MUL(ret, x, y)             \
+        do {                           \
+                (ret).u = (x).u * (y); \
+                (ret).v = (x).v * (y); \
+                (ret).w = (x).w * (y); \
         } while (0)
 
-#define AB_ADD_VEC(ret, x, y)                                                                      \
-        do {                                                                                       \
-                (ret).a = (x).a + (y).a;                                                           \
-                (ret).b = (x).b + (y).b;                                                           \
+#define AB_ADD_VEC(ret, x, y)            \
+        do {                             \
+                (ret).a = (x).a + (y).a; \
+                (ret).b = (x).b + (y).b; \
         } while (0)
 
-#define AB_SUB_VEC(ret, x, y)                                                                      \
-        do {                                                                                       \
-                (ret).a = (x).a - (y).a;                                                           \
-                (ret).b = (x).b - (y).b;                                                           \
+#define AB_SUB_VEC(ret, x, y)            \
+        do {                             \
+                (ret).a = (x).a - (y).a; \
+                (ret).b = (x).b - (y).b; \
         } while (0)
 
-#define AB_MUL_VEC(ret, x, y)                                                                      \
-        do {                                                                                       \
-                (ret).a = (x).a * (y).a;                                                           \
-                (ret).b = (x).b * (y).b;                                                           \
+#define AB_MUL_VEC(ret, x, y)            \
+        do {                             \
+                (ret).a = (x).a * (y).a; \
+                (ret).b = (x).b * (y).b; \
         } while (0)
 
-#define AB_DIV_VEC(ret, x, y)                                                                      \
-        do {                                                                                       \
-                (ret).a = (x).a / (y).a;                                                           \
-                (ret).b = (x).b / (y).b;                                                           \
+#define AB_DIV_VEC(ret, x, y)            \
+        do {                             \
+                (ret).a = (x).a / (y).a; \
+                (ret).b = (x).b / (y).b; \
         } while (0)
 
-static inline void find_max(const float *arr, size_t n, float *max_val, size_t *max_idx) {
+static inline void
+find_max(const float *arr, size_t n, float *max_val, size_t *max_idx)
+{
         if (n == 0) {
                 *max_val = 0.0f;
                 *max_idx = 0;
@@ -314,14 +316,16 @@ static inline void find_max(const float *arr, size_t n, float *max_val, size_t *
 #endif
 }
 
-static inline f32 poly_eval(const f32 *coeffs, u32 order, f32 x) {
+static inline f32
+poly_eval(const f32 *coeffs, u32 order, f32 x)
+{
         f32 result = coeffs[0];
         for (u32 i = 1; i <= order; i++)
                 result = result * x + coeffs[i];
         return result;
 }
 
-#define IS_POWER_OF_2(n)    ((n) != 0 && (((n) & ((n)-1)) == 0))
-#define ROUNDUP_POW_OF_2(n) ((n) == 0 ? 1 : (1ULL << (sizeof(n) * 8 - clz64((n)-1))))
+#define IS_POWER_OF_2(n)    ((n) != 0 && (((n) & ((n) - 1)) == 0))
+#define ROUNDUP_POW_OF_2(n) ((n) == 0 ? 1 : (1ULL << (sizeof(n) * 8 - clz64((n) - 1))))
 
 #endif // !MATHDEF_H

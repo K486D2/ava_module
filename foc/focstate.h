@@ -4,19 +4,17 @@
 #include "focctl.h"
 #include "focobs.h"
 
-static inline void foc_svpwm(foc_t *foc)
+static inline void
+foc_svpwm(foc_t *foc)
 {
         DECL_PTRS(foc, cfg, out);
 
         out->f32_v_uvw = inv_clarke(out->v_ab_sv);
 
-        if (out->f32_v_uvw.u > out->f32_v_uvw.v)
-        {
+        if (out->f32_v_uvw.u > out->f32_v_uvw.v) {
                 out->svpwm.v_max = out->f32_v_uvw.u;
                 out->svpwm.v_min = out->f32_v_uvw.v;
-        }
-        else
-        {
+        } else {
                 out->svpwm.v_max = out->f32_v_uvw.v;
                 out->svpwm.v_min = out->f32_v_uvw.u;
         }
@@ -34,26 +32,23 @@ static inline void foc_svpwm(foc_t *foc)
         UVW_MUL(out->svpwm.u32_pwm_duty, out->svpwm.f32_pwm_duty, cfg->periph_cfg.pwm_full_cnt);
 }
 
-static inline void foc_select_theta(foc_t *foc)
+static inline void
+foc_select_theta(foc_t *foc)
 {
         DECL_PTRS(foc, in, lo);
 
-        switch (lo->e_theta)
-        {
-                case FOC_THETA_FORCE:
-                {
+        switch (lo->e_theta) {
+                case FOC_THETA_FORCE: {
                         in->rotor.theta = in->rotor.force_theta;
                         in->rotor.omega = in->rotor.force_omega;
                         break;
                 }
-                case FOC_THETA_SENSOR:
-                {
+                case FOC_THETA_SENSOR: {
                         in->rotor.theta = in->rotor.sensor_theta;
                         in->rotor.omega = in->rotor.sensor_omega;
                         break;
                 }
-                case FOC_THETA_SENSORLESS:
-                {
+                case FOC_THETA_SENSORLESS: {
                         in->rotor.theta = in->rotor.obs_theta;
                         in->rotor.omega = in->rotor.obs_omega;
                         break;
@@ -65,9 +60,14 @@ static inline void foc_select_theta(foc_t *foc)
         }
 }
 
-static inline void foc_ready(foc_t *foc) { ARG_UNUSED(foc); }
+static inline void
+foc_ready(foc_t *foc)
+{
+        ARG_UNUSED(foc);
+}
 
-static inline void foc_disable(foc_t *foc)
+static inline void
+foc_disable(foc_t *foc)
 {
         DECL_PTRS(foc, ops, in);
 
@@ -84,7 +84,8 @@ static inline void foc_disable(foc_t *foc)
         RESET_OUT(&foc->lo.hfi);
 }
 
-static inline void foc_enable(foc_t *foc)
+static inline void
+foc_enable(foc_t *foc)
 {
         DECL_PTRS(foc, cfg, ops, in, out, lo);
 
@@ -123,43 +124,36 @@ static inline void foc_enable(foc_t *foc)
 
         foc_select_mode(foc);
 
-        switch (lo->e_mode)
-        {
-                case FOC_MODE_VOL:
-                {
+        switch (lo->e_mode) {
+                case FOC_MODE_VOL: {
                         foc_vol_ctl(foc);
                         break;
                 }
-                case FOC_MODE_CUR:
-                {
+                case FOC_MODE_CUR: {
                         foc_cur_ctl(foc);
                         foc_vol_ctl(foc);
                         break;
                 }
-                case FOC_MODE_VEL:
-                {
+                case FOC_MODE_VEL: {
                         foc_vel_ctl(foc);
                         foc_cur_ctl(foc);
                         foc_vol_ctl(foc);
                         break;
                 }
-                case FOC_MODE_POS:
-                {
+                case FOC_MODE_POS: {
                         foc_pos_ctl(foc);
                         foc_vel_ctl(foc);
                         foc_cur_ctl(foc);
                         foc_vol_ctl(foc);
                         break;
                 }
-                case FOC_MODE_PD:
-                {
+                case FOC_MODE_PD: {
                         foc_pd_ctl(foc);
                         foc_cur_ctl(foc);
                         foc_vol_ctl(foc);
                         break;
                 }
-                case FOC_MODE_ASC:
-                {
+                case FOC_MODE_ASC: {
                         foc_cur_ctl(foc);
                         foc_vol_ctl(foc);
                         break;

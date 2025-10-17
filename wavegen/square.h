@@ -27,13 +27,17 @@ typedef struct {
         square_lo_t  lo;
 } square_t;
 
-static inline void square_init(square_t *square, square_cfg_t square_cfg) {
+static inline void
+square_init(square_t *square, square_cfg_t square_cfg)
+{
         DECL_PTRS(square, cfg);
 
         *cfg = square_cfg;
 }
 
-static inline void square_exec(square_t *square) {
+static inline void
+square_exec(square_t *square)
+{
         DECL_PTRS(square, cfg, out, lo);
 
         lo->phase_incr = TAU * cfg->wave_freq / cfg->fs;

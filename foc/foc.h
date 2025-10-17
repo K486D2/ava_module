@@ -4,27 +4,28 @@
 #include "foccali.h"
 #include "focstate.h"
 
-static inline void foc_init(foc_t *foc, foc_cfg_t foc_cfg)
+static inline void
+foc_init(foc_t *foc, foc_cfg_t foc_cfg)
 {
         DECL_PTRS(foc, cfg, lo);
 
-        *cfg = foc_cfg;
+        *cfg                         = foc_cfg;
 
         cfg->periph_cfg.adc2cur      = cfg->periph_cfg.cur_range / cfg->periph_cfg.adc_full_cnt;
         cfg->periph_cfg.adc2vbus     = cfg->periph_cfg.vbus_range / cfg->periph_cfg.adc_full_cnt;
         cfg->periph_cfg.pwm_full_cnt = cfg->periph_cfg.timer_freq / cfg->periph_cfg.pwm_freq;
 
-        lo->pll.cfg.fs        = cfg->exec_freq;
-        lo->smo.cfg.fs        = cfg->exec_freq;
-        lo->smo.cfg.motor_cfg = cfg->motor_cfg;
-        lo->hfi.cfg.fs        = cfg->exec_freq;
-        lo->lbg.cfg.fs        = cfg->exec_freq;
-        lo->lbg.cfg.motor     = cfg->motor_cfg;
+        lo->pll.cfg.fs               = cfg->exec_freq;
+        lo->smo.cfg.fs               = cfg->exec_freq;
+        lo->smo.cfg.motor_cfg        = cfg->motor_cfg;
+        lo->hfi.cfg.fs               = cfg->exec_freq;
+        lo->lbg.cfg.fs               = cfg->exec_freq;
+        lo->lbg.cfg.motor            = cfg->motor_cfg;
 
-        pid_cfg_t cur_pid_cfg = {
-            .fs = cfg->exec_freq / cfg->cur_div,
-            .kp = cfg->motor_cfg.wc * cfg->motor_cfg.ld,
-            .ki = cfg->motor_cfg.wc * cfg->motor_cfg.rs,
+        pid_cfg_t cur_pid_cfg        = {
+                       .fs = cfg->exec_freq / cfg->cur_div,
+                       .kp = cfg->motor_cfg.wc * cfg->motor_cfg.ld,
+                       .ki = cfg->motor_cfg.wc * cfg->motor_cfg.rs,
         };
         cfg->vel_cfg.fs = cfg->exec_freq / cfg->vel_div;
         cfg->pos_cfg.fs = cfg->exec_freq / cfg->pos_div;
@@ -42,7 +43,8 @@ static inline void foc_init(foc_t *foc, foc_cfg_t foc_cfg)
         lbg_init(&lo->lbg, lo->lbg.cfg);
 }
 
-static inline void foc_rotor_cal(foc_t *foc)
+static inline void
+foc_rotor_cal(foc_t *foc)
 {
         DECL_PTRS(foc, cfg, ops, in, lo);
 
@@ -56,10 +58,10 @@ static inline void foc_rotor_cal(foc_t *foc)
         in->rotor.mech_prev_theta  = in->rotor.mech_theta;
 
         // 电角度计算
-        in->rotor.sensor_theta =
-            MECH_TO_ELEC(in->rotor.mech_theta, cfg->motor_cfg.npp) - cfg->theta_offset;
-        in->rotor.sensor_comp_theta =
-            cfg->sensor_theta_comp_gain * in->rotor.sensor_omega / cfg->exec_freq;
+        in->rotor.sensor_theta
+            = MECH_TO_ELEC(in->rotor.mech_theta, cfg->motor_cfg.npp) - cfg->theta_offset;
+        in->rotor.sensor_comp_theta
+            = cfg->sensor_theta_comp_gain * in->rotor.sensor_omega / cfg->exec_freq;
         in->rotor.sensor_theta += in->rotor.sensor_comp_theta;
         WARP_TAU(in->rotor.sensor_theta);
 
@@ -71,14 +73,14 @@ static inline void foc_rotor_cal(foc_t *foc)
         // 机械角速度计算
         in->rotor.mech_omega = ELEC_TO_MECH(in->rotor.sensor_omega, cfg->motor_cfg.npp);
 
-        if (lo->e_theta == FOC_THETA_SENSOR)
-        {
+        if (lo->e_theta == FOC_THETA_SENSOR) {
                 in->rotor.theta = in->rotor.sensor_theta;
                 in->rotor.omega = in->rotor.sensor_omega;
         }
 }
 
-static inline void foc_get_fdb(foc_t *foc)
+static inline void
+foc_get_fdb(foc_t *foc)
 {
         DECL_PTRS(foc, in, lo);
 
@@ -87,7 +89,8 @@ static inline void foc_get_fdb(foc_t *foc)
         lo->fdb_pvct.cur = in->i_dq.q;
 }
 
-static inline void foc_exec(foc_t *foc)
+static inline void
+foc_exec(foc_t *foc)
 {
         DECL_PTRS(foc, lo);
 
@@ -95,25 +98,20 @@ static inline void foc_exec(foc_t *foc)
 
         foc_rotor_cal(foc);
 
-        switch (lo->e_state)
-        {
-                case FOC_STATE_CALI:
-                {
+        switch (lo->e_state) {
+                case FOC_STATE_CALI: {
                         foc_cali(foc);
                         break;
                 }
-                case FOC_STATE_READY:
-                {
+                case FOC_STATE_READY: {
                         foc_ready(foc);
                         break;
                 }
-                case FOC_STATE_DISABLE:
-                {
+                case FOC_STATE_DISABLE: {
                         foc_disable(foc);
                         break;
                 }
-                case FOC_STATE_ENABLE:
-                {
+                case FOC_STATE_ENABLE: {
                         foc_enable(foc);
                         break;
                 }
