@@ -5,26 +5,41 @@
 
 net_t net;
 
+void
+on_send_done(net_ch_t *ch, void *buf, int ret)
+{
+        printf("[回调] 发送 %d 字节: %.*s\n", ret, ret < 0 ? 0 : ret, (char *)buf);
+}
+
+void
+on_recv_done(net_ch_t *ch, void *buf, int ret)
+{
+        printf("[回调] 收到 %d 字节: %.*s\n", ret, ret < 0 ? 0 : ret, (char *)buf);
+}
+
 HAPI int
 init(void)
 {
         net_cfg_t net_cfg = {.e_type = NET_TYPE_UDP};
-        return net_init(&net, net_cfg);
+        int       ret     = net_init(&net, net_cfg);
+        return ret;
 }
 
 HAPI int
 exec(void)
 {
         net_ch_t ch = {
-            // .remote_ip = "192.168.137.101",
+            //     .remote_ip = "192.168.137.101",
             .remote_ip   = "127.0.0.1",
             .remote_port = 2333,
-            // .local_ip    = "192.168.137.1",
+            //     .local_ip    = "192.168.137.1",
             .local_ip   = "127.0.0.1",
             .local_port = 2334,
-            //     .e_mode     = NET_SYNC_YIELD,
-            //     .e_mode = NET_SYNC_SPIN,
-            .e_mode = NET_ASYNC,
+            //     .e_mode     = NET_MODE_SYNC_YIELD,
+            //     .e_mode = NET_MODE_SYNC_SPIN,
+            .e_mode    = NET_MODE_ASYNC,
+            .f_send_cb = on_send_done,
+            .f_recv_cb = on_recv_done,
         };
 
         int ret;
@@ -36,17 +51,29 @@ exec(void)
         char tx_buf[1024] = {0};
         char rx_buf[1024] = {0};
 
-        while (true) {
-                sprintf(tx_buf, "%llu", cnt++);
+        // while (true) {
+        //         sprintf(tx_buf, "%llu", cnt++);
+        //         u64 begin_us = get_mono_ts_us();
+        //         ret          = net_send_recv(&net, &ch, tx_buf, strlen(tx_buf), rx_buf, sizeof(rx_buf), 1);
+        //         u64 end_us   = get_mono_ts_us();
+        //         if (ret > 0)
+        //                 printf("recv cnt: %s, elapsed: %llu us\n", rx_buf, end_us - begin_us);
+        //         else
+        //                 printf("recv timeout\n");
+        //         delay_s(1, YIELD);
+        // }
+
+        for (usz i = 0; i < 10; i++) {
+                sprintf(tx_buf, "CNT_%llu", cnt++);
                 u64 begin_us = get_mono_ts_us();
-                ret          = net_send_recv(&net, &ch, tx_buf, strlen(tx_buf), rx_buf, sizeof(rx_buf), 1);
-                u64 end_us   = get_mono_ts_us();
-                if (ret > 0)
-                        printf("recv cnt: %s, elapsed: %llu us\n", rx_buf, end_us - begin_us);
-                else
-                        printf("recv timeout\n");
-                delay_s(1, YIELD);
+                net_send_recv(&net, &ch, tx_buf, strlen(tx_buf), rx_buf, sizeof(rx_buf), 1000);
+                u64 end_us = get_mono_ts_us();
+                printf("elapsed: %llu us\t", end_us - begin_us);
+
+                delay_ms(1, YIELD);
+                net_poll(&net);
         }
+
         return 0;
 }
 
