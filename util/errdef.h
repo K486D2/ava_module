@@ -7,6 +7,7 @@ enum errdef_e {
         MEACCES,
         METIMEOUT,
         MECREATE,
+        MEALLOC,
 };
 
 #endif // !ERRDEF_H

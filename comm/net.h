@@ -22,6 +22,7 @@ typedef SOCKET socket_t;
 #include <string.h>
 
 #include "ds/list.h"
+#include "ds/mp.h"
 #include "util/errdef.h"
 #include "util/timeops.h"
 
@@ -53,53 +54,76 @@ typedef struct {
         u8  type;        // 事件类型
         u32 remote_ip;   // 设备IP
         u16 remote_port; // 设备端口
-        u32 len;         // 数据长度
+        u32 nbytes;      // 数据长度
 } net_log_meta_t;
 #pragma pack(pop)
 
-typedef enum {
-        SEND,
-        RECV,
-        SEND_RECV,
-} net_flag_e;
-
-typedef void (*net_log_cb_f)(FILE *file, const net_log_meta_t *log_meta, const void *log_data);
-
 struct net_ch;
 typedef void (*net_async_cb_f)(struct net_ch *ch, void *buf, int ret);
+typedef void (*net_log_cb_f)(FILE *fd, const net_log_meta_t *log_meta, const void *log_data);
 
 typedef struct net_ch {
-        list_head_t  node;
+        list_head_t  ch;
         net_mode_e   e_mode;
         char         remote_ip[MAX_IP_SIZE], local_ip[MAX_IP_SIZE];
         u16          remote_port, local_port;
         socket_t     fd;
         net_log_cb_f f_log_cb;
 
-        // 异步
-        net_op_e       e_status;
+        net_op_e       e_op;
         net_async_cb_f f_send_cb, f_recv_cb;
-        void          *tx_buf, *rx_buf;
-        usz            tx_nbytes, rx_buf_cap;
 } net_ch_t;
 
 typedef struct {
+        net_ch_t      *ch;
+        net_op_e       op;
+        void          *buf;
+        usz            nbytes;
+        net_async_cb_f f_cb;
+} net_async_req_t;
+
+typedef struct {
         net_type_e e_type;
+        mp_t      *mp;
 } net_cfg_t;
 
 typedef struct {
-        net_ch_t ch;
+        list_head_t ch;
 #ifdef __linux__
         struct io_uring ring;
 #elif defined(_WIN32)
+        // Windows 异步实现待补充
 #endif
-        net_log_meta_t log_meta;
 } net_lo_t;
 
 typedef struct net {
         net_cfg_t cfg;
         net_lo_t  lo;
 } net_t;
+
+typedef struct {
+        char remote_ip[MAX_IP_SIZE];
+        char resp[MAX_RESP_BUF_SIZE];
+} net_broadcast_t;
+
+HAPI int net_init(net_t *net, net_cfg_t net_cfg);
+HAPI int net_set_nonblock(net_ch_t *ch);
+HAPI int net_add_ch(net_t *net, net_ch_t *ch);
+
+HAPI int net_sync_send(net_ch_t *ch, void *tx_buf, usz nbytes);
+HAPI int net_sync_recv_yield(net_ch_t *ch, void *rx_buf, usz cap, u32 timeout_us);
+HAPI int net_sync_recv_spin(net_ch_t *ch, void *rx_buf, usz cap, u32 timeout_us);
+
+HAPI int net_async_send(net_t *net, net_ch_t *ch, void *tx_buf, usz nbytes);
+HAPI int net_async_recv(net_t *net, net_ch_t *ch, void *rx_buf, usz cap);
+HAPI int net_poll(net_t *net);
+
+HAPI int net_send(net_t *net, net_ch_t *ch, void *tx_buf, usz nbytes);
+HAPI int net_recv(net_t *net, net_ch_t *ch, void *rx_buf, usz cap, u32 timeout_us);
+HAPI int net_send_recv(net_t *net, net_ch_t *ch, void *tx_buf, usz nbytes, void *rx_buf, usz cap, u32 timeout_us);
+
+HAPI int
+net_broadcast(const char *remote_ip, u16 remote_port, const void *tx_buf, u32 nbytes, net_broadcast_t *resp, u32 timeout_us);
 
 HAPI int
 net_init(net_t *net, net_cfg_t net_cfg)
@@ -108,7 +132,7 @@ net_init(net_t *net, net_cfg_t net_cfg)
 
         *cfg = net_cfg;
 
-        list_init(&lo->ch.node);
+        list_init(&lo->ch);
 
 #ifdef __linux__
         int ret = io_uring_queue_init(64, &lo->ring, 0);
@@ -177,9 +201,8 @@ net_add_ch(net_t *net, net_ch_t *ch)
         if (ret < 0)
                 goto cleanup;
 
-        list_add(&ch->node, &lo->ch.node);
+        list_add(&ch->ch, &lo->ch);
         return 0;
-
 cleanup:
         CLOSE_SOCKET(ch->fd);
         return ret;
@@ -200,15 +223,14 @@ HAPI int
 net_sync_recv_yield(net_ch_t *ch, void *rx_buf, usz cap, u32 timeout_us)
 {
         struct timeval tv = {
-            .tv_sec  = (int)US2S(timeout_us),               // 秒
-            .tv_usec = (int)(timeout_us - S2US(tv.tv_sec)), // 微秒
+            .tv_sec  = (int)US2S(timeout_us),
+            .tv_usec = (int)(timeout_us - S2US(tv.tv_sec)),
         };
-
 #ifdef __linux__
         setsockopt(ch->fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
         int ret = recv(ch->fd, rx_buf, cap, 0);
 #elif defined(_WIN32)
-        setsockopt(ch->sock, SOL_SOCKET, SO_RCVTIMEO, (const char *)&tv, sizeof(tv));
+        setsockopt(ch->fd, SOL_SOCKET, SO_RCVTIMEO, (const char *)&tv, sizeof(tv));
         int ret = recv(ch->fd, (char *)rx_buf, cap, 0);
 #endif
         return ret;
@@ -235,17 +257,24 @@ net_sync_recv_spin(net_ch_t *ch, void *rx_buf, usz cap, u32 timeout_us)
 HAPI int
 net_async_send(net_t *net, net_ch_t *ch, void *tx_buf, usz nbytes)
 {
-        DECL_PTRS(net, lo);
+        DECL_PTRS(net, cfg, lo);
 
         struct io_uring_sqe *sqe = io_uring_get_sqe(&lo->ring);
         if (!sqe)
                 return -1;
 
-        ch->tx_buf    = tx_buf;
-        ch->tx_nbytes = nbytes;
+        net_async_req_t *req = mp_alloc(cfg->mp, sizeof(net_async_req_t));
+        if (!req)
+                return -MEALLOC;
 
-        io_uring_prep_send(sqe, ch->fd, ch->tx_buf, ch->tx_nbytes, 0);
-        io_uring_sqe_set_data(sqe, ch);
+        req->ch     = ch;
+        req->op     = NET_OP_SEND;
+        req->buf    = tx_buf;
+        req->nbytes = nbytes;
+        req->f_cb   = ch->f_send_cb;
+
+        io_uring_prep_send(sqe, ch->fd, tx_buf, nbytes, 0);
+        io_uring_sqe_set_data(sqe, req);
 
         int ret = io_uring_submit(&lo->ring);
         return ret;
@@ -254,17 +283,24 @@ net_async_send(net_t *net, net_ch_t *ch, void *tx_buf, usz nbytes)
 HAPI int
 net_async_recv(net_t *net, net_ch_t *ch, void *rx_buf, usz cap)
 {
-        DECL_PTRS(net, lo);
+        DECL_PTRS(net, cfg, lo);
 
         struct io_uring_sqe *sqe = io_uring_get_sqe(&lo->ring);
         if (!sqe)
                 return -1;
 
-        ch->rx_buf     = rx_buf;
-        ch->rx_buf_cap = cap;
+        net_async_req_t *req = mp_alloc(cfg->mp, sizeof(net_async_req_t));
+        if (!req)
+                return -MEALLOC;
 
-        io_uring_prep_recv(sqe, ch->fd, ch->rx_buf, ch->rx_buf_cap, 0);
-        io_uring_sqe_set_data(sqe, ch);
+        req->ch     = ch;
+        req->op     = NET_OP_RECV;
+        req->buf    = rx_buf;
+        req->nbytes = cap;
+        req->f_cb   = ch->f_recv_cb;
+
+        io_uring_prep_recv(sqe, ch->fd, rx_buf, cap, 0);
+        io_uring_sqe_set_data(sqe, req);
 
         int ret = io_uring_submit(&lo->ring);
         return ret;
@@ -273,91 +309,67 @@ net_async_recv(net_t *net, net_ch_t *ch, void *rx_buf, usz cap)
 HAPI int
 net_poll(net_t *net)
 {
-        DECL_PTRS(net, lo);
+        DECL_PTRS(net, cfg, lo);
 
         struct io_uring_cqe *cqe;
         while (io_uring_peek_cqe(&lo->ring, &cqe) == 0) {
-                net_ch_t *ch  = io_uring_cqe_get_data(cqe);
-                int       ret = cqe->res;
+                net_async_req_t *req = io_uring_cqe_get_data(cqe);
+                int              ret = cqe->res;
                 io_uring_cqe_seen(&lo->ring, cqe);
 
-                if (!ch)
+                if (!req)
                         continue;
 
-                if (ch->e_status == NET_OP_SEND && ch->f_send_cb)
-                        ch->f_send_cb(ch, ch->tx_buf, ret);
-                else if (ch->e_status == NET_OP_RECV && ch->f_recv_cb)
-                        ch->f_recv_cb(ch, ch->rx_buf, ret);
+                if (req->op == NET_OP_SEND && req->f_cb)
+                        req->f_cb(req->ch, req->buf, ret);
+                else if (req->op == NET_OP_RECV && req->f_cb)
+                        req->f_cb(req->ch, req->buf, ret);
 
-                ch->e_status = NET_OP_NULL;
+                mp_free(cfg->mp, req);
         }
-
         return 0;
 }
 
 HAPI int
-net_send(net_t *net, net_ch_t *ch, void *rx_buf, usz nbytes)
+net_send(net_t *net, net_ch_t *ch, void *tx_buf, usz nbytes)
 {
-        ch->e_status = NET_OP_SEND;
-
-        int ret;
+        ch->e_op = NET_OP_SEND;
         switch (ch->e_mode) {
                 case NET_MODE_SYNC_SPIN:
-                case NET_MODE_SYNC_YIELD: {
-                        ret = net_sync_send(ch, rx_buf, nbytes);
-                        break;
-                }
-                case NET_MODE_ASYNC: {
-                        ret = net_async_send(net, ch, rx_buf, nbytes);
-                        break;
-                }
+                case NET_MODE_SYNC_YIELD:
+                        return net_sync_send(ch, tx_buf, nbytes);
+                case NET_MODE_ASYNC:
+                        return net_async_send(net, ch, tx_buf, nbytes);
                 default:
                         return -MEINVAL;
         }
-        return ret;
 }
 
 HAPI int
 net_recv(net_t *net, net_ch_t *ch, void *rx_buf, usz cap, u32 timeout_us)
 {
-        ch->e_status = NET_OP_RECV;
-
-        int ret;
+        ch->e_op = NET_OP_RECV;
         switch (ch->e_mode) {
-                case NET_MODE_SYNC_YIELD: {
-                        ret = net_sync_recv_yield(ch, rx_buf, cap, timeout_us);
-                        break;
-                }
-                case NET_MODE_SYNC_SPIN: {
-                        ret = net_sync_recv_spin(ch, rx_buf, cap, timeout_us);
-                        break;
-                }
-                case NET_MODE_ASYNC: {
-                        ret = net_async_recv(net, ch, rx_buf, cap);
-                        break;
-                }
+                case NET_MODE_SYNC_YIELD:
+                        return net_sync_recv_yield(ch, rx_buf, cap, timeout_us);
+                case NET_MODE_SYNC_SPIN:
+                        return net_sync_recv_spin(ch, rx_buf, cap, timeout_us);
+                case NET_MODE_ASYNC:
+                        return net_async_recv(net, ch, rx_buf, cap);
                 default:
                         return -MEINVAL;
         }
-        return ret;
 }
 
 HAPI int
 net_send_recv(net_t *net, net_ch_t *ch, void *tx_buf, usz nbytes, void *rx_buf, usz cap, u32 timeout_us)
 {
-        int ret;
-        ret = net_send(net, ch, tx_buf, nbytes);
+        int ret = net_send(net, ch, tx_buf, nbytes);
         if (ret <= 0)
                 return ret;
-
         ret = net_recv(net, ch, rx_buf, cap, timeout_us);
         return ret;
 }
-
-typedef struct {
-        char remote_ip[MAX_IP_SIZE];
-        char resp[MAX_RESP_BUF_SIZE];
-} net_broadcast_t;
 
 HAPI int
 net_broadcast(const char *remote_ip, u16 remote_port, const void *tx_buf, u32 nbytes, net_broadcast_t *resp, u32 timeout_us)

@@ -7,15 +7,15 @@
 #include "util/typedef.h"
 
 #ifdef MCU
-#define MPSC_OFF_MASK      (0x0000FFFFU)
+#define MPSC_OFFSET_MASK   (0x0000FFFFU)
 #define MPSC_WRAP_LOCK_BIT (0x80000000U)
-#define MPSC_OFF_MAX       (UINT32_MAX & ~MPSC_WRAP_LOCK_BIT)
+#define MPSC_OFFSET_MAX    (UINT32_MAX & ~MPSC_WRAP_LOCK_BIT)
 #define MPSC_WRAP_COUNTER  (0x7FFF0000U)
 #define MPSC_WRAP_INCR(x)  (((x) + 0x00010000U) & MPSC_WRAP_COUNTER)
 #else
-#define MPSC_OFF_MASK      (0x00000000FFFFFFFFUL)
+#define MPSC_OFFSET_MASK   (0x00000000FFFFFFFFUL)
 #define MPSC_WRAP_LOCK_BIT (0x8000000000000000UL)
-#define MPSC_OFF_MAX       (UINT64_MAX & ~MPSC_WRAP_LOCK_BIT)
+#define MPSC_OFFSET_MAX    (UINT64_MAX & ~MPSC_WRAP_LOCK_BIT)
 #define MPSC_WRAP_COUNTER  (0x7FFFFFFF00000000UL)
 #define MPSC_WRAP_INCR(x)  (((x) + 0x100000000UL) & MPSC_WRAP_COUNTER)
 #endif
@@ -43,7 +43,7 @@ HAPI mpsc_p_t *mpsc_reg(mpsc_t *mpsc, usz id);
 HAPI void      mpsc_unreg(mpsc_p_t *p);
 HAPI isz       mpsc_acquire(mpsc_t *mpsc, mpsc_p_t *p, usz nbytes);
 HAPI void      mpsc_push(mpsc_p_t *p);
-HAPI usz       mpsc_pop(mpsc_t *mpsc, usz *off);
+HAPI usz       mpsc_pop(mpsc_t *mpsc, usz *offset);
 HAPI void      mpsc_release(mpsc_t *mpsc, usz nbytes);
 
 HAPI void
@@ -51,7 +51,7 @@ mpsc_init(mpsc_t *mpsc, void *buf, usz cap, mpsc_p_t *producers, usz nproducers)
 {
         mpsc->buf        = buf;
         mpsc->cap        = cap;
-        mpsc->warp_end   = MPSC_OFF_MAX;
+        mpsc->warp_end   = MPSC_OFFSET_MAX;
         mpsc->nproducers = nproducers;
         mpsc->producers  = producers;
 }
@@ -60,7 +60,7 @@ HAPI mpsc_p_t *
 mpsc_reg(mpsc_t *mpsc, usz id)
 {
         mpsc_p_t *p = &mpsc->producers[id];
-        ATOMIC_STORE_EXPLICIT(&p->reserve_pos, MPSC_OFF_MAX, memory_order_relaxed);
+        ATOMIC_STORE_EXPLICIT(&p->reserve_pos, MPSC_OFFSET_MAX, memory_order_relaxed);
         ATOMIC_STORE_EXPLICIT(&p->flag, true, memory_order_release);
         return p;
 }
@@ -112,31 +112,31 @@ retry:
 HAPI isz
 mpsc_acquire(mpsc_t *mpsc, mpsc_p_t *p, usz nbytes)
 {
-        usz wp, off, target;
+        usz wp, offset, target;
 
         do {
                 // 读取全局写指针
                 wp = mpsc_get_wp(mpsc);
 
                 // 提取实际偏移
-                off = wp & MPSC_OFF_MASK;
+                offset = wp & MPSC_OFFSET_MASK;
 
                 // 标记正在申请写入
-                ATOMIC_STORE_EXPLICIT(&p->reserve_pos, off | MPSC_WRAP_LOCK_BIT, memory_order_relaxed);
+                ATOMIC_STORE_EXPLICIT(&p->reserve_pos, offset | MPSC_WRAP_LOCK_BIT, memory_order_relaxed);
 
                 // 尝试申请的终点位置
-                target = off + nbytes;
+                target = offset + nbytes;
                 usz rp = ATOMIC_LOAD_EXPLICIT(&mpsc->rp, memory_order_relaxed);
-                if (off < rp && target >= rp) {
-                        ATOMIC_STORE_EXPLICIT(&p->reserve_pos, MPSC_OFF_MAX, memory_order_release);
+                if (offset < rp && target >= rp) {
+                        ATOMIC_STORE_EXPLICIT(&p->reserve_pos, MPSC_OFFSET_MAX, memory_order_release);
                         return -1;
                 }
 
                 // 如果申请空间超过环尾
                 if (target >= mpsc->cap) {
                         target = (target > mpsc->cap) ? (MPSC_WRAP_LOCK_BIT | nbytes) : 0;
-                        if ((target & MPSC_OFF_MASK) >= rp) {
-                                ATOMIC_STORE_EXPLICIT(&p->reserve_pos, MPSC_OFF_MAX, memory_order_release);
+                        if ((target & MPSC_OFFSET_MASK) >= rp) {
+                                ATOMIC_STORE_EXPLICIT(&p->reserve_pos, MPSC_OFFSET_MAX, memory_order_release);
                                 return -1;
                         }
                         target |= MPSC_WRAP_INCR(wp & MPSC_WRAP_COUNTER);
@@ -149,27 +149,27 @@ mpsc_acquire(mpsc_t *mpsc, mpsc_p_t *p, usz nbytes)
 
         // 如果申请触发 wrap
         if (target & MPSC_WRAP_LOCK_BIT) {
-                mpsc->warp_end = off;
+                mpsc->warp_end = offset;
                 ATOMIC_STORE_EXPLICIT(&mpsc->wp, (target & ~MPSC_WRAP_LOCK_BIT), memory_order_release);
-                off = 0;
+                offset = 0;
         }
-        return (isz)off;
+        return (isz)offset;
 }
 
 HAPI void
 mpsc_push(mpsc_p_t *p)
 {
-        ATOMIC_STORE_EXPLICIT(&p->reserve_pos, MPSC_OFF_MAX, memory_order_release);
+        ATOMIC_STORE_EXPLICIT(&p->reserve_pos, MPSC_OFFSET_MAX, memory_order_release);
 }
 
 HAPI usz
-mpsc_pop(mpsc_t *mpsc, usz *off)
+mpsc_pop(mpsc_t *mpsc, usz *offset)
 {
         usz rp = ATOMIC_LOAD_EXPLICIT(&mpsc->rp, memory_order_relaxed);
         usz wp;
 
 retry:
-        wp = mpsc_get_wp(mpsc) & MPSC_OFF_MASK;
+        wp = mpsc_get_wp(mpsc) & MPSC_OFFSET_MASK;
         if (rp == wp)
                 return 0;
 
@@ -178,7 +178,7 @@ retry:
         // consumer 只能读到这个位置，保证不读到未完成数据
 
         // 本次 pop 能安全读取的最大逻辑偏移量
-        usz ready = MPSC_OFF_MAX;
+        usz ready = MPSC_OFFSET_MAX;
         for (usz i = 0; i < mpsc->nproducers; i++) {
                 mpsc_p_t *p = &mpsc->producers[i];
                 if (!ATOMIC_LOAD_EXPLICIT(&p->flag, memory_order_relaxed))
@@ -193,10 +193,10 @@ retry:
 
         // 处理环形缓冲 wrap
         if (wp < rp) {
-                usz warp_end = (mpsc->warp_end == MPSC_OFF_MAX) ? mpsc->cap : mpsc->warp_end;
-                if (ready == MPSC_OFF_MAX && rp == warp_end) {
-                        if (mpsc->warp_end != MPSC_OFF_MAX)
-                                mpsc->warp_end = MPSC_OFF_MAX;
+                usz warp_end = (mpsc->warp_end == MPSC_OFFSET_MAX) ? mpsc->cap : mpsc->warp_end;
+                if (ready == MPSC_OFFSET_MAX && rp == warp_end) {
+                        if (mpsc->warp_end != MPSC_OFFSET_MAX)
+                                mpsc->warp_end = MPSC_OFFSET_MAX;
                         rp = 0;
                         ATOMIC_STORE_EXPLICIT(&mpsc->rp, rp, memory_order_release);
                         goto retry;
@@ -206,7 +206,7 @@ retry:
                 ready = (ready < wp) ? ready : wp;
 
         usz write_nbytes = ready - rp;
-        *off             = rp;
+        *offset          = rp;
         return write_nbytes;
 }
 
@@ -220,36 +220,36 @@ mpsc_release(mpsc_t *mpsc, usz nbytes)
 HAPI isz
 mpsc_write(mpsc_t *mpsc, mpsc_p_t *p, const void *src, usz nbytes)
 {
-        isz off = mpsc_acquire(mpsc, p, nbytes);
-        if (off < 0)
+        isz offset = mpsc_acquire(mpsc, p, nbytes);
+        if (offset < 0)
                 return -1;
 
-        if ((usz)off + nbytes <= mpsc->cap)
-                memcpy((u8 *)mpsc->buf + (usz)off, src, nbytes);
+        if ((usz)offset + nbytes <= mpsc->cap)
+                memcpy((u8 *)mpsc->buf + (usz)offset, src, nbytes);
         else {
-                usz first = mpsc->cap - (usz)off;
-                memcpy((u8 *)mpsc->buf + (usz)off, src, first);
+                usz first = mpsc->cap - (usz)offset;
+                memcpy((u8 *)mpsc->buf + (usz)offset, src, first);
                 memcpy((u8 *)mpsc->buf, (u8 *)src + first, nbytes - first);
         }
 
         mpsc_push(p);
-        return off;
+        return offset;
 }
 
 HAPI usz
 mpsc_read(mpsc_t *mpsc, void *dst, usz nbytes)
 {
-        usz off, avail_nbytes = mpsc_pop(mpsc, &off);
+        usz offset, avail_nbytes = mpsc_pop(mpsc, &offset);
         if (avail_nbytes == 0)
                 return 0;
 
         usz read_nbytes = (avail_nbytes < nbytes) ? 0 : nbytes;
 
-        if (off + read_nbytes <= mpsc->cap)
-                memcpy(dst, (u8 *)mpsc->buf + off, read_nbytes);
+        if (offset + read_nbytes <= mpsc->cap)
+                memcpy(dst, (u8 *)mpsc->buf + offset, read_nbytes);
         else {
-                usz first = mpsc->cap - off;
-                memcpy(dst, (u8 *)mpsc->buf + off, first);
+                usz first = mpsc->cap - offset;
+                memcpy(dst, (u8 *)mpsc->buf + offset, first);
                 memcpy((u8 *)dst + first, (u8 *)mpsc->buf, read_nbytes - first);
         }
 

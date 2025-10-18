@@ -101,14 +101,14 @@ log_write(log_t *log, usz id, const char *fmt, va_list args)
         if (total_nbytes > cfg->cap)
                 return;
 
-        mpsc_p_t *p   = mpsc_reg(&lo->mpsc, id);
-        isz       off = mpsc_acquire(&lo->mpsc, p, total_nbytes);
-        if (off < 0) {
+        mpsc_p_t *p      = mpsc_reg(&lo->mpsc, id);
+        isz       offset = mpsc_acquire(&lo->mpsc, p, total_nbytes);
+        if (offset < 0) {
                 mpsc_unreg(p);
                 return;
         }
 
-        u8 *buf = (u8 *)lo->mpsc.buf + (usz)off;
+        u8 *buf = (u8 *)lo->mpsc.buf + (usz)offset;
         memcpy(buf, &entry, sizeof(entry));
 
         va_list args_msg;

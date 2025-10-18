@@ -1,6 +1,8 @@
 #ifndef MARCO_H
 #define MARCO_H
 
+#include <stddef.h>
+
 #define AT(addr) __attribute__((section(addr)))
 #define OPTNONE  __attribute__((optnone))
 

@@ -2,6 +2,7 @@
 #define DS_H
 
 #include "list.h"
+#include "mp.h"
 #include "mpsc.h"
 #include "rbtree.h"
 #include "spsc.h"
