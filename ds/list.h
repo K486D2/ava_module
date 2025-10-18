@@ -112,14 +112,14 @@ list_move_tail(list_head_t *node, list_head_t *head)
         list_add_tail(node, head);
 }
 
-#define list_first_entry(ptr, type, member) list_entry((ptr)->next, type, member)
+#define LIST_FIRST_ENTRY(ptr, type, member) CONTAINER_OF((ptr)->next, type, member)
 
-#define list_for_each(pos, head)            for (pos = (head)->next; pos != (head); pos = pos->next)
+#define LIST_FOR_EACH(pos, head)            for (pos = (head)->next; pos != (head); pos = pos->next)
 
-#define list_for_each_entry(pos, head, member)                                             \
-        for (pos = list_entry((head)->next, typeof(*pos), member); &pos->member != (head); \
-             pos = list_entry(pos->member.next, typeof(*pos), member))
+#define LIST_FOR_EACH_ENTRY(pos, head, member)                                               \
+        for (pos = CONTAINER_OF((head)->next, typeof(*pos), member); &pos->member != (head); \
+             pos = CONTAINER_OF(pos->member.next, typeof(*pos), member))
 
-#define list_for_each_prev(pos, head) for (pos = (head)->prev; pos != (head); pos = pos->prev)
+#define LIST_FOR_EACH_PREV(pos, head) for (pos = (head)->prev; pos != (head); pos = pos->prev)
 
 #endif // !LIST_H

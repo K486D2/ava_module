@@ -10,7 +10,7 @@
 #define ALIGN(size) (((size) + (ALIGNMENT - 1)) & ~(ALIGNMENT - 1))
 
 typedef struct {
-        usz         size;
+        usz         cap;
         list_head_t list;
 } mp_block_t;
 
@@ -34,21 +34,20 @@ mp_alloc(mp_t *mp, usz cap)
         usz total    = req_size + ALIGN(sizeof(mp_block_t));
 
         list_head_t *pos;
-        list_for_each(pos, &mp->free)
+        LIST_FOR_EACH(pos, &mp->free)
         {
                 mp_block_t *block = CONTAINER_OF(pos, mp_block_t, list);
-                if (block->size >= total) {
-                        if (block->size >= total + ALIGN(sizeof(mp_block_t)) + ALIGNMENT) {
-                                mp_block_t *split = (mp_block_t *)((u8 *)block + total);
-                                split->size       = block->size - total;
-                                block->size       = total;
+                if (block->cap >= total) {
+                        if (block->cap >= total + ALIGN(sizeof(mp_block_t)) + ALIGNMENT) {
+                                list_del(pos);
 
-                                list_replace(block->list.next, &split->list);
-                                list_del(&block->list);
+                                mp_block_t *split = (mp_block_t *)((u8 *)block + total);
+                                split->cap        = block->cap - total;
+                                block->cap        = total;
 
                                 list_head_t *iter;
                                 list_head_t *ins_before = NULL;
-                                list_for_each(iter, &mp->free)
+                                LIST_FOR_EACH(iter, &mp->free)
                                 {
                                         mp_block_t *curr = CONTAINER_OF(iter, mp_block_t, list);
                                         if ((u8 *)split < (u8 *)curr) {
@@ -71,7 +70,7 @@ mp_alloc(mp_t *mp, usz cap)
                 return NULL;
 
         mp_block_t *block  = (mp_block_t *)&mp->pool[mp->offset];
-        block->size        = total;
+        block->cap         = total;
         mp->offset        += total;
         return (void *)((u8 *)block + ALIGN(sizeof(mp_block_t)));
 }
@@ -85,7 +84,7 @@ mp_free(mp_t *mp, void *ptr)
 
         list_head_t *iter;
         list_head_t *ins_before = NULL;
-        list_for_each(iter, &mp->free)
+        LIST_FOR_EACH(iter, &mp->free)
         {
                 mp_block_t *curr = CONTAINER_OF(iter, mp_block_t, list);
                 if ((u8 *)block < (u8 *)curr) {
@@ -101,8 +100,8 @@ mp_free(mp_t *mp, void *ptr)
         list_head_t *next_pos = block->list.next;
         if (next_pos != &mp->free) {
                 mp_block_t *next_block = CONTAINER_OF(next_pos, mp_block_t, list);
-                if ((u8 *)block + block->size == (u8 *)next_block) {
-                        block->size += next_block->size;
+                if ((u8 *)block + block->cap == (u8 *)next_block) {
+                        block->cap += next_block->cap;
                         list_del(&next_block->list);
                 }
         }
@@ -110,8 +109,8 @@ mp_free(mp_t *mp, void *ptr)
         list_head_t *prev_pos = block->list.prev;
         if (prev_pos != &mp->free) {
                 mp_block_t *prev_block = CONTAINER_OF(prev_pos, mp_block_t, list);
-                if ((u8 *)prev_block + prev_block->size == (u8 *)block) {
-                        prev_block->size += block->size;
+                if ((u8 *)prev_block + prev_block->cap == (u8 *)block) {
+                        prev_block->cap += block->cap;
                         list_del(&block->list);
                 }
         }
