@@ -155,7 +155,7 @@ print_success(const char *fmt, ...)
 }
 
 HAPI void
-print_warning(const char *fmt, ...)
+print_warn(const char *fmt, ...)
 {
         va_list args;
         va_start(args, fmt);
@@ -166,7 +166,7 @@ print_warning(const char *fmt, ...)
 }
 
 HAPI void
-print_error(const char *fmt, ...)
+print_err(const char *fmt, ...)
 {
         va_list args;
         va_start(args, fmt);

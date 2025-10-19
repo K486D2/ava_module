@@ -116,7 +116,7 @@ HAPI int net_sync_recv_yield(net_ch_t *ch, void *rx_buf, usz cap, u32 timeout_us
 HAPI int net_sync_recv_spin(net_ch_t *ch, void *rx_buf, usz cap, u32 timeout_us);
 
 HAPI int net_async_send(net_t *net, net_ch_t *ch, void *tx_buf, usz nbytes);
-HAPI int net_async_recv(net_t *net, net_ch_t *ch, void *rx_buf, usz cap);
+HAPI int net_async_recv(net_t *net, net_ch_t *ch, void *rx_buf, usz cap, u32 timeout_us);
 HAPI int net_poll(net_t *net);
 
 HAPI int net_send(net_t *net, net_ch_t *ch, void *tx_buf, usz nbytes);
@@ -283,7 +283,7 @@ net_async_send(net_t *net, net_ch_t *ch, void *tx_buf, usz nbytes)
 }
 
 HAPI int
-net_async_recv(net_t *net, net_ch_t *ch, void *rx_buf, usz cap)
+net_async_recv(net_t *net, net_ch_t *ch, void *rx_buf, usz cap, u32 timeout_us)
 {
         DECL_PTRS(net, cfg, lo);
 
@@ -304,6 +304,22 @@ net_async_recv(net_t *net, net_ch_t *ch, void *rx_buf, usz cap)
         io_uring_prep_recv(sqe, ch->fd, rx_buf, cap, 0);
         io_uring_sqe_set_data(sqe, req);
 
+        struct io_uring_sqe *sqe_to = io_uring_get_sqe(&lo->ring);
+        if (!sqe_to)
+                return -1;
+
+        struct __kernel_timespec ts;
+        clock_gettime(CLOCK_MONOTONIC, (struct timespec *)&ts);
+        ts.tv_sec  += US2S(timeout_us);
+        ts.tv_nsec += US2NS(timeout_us % 1000000);
+        if (ts.tv_nsec >= 1000000000) {
+                ts.tv_sec++;
+                ts.tv_nsec -= 1000000000;
+        }
+
+        io_uring_prep_timeout(sqe_to, &ts, 0, IORING_TIMEOUT_ABS);
+        io_uring_sqe_set_data(sqe_to, req);
+
         int ret = io_uring_submit(&lo->ring);
         return ret;
 }
@@ -312,15 +328,14 @@ HAPI int
 net_poll(net_t *net)
 {
         DECL_PTRS(net, cfg, lo);
-
         struct io_uring_cqe *cqe;
         while (io_uring_peek_cqe(&lo->ring, &cqe) == 0) {
                 net_async_req_t *req = io_uring_cqe_get_data(cqe);
-                int              ret = cqe->res;
-                io_uring_cqe_seen(&lo->ring, cqe);
-
                 if (!req)
                         continue;
+
+                int ret = cqe->res;
+                io_uring_cqe_seen(&lo->ring, cqe);
 
                 if (req->op == NET_OP_SEND && req->f_cb)
                         req->f_cb(req->ch, req->buf, ret);
@@ -358,7 +373,7 @@ net_recv(net_t *net, net_ch_t *ch, void *rx_buf, usz cap, u32 timeout_us)
                 case NET_MODE_SYNC_SPIN:
                         return net_sync_recv_spin(ch, rx_buf, cap, timeout_us);
                 case NET_MODE_ASYNC:
-                        return net_async_recv(net, ch, rx_buf, cap);
+                        return net_async_recv(net, ch, rx_buf, cap, timeout_us);
                 default:
                         return -MEINVAL;
         }
@@ -370,6 +385,7 @@ net_send_recv(net_t *net, net_ch_t *ch, void *tx_buf, usz nbytes, void *rx_buf, 
         int ret = net_send(net, ch, tx_buf, nbytes);
         if (ret <= 0)
                 return ret;
+
         ret = net_recv(net, ch, rx_buf, cap, timeout_us);
         return ret;
 }

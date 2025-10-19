@@ -1,9 +1,11 @@
-#include "comm/net.h"
-#include "ds/mp.h"
 #include <pthread.h>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+
+#include "comm/net.h"
+#include "ds/mp.h"
+#include "util/printops.h"
 
 net_t net;
 mp_t  mp;
@@ -12,6 +14,7 @@ void
 on_send_done(net_ch_t *ch, void *buf, int ret)
 {
         ARG_UNUSED(ch);
+
         printf("[CALLBACK] send %d bytes: %.*s\n", ret, ret < 0 ? 0 : ret, (char *)buf);
 }
 
@@ -19,7 +22,11 @@ void
 on_recv_done(net_ch_t *ch, void *buf, int ret)
 {
         ARG_UNUSED(ch);
-        printf("[CALLBACK] recv %d bytes: %.*s\n", ret, ret < 0 ? 0 : ret, (char *)buf);
+
+        if (ret == -ETIME)
+                print_err("recv timeout occurred\n");
+        else
+                printf("[CALLBACK] recv %d bytes: %.*s\n", ret, ret < 0 ? 0 : ret, (char *)buf);
 }
 
 void *
@@ -42,7 +49,7 @@ send_recv_thread(void *arg)
                 }
 
                 u64 begin_us = get_mono_ts_us();
-                net_send_recv(&net, ch, tx_buf, strlen(tx_buf), rx_buf, 1024, 1000);
+                net_send_recv(&net, ch, tx_buf, strlen(tx_buf), rx_buf, 1024, MS2US(1000));
                 u64 end_us = get_mono_ts_us();
                 printf("elapsed: %llu us\n", end_us - begin_us);
                 delay_ms(100, YIELD);
@@ -60,9 +67,9 @@ init(void)
         int ret = net_init(&net, net_cfg);
         mp_init(&mp);
 
-        net_broadcast_t resp[255];
-        const char     *tx_buf = "Hello!";
-        net_broadcast(&net, "127.0.0.255", 2333, tx_buf, strlen(tx_buf), resp, 1000);
+        // net_broadcast_t resp[255];
+        // const char     *tx_buf = "Hello!";
+        // net_broadcast(&net, "127.0.0.255", 2333, tx_buf, strlen(tx_buf), resp, 1000);
 
         return ret;
 }
