@@ -59,6 +59,11 @@ init(void)
         };
         int ret = net_init(&net, net_cfg);
         mp_init(&mp);
+
+        net_broadcast_t resp[255];
+        const char     *tx_buf = "Hello!";
+        net_broadcast(&net, "127.0.0.255", 2333, tx_buf, strlen(tx_buf), resp, 1000);
+
         return ret;
 }
 
@@ -66,13 +71,14 @@ HAPI int
 exec(void)
 {
         net_ch_t ch = {
-            .remote_ip   = "127.0.0.1",
+            //     .remote_ip   = "127.0.0.1",
+            .remote_ip   = "192.168.137.101",
             .remote_port = 2333,
-            .local_ip    = "127.0.0.1",
-            .local_port  = 2334,
-            .e_mode      = NET_MODE_ASYNC,
-            .f_send_cb   = on_send_done,
-            .f_recv_cb   = on_recv_done,
+            //     .local_ip    = "127.0.0.1",
+            //     .local_port  = 2334,
+            .e_mode    = NET_MODE_ASYNC,
+            .f_send_cb = on_send_done,
+            .f_recv_cb = on_recv_done,
         };
 
         int ret = net_add_ch(&net, &ch);

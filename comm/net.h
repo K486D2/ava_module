@@ -63,10 +63,11 @@ typedef void (*net_async_cb_f)(struct net_ch *ch, void *buf, int ret);
 typedef void (*net_log_cb_f)(FILE *fd, const net_log_meta_t *log_meta, const void *log_data);
 
 typedef struct net_ch {
-        list_head_t  ch;
-        net_mode_e   e_mode;
-        char         remote_ip[MAX_IP_SIZE], local_ip[MAX_IP_SIZE];
-        u16          remote_port, local_port;
+        list_head_t ch;
+        net_mode_e  e_mode;
+        char        remote_ip[MAX_IP_SIZE], local_ip[MAX_IP_SIZE];
+        u16         remote_port, local_port;
+
         socket_t     fd;
         net_log_cb_f f_log_cb;
 
@@ -122,8 +123,8 @@ HAPI int net_send(net_t *net, net_ch_t *ch, void *tx_buf, usz nbytes);
 HAPI int net_recv(net_t *net, net_ch_t *ch, void *rx_buf, usz cap, u32 timeout_us);
 HAPI int net_send_recv(net_t *net, net_ch_t *ch, void *tx_buf, usz nbytes, void *rx_buf, usz cap, u32 timeout_us);
 
-HAPI int
-net_broadcast(const char *remote_ip, u16 remote_port, const void *tx_buf, u32 nbytes, net_broadcast_t *resp, u32 timeout_us);
+HAPI int net_broadcast(
+    net_t *net, const char *remote_ip, u16 remote_port, const void *tx_buf, u32 nbytes, net_broadcast_t *resp, u32 timeout_us);
 
 HAPI int
 net_init(net_t *net, net_cfg_t net_cfg)
@@ -152,6 +153,7 @@ net_set_nonblock(net_ch_t *ch)
         int flags = fcntl(ch->fd, F_GETFL, 0);
         if (flags < 0)
                 return flags;
+
         flags   |= O_NONBLOCK;
         int ret  = fcntl(ch->fd, F_SETFL, flags);
         return ret;
@@ -223,8 +225,8 @@ HAPI int
 net_sync_recv_yield(net_ch_t *ch, void *rx_buf, usz cap, u32 timeout_us)
 {
         struct timeval tv = {
-            .tv_sec  = (int)US2S(timeout_us),
-            .tv_usec = (int)(timeout_us - S2US(tv.tv_sec)),
+            .tv_sec  = US2S(timeout_us),
+            .tv_usec = (timeout_us % 1000000),
         };
 #ifdef __linux__
         setsockopt(ch->fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
@@ -325,8 +327,8 @@ net_poll(net_t *net)
                 else if (req->op == NET_OP_RECV && req->f_cb)
                         req->f_cb(req->ch, req->buf, ret);
 
-                mp_free(cfg->mp, req);
                 mp_free(cfg->mp, req->buf);
+                mp_free(cfg->mp, req);
         }
         return 0;
 }
@@ -373,9 +375,33 @@ net_send_recv(net_t *net, net_ch_t *ch, void *tx_buf, usz nbytes, void *rx_buf, 
 }
 
 HAPI int
-net_broadcast(const char *remote_ip, u16 remote_port, const void *tx_buf, u32 nbytes, net_broadcast_t *resp, u32 timeout_us)
+net_broadcast(
+    net_t *net, const char *remote_ip, u16 remote_port, const void *tx_buf, u32 nbytes, net_broadcast_t *resp, u32 timeout_us)
 {
-        return 0;
+        net_ch_t ch = {
+            .remote_port = remote_port,
+            .e_mode      = NET_MODE_SYNC_YIELD,
+        };
+        strncpy(ch.remote_ip, remote_ip, MAX_IP_SIZE - 1);
+
+        int ret = net_add_ch(net, &ch);
+        if (ret < 0)
+                goto cleanup;
+
+        ret = net_send(net, &ch, (void *)tx_buf, nbytes);
+        if (ret <= 0)
+                goto cleanup;
+
+        ret = net_recv(net, &ch, resp->resp, MAX_RESP_BUF_SIZE, timeout_us);
+        if (ret <= 0)
+                goto cleanup;
+
+        strncpy(resp->remote_ip, remote_ip, MAX_IP_SIZE - 1);
+        resp->resp[ret] = '\0';
+
+cleanup:
+        CLOSE_SOCKET(ch.fd);
+        return ret;
 }
 
 #endif // !NET_H

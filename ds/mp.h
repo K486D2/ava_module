@@ -59,6 +59,7 @@ mp_alloc(mp_t *mp, usz cap)
         }
         if (mp->offset + total > MP_SIZE)
                 return NULL;
+
         mp_block_t *block  = (mp_block_t *)&mp->pool[mp->offset];
         block->cap         = total;
         mp->offset        += total;
@@ -74,9 +75,9 @@ mp_free(mp_t *mp, void *ptr)
 
         // 按地址顺序插入空闲链表
         list_head_t *pos = mp->free.next;
-        while (pos != &mp->free && (u8 *)CONTAINER_OF(pos, mp_block_t, block) < (u8 *)block) {
+        while (pos != &mp->free && (u8 *)CONTAINER_OF(pos, mp_block_t, block) < (u8 *)block)
                 pos = pos->next;
-        }
+
         __list_add(&block->block, pos->prev, pos);
 
         // 合并后面的相邻块
