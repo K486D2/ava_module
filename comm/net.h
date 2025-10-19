@@ -326,6 +326,7 @@ net_poll(net_t *net)
                         req->f_cb(req->ch, req->buf, ret);
 
                 mp_free(cfg->mp, req);
+                mp_free(cfg->mp, req->buf);
         }
         return 0;
 }

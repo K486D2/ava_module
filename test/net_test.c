@@ -84,6 +84,7 @@ exec(void)
 
         while (true) {
                 net_poll(&net);
+                delay_ms(10, YIELD);
         }
 
         pthread_join(tid, NULL);
