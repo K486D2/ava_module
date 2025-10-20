@@ -11,6 +11,9 @@ FLAGS_C  += -g
 FLAGS_C  += -D_GNU_SOURCE
 FLAGS_LD += -lpthread -lm -luring
 
+FLAGS_C  += -fsanitize=address -fno-omit-frame-pointer
+FLAGS_LD += -fsanitize=address
+
 ifeq ($(OS), Windows_NT)
 	SHELL    := cmd.exe
 	MKDIR    := md
