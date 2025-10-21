@@ -38,7 +38,8 @@ foc_cali(foc_t *foc)
                         lo->e_mode            = FOC_MODE_CUR;
                         lo->e_theta           = FOC_THETA_FORCE;
                         lo->e_cali            = FOC_CALI_CW;
-                } break;
+                        break;
+                }
                 case FOC_CALI_CW: {
                         foc_enable(foc);
                         if (in->rotor.force_theta >= TAU) {
@@ -53,7 +54,8 @@ foc_cali(foc_t *foc)
                                 }
                         } else if (lo->theta_cali_hold_cnt == 0)
                                 in->rotor.force_theta += in->rotor.force_omega / cfg->exec_freq;
-                } break;
+                        break;
+                }
                 case FOC_CALI_CCW: {
                         foc_enable(foc);
                         if (in->rotor.force_theta <= 0.0f) {
@@ -68,7 +70,8 @@ foc_cali(foc_t *foc)
                                 }
                         } else if (lo->theta_cali_hold_cnt == 0)
                                 in->rotor.force_theta -= in->rotor.force_omega / cfg->exec_freq;
-                } break;
+                        break;
+                }
                 case FOC_CALI_FINISH: {
                         foc_disable(foc);
                         cfg->theta_offset = lo->theta_offset_sum / lo->theta_cali_cnt;
@@ -79,10 +82,12 @@ foc_cali(foc_t *foc)
                         lo->e_mode                            = FOC_MODE_NULL;
                         lo->e_theta                           = FOC_THETA_NULL;
                         lo->e_state                           = FOC_STATE_READY;
-                } break;
+                        break;
+                }
                 default: {
                         lo->e_state = FOC_STATE_DISABLE;
-                } break;
+                        break;
+                }
         }
 }
 
