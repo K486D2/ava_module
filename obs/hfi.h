@@ -86,7 +86,6 @@ hfi_polar_idf(hfi_obs_t *hfi)
                         out->id     = -cfg->hfi_id;
                         lo->id_neg += ABS(lo->lpf_id);
                         if (lo->polar_cnt == lo->polar_cnt_max * 2) {
-                                cfg->hfi_vd      = (ABS(lo->id_pos) > ABS(lo->id_neg)) ? cfg->hfi_vd : -cfg->hfi_vd;
                                 lo->polar_offset = (ABS(lo->id_pos) > ABS(lo->id_neg)) ? 0.0f : PI;
                                 lo->e_polar_idf  = HFI_POALR_IDF_FINISH;
                         }
