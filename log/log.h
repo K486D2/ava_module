@@ -134,8 +134,13 @@ log_flush(log_t *log)
                 if (entry_nbytes == 0)
                         break;
 
-                usz total_nbytes  = snprintf((char *)cfg->flush_buf, cfg->flush_cap, "[%llu][%u]", entry.ts, entry.id);
-                total_nbytes     += mpsc_read(&lo->mpsc, cfg->flush_buf + total_nbytes, entry.msg_nbytes);
+#ifdef MCU
+                usz total_nbytes = snprintf((char *)cfg->flush_buf, cfg->flush_cap, "[%llu][%u]", entry.ts, entry.id);
+#else
+                usz total_nbytes = snprintf((char *)cfg->flush_buf, cfg->flush_cap, "[%llu][%llu]", entry.ts, entry.id);
+#endif
+
+                total_nbytes += mpsc_read(&lo->mpsc, cfg->flush_buf + total_nbytes, entry.msg_nbytes);
 
                 ops->f_flush(cfg->fp, cfg->flush_buf, total_nbytes);
                 lo->busy = (cfg->e_mode == LOG_MODE_ASYNC);
