@@ -80,6 +80,18 @@ pll_exec_ab_in(pll_filter_t *pll, f32_ab_t ab)
 }
 
 HAPI void
+pll_exec_theta_err_in(pll_filter_t *pll, f32 theta_err)
+{
+        DECL_PTRS(pll, cfg, in, out, lo);
+
+        // PD鉴相器
+        lo->theta_err = theta_err;
+        WARP_PI(lo->theta_err);
+
+        pll_exec(pll);
+}
+
+HAPI void
 pll_exec_theta_in(pll_filter_t *pll, f32 theta)
 {
         DECL_PTRS(pll, cfg, in, out, lo);

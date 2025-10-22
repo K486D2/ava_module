@@ -63,7 +63,8 @@ hfi_init(hfi_obs_t *hfi, hfi_cfg_t hfi_cfg)
         *cfg = hfi_cfg;
 
         lo->pll.cfg.fs = lo->id_bpf.cfg.fs = lo->iq_bpf.cfg.fs = cfg->fs;
-        lo->polar_cnt_max                                      = (u32)(cfg->fs / 3.0f);
+
+        lo->polar_cnt_max = (u32)(cfg->fs / 3.0f);
 
         pll_init(&lo->pll, lo->pll.cfg);
         iir_init(&lo->id_bpf, lo->id_bpf.cfg);
@@ -119,25 +120,22 @@ hfi_exec(hfi_obs_t *hfi)
         lo->hfi_id = id_bpf->out.y * SIN(lo->hfi_theta);
         LOWPASS(lo->lpf_id, lo->hfi_id, cfg->id_lpf_fc, cfg->fs);
 
-        DECL_PTR_RENAME(&lo->iq_bpf, iq_bpf);
-        iir_exec_in(iq_bpf, in->i_dq.q);
-        lo->hfi_iq = iq_bpf->out.y * SIN(lo->hfi_theta);
-        LOWPASS(lo->hfi_theta_err, lo->hfi_iq, cfg->iq_lpf_fc, cfg->fs);
-
         // 极性辨识
         hfi_polar_idf(hfi);
-
-        // PLL
-        DECL_PTR_RENAME(&lo->pll, pll);
-        pll->lo.theta_err = lo->hfi_theta_err;
-        pll_exec(pll);
 
         // 注入
         INTEGRATOR(lo->hfi_theta, TAU * cfg->fh, 1.0f, cfg->fs);
         WARP_TAU(lo->hfi_theta);
         out->vd = cfg->hfi_vd * COS(lo->hfi_theta);
 
-        // 角度计算
+        DECL_PTR_RENAME(&lo->iq_bpf, iq_bpf);
+        iir_exec_in(iq_bpf, in->i_dq.q);
+        lo->hfi_iq = iq_bpf->out.y * SIN(lo->hfi_theta);
+        LOWPASS(lo->hfi_theta_err, lo->hfi_iq, cfg->iq_lpf_fc, cfg->fs);
+
+        // PLL
+        DECL_PTR_RENAME(&lo->pll, pll);
+        pll_exec_theta_err_in(pll, lo->hfi_theta_err);
         out->est_theta = pll->out.theta + lo->polar_offset;
         WARP_TAU(out->est_theta);
         out->est_omega = pll->out.omega;
