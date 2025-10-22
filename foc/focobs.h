@@ -33,6 +33,7 @@ foc_obs_i_dq(foc_t *foc)
                         in->rotor.obs_theta = hfi->out.est_theta;
                         in->rotor.obs_omega = hfi->out.est_omega;
                         lo->ref_i_dq.d      = hfi->out.id;
+                        lo->e_mode          = (hfi->lo.e_polar_idf == HFI_POLAR_IDF_READY) ? FOC_MODE_VOL : lo->e_mode;
                         break;
                 }
                 case FOC_OBS_LBG: {

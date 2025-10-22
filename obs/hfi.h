@@ -26,6 +26,7 @@ typedef struct {
 } hfi_out_t;
 
 typedef enum {
+        HFI_POLAR_IDF_READY,
         HFI_POLAR_IDF_POSITIVE,
         HFI_POLAR_IDF_NEGATIVE,
         HFI_POALR_IDF_FINISH,
@@ -62,7 +63,7 @@ hfi_init(hfi_obs_t *hfi, hfi_cfg_t hfi_cfg)
         *cfg = hfi_cfg;
 
         lo->pll.cfg.fs = lo->id_bpf.cfg.fs = lo->iq_bpf.cfg.fs = cfg->fs;
-        lo->polar_cnt_max                                      = (u32)cfg->fs;
+        lo->polar_cnt_max                                      = (u32)(cfg->fs / 3.0f);
 
         pll_init(&lo->pll, lo->pll.cfg);
         iir_init(&lo->id_bpf, lo->id_bpf.cfg);
@@ -75,17 +76,22 @@ hfi_polar_idf(hfi_obs_t *hfi)
         DECL_PTRS(hfi, cfg, out, lo);
 
         switch (lo->e_polar_idf) {
+                case HFI_POLAR_IDF_READY: {
+                        if (lo->polar_cnt == lo->polar_cnt_max * 1)
+                                lo->e_polar_idf = HFI_POLAR_IDF_POSITIVE;
+                        break;
+                }
                 case HFI_POLAR_IDF_POSITIVE: {
                         out->id     = cfg->hfi_id;
                         lo->id_pos += ABS(lo->lpf_id);
-                        if (lo->polar_cnt == lo->polar_cnt_max * 1)
+                        if (lo->polar_cnt == lo->polar_cnt_max * 2)
                                 lo->e_polar_idf = HFI_POLAR_IDF_NEGATIVE;
                         break;
                 }
                 case HFI_POLAR_IDF_NEGATIVE: {
                         out->id     = -cfg->hfi_id;
                         lo->id_neg += ABS(lo->lpf_id);
-                        if (lo->polar_cnt == lo->polar_cnt_max * 2) {
+                        if (lo->polar_cnt == lo->polar_cnt_max * 3) {
                                 lo->polar_offset = (ABS(lo->id_pos) > ABS(lo->id_neg)) ? 0.0f : PI;
                                 lo->e_polar_idf  = HFI_POALR_IDF_FINISH;
                         }
