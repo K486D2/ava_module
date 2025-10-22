@@ -116,13 +116,12 @@ hfi_exec(hfi_obs_t *hfi)
 
         DECL_PTR_RENAME(&lo->id_bpf, id_bpf);
         iir_exec_in(id_bpf, in->i_dq.d);
+        lo->hfi_id = id_bpf->out.y * SIN(lo->hfi_theta);
+        LOWPASS(lo->lpf_id, lo->hfi_id, cfg->id_lpf_fc, cfg->fs);
 
         DECL_PTR_RENAME(&lo->iq_bpf, iq_bpf);
         iir_exec_in(iq_bpf, in->i_dq.q);
-
-        lo->hfi_id = id_bpf->out.y * SIN(lo->hfi_theta);
         lo->hfi_iq = iq_bpf->out.y * SIN(lo->hfi_theta);
-        LOWPASS(lo->lpf_id, lo->hfi_id, cfg->id_lpf_fc, cfg->fs);
         LOWPASS(lo->hfi_theta_err, lo->hfi_iq, cfg->iq_lpf_fc, cfg->fs);
 
         // 极性辨识
