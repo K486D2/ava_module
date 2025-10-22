@@ -12,6 +12,7 @@ typedef struct {
         f32 fh;
         f32 hfi_vd, hfi_id;
         f32 id_lpf_fc, iq_lpf_fc;
+        u32 polar_cnt_max;
 } hfi_cfg_t;
 
 typedef struct {
@@ -33,14 +34,13 @@ typedef enum {
 } polar_idf_e;
 
 typedef struct {
-        f32 hfi_id, hfi_iq;
         f32 hfi_theta;
-        f32 lpf_id, hfi_theta_err;
-        f32 hfi_theta_err_integ;
+        f32 hfi_id, hfi_iq;
+        f32 lpf_id, lpf_iq;
 
         // 极性辨识
         polar_idf_e e_polar_idf;
-        u32         polar_cnt, polar_cnt_max;
+        u32         polar_cnt;
         f32         id_pos, id_neg;
         f32         polar_offset;
 
@@ -64,7 +64,7 @@ hfi_init(hfi_obs_t *hfi, hfi_cfg_t hfi_cfg)
 
         lo->pll.cfg.fs = lo->id_bpf.cfg.fs = lo->iq_bpf.cfg.fs = cfg->fs;
 
-        lo->polar_cnt_max = (u32)(cfg->fs / 3.0f);
+        cfg->polar_cnt_max = (u32)(cfg->fs / 3.0f);
 
         pll_init(&lo->pll, lo->pll.cfg);
         iir_init(&lo->id_bpf, lo->id_bpf.cfg);
@@ -78,21 +78,21 @@ hfi_polar_idf(hfi_obs_t *hfi)
 
         switch (lo->e_polar_idf) {
                 case HFI_POLAR_IDF_READY: {
-                        if (lo->polar_cnt == lo->polar_cnt_max * 1)
+                        if (lo->polar_cnt == cfg->polar_cnt_max * 1)
                                 lo->e_polar_idf = HFI_POLAR_IDF_POSITIVE;
                         break;
                 }
                 case HFI_POLAR_IDF_POSITIVE: {
                         out->id     = cfg->hfi_id;
                         lo->id_pos += ABS(lo->lpf_id);
-                        if (lo->polar_cnt == lo->polar_cnt_max * 2)
+                        if (lo->polar_cnt == cfg->polar_cnt_max * 2)
                                 lo->e_polar_idf = HFI_POLAR_IDF_NEGATIVE;
                         break;
                 }
                 case HFI_POLAR_IDF_NEGATIVE: {
                         out->id     = -cfg->hfi_id;
                         lo->id_neg += ABS(lo->lpf_id);
-                        if (lo->polar_cnt == lo->polar_cnt_max * 3) {
+                        if (lo->polar_cnt == cfg->polar_cnt_max * 3) {
                                 lo->polar_offset = (ABS(lo->id_pos) > ABS(lo->id_neg)) ? 0.0f : PI;
                                 lo->e_polar_idf  = HFI_POALR_IDF_FINISH;
                         }
@@ -131,11 +131,11 @@ hfi_exec(hfi_obs_t *hfi)
         DECL_PTR_RENAME(&lo->iq_bpf, iq_bpf);
         iir_exec_in(iq_bpf, in->i_dq.q);
         lo->hfi_iq = iq_bpf->out.y * SIN(lo->hfi_theta);
-        LOWPASS(lo->hfi_theta_err, lo->hfi_iq, cfg->iq_lpf_fc, cfg->fs);
+        LOWPASS(lo->lpf_iq, lo->hfi_iq, cfg->iq_lpf_fc, cfg->fs);
 
         // PLL
         DECL_PTR_RENAME(&lo->pll, pll);
-        pll_exec_theta_err_in(pll, lo->hfi_theta_err);
+        pll_exec_theta_err_in(pll, lo->lpf_iq);
         out->est_theta = pll->out.theta + lo->polar_offset;
         WARP_TAU(out->est_theta);
         out->est_omega = pll->out.omega;
