@@ -66,12 +66,14 @@ iir_init(iir_filter_t *iir, iir_cfg_t iir_cfg)
                                         lo->b0        = lo->alpha;
                                         lo->b1        = 0.0f;
                                         lo->normal_a1 = -(1.0f - lo->alpha);
-                                } break;
+                                        break;
+                                }
                                 case IIR_HIGHPASS: {
                                         lo->b0        = 1.0f - lo->alpha;
                                         lo->b1        = -(1.0f - lo->alpha);
                                         lo->normal_a1 = -(1.0f - lo->alpha);
-                                } break;
+                                        break;
+                                }
                                 default:
                                         break;
                         }
@@ -91,7 +93,8 @@ iir_init(iir_filter_t *iir, iir_cfg_t iir_cfg)
                                         lo->a0 = 1.0f + lo->alpha;
                                         lo->a1 = -2.0f * lo->cos_w0;
                                         lo->a2 = 1.0f - lo->alpha;
-                                } break;
+                                        break;
+                                }
                                 case IIR_HIGHPASS: {
                                         lo->b0 = (1.0f + lo->cos_w0) / 2.0f;
                                         lo->b1 = -lo->b0 * 2.0f;
@@ -99,7 +102,8 @@ iir_init(iir_filter_t *iir, iir_cfg_t iir_cfg)
                                         lo->a0 = 1.0f + lo->alpha;
                                         lo->a1 = -2.0f * lo->cos_w0;
                                         lo->a2 = 1.0f - lo->alpha;
-                                } break;
+                                        break;
+                                }
                                 case IIR_BANDPASS: {
                                         lo->b0 = lo->alpha;
                                         lo->b1 = 0.0f;
@@ -107,7 +111,8 @@ iir_init(iir_filter_t *iir, iir_cfg_t iir_cfg)
                                         lo->a0 = 1.0f + lo->alpha;
                                         lo->a1 = -2.0f * lo->cos_w0;
                                         lo->a2 = 1.0f - lo->alpha;
-                                } break;
+                                        break;
+                                }
                                 default:
                                         break;
                         }
@@ -118,7 +123,8 @@ iir_init(iir_filter_t *iir, iir_cfg_t iir_cfg)
                         lo->normal_a2 = lo->b2 / lo->a0;
                         lo->normal_a3 = lo->a1 / lo->a0;
                         lo->normal_a4 = lo->a2 / lo->a0;
-                } break;
+                        break;
+                }
                 default:
                         break;
         }
@@ -138,7 +144,8 @@ iir_exec(iir_filter_t *iir)
                         out->y = lo->b0 * in->x + lo->b1 * lo->x1 - lo->normal_a1 * lo->y1;
                         lo->x1 = in->x;
                         lo->y1 = out->y;
-                } break;
+                        break;
+                }
                 case IIR_2: {
                         out->y = lo->normal_a0 * in->x + lo->normal_a1 * lo->x1 + lo->normal_a2 * lo->x2 -
                                  lo->normal_a3 * lo->y1 - lo->normal_a4 * lo->y2;
@@ -146,7 +153,8 @@ iir_exec(iir_filter_t *iir)
                         lo->x1 = in->x;
                         lo->y2 = lo->y1;
                         lo->y1 = out->y;
-                } break;
+                        break;
+                }
                 default:
                         break;
         }
