@@ -15,7 +15,7 @@ on_send_done(net_ch_t *ch, void *buf, int ret)
 {
         ARG_UNUSED(ch);
 
-        printf("[CALLBACK] send %d bytes: %.*s\n", ret, ret < 0 ? 0 : ret, (char *)buf);
+        printf("[CALLBACK][%llu] send %d bytes: %.*s\n", get_mono_ts_ms(), ret, ret < 0 ? 0 : ret, (char *)buf);
 }
 
 void
@@ -26,7 +26,7 @@ on_recv_done(net_ch_t *ch, void *buf, int ret)
         if (ret == -ETIME)
                 print_err("recv timeout occurred\n");
         else
-                printf("[CALLBACK] recv %d bytes: %.*s\n", ret, ret < 0 ? 0 : ret, (char *)buf);
+                printf("[CALLBACK][%llu] recv %d bytes: %.*s\n", get_mono_ts_ms(), ret, ret < 0 ? 0 : ret, (char *)buf);
 }
 
 void *
@@ -52,7 +52,7 @@ send_recv_thread(void *arg)
                 net_send_recv(&net, ch, tx_buf, strlen(tx_buf), rx_buf, 1024, MS2US(1000));
                 u64 end_us = get_mono_ts_us();
                 printf("elapsed: %llu us\n", end_us - begin_us);
-                delay_ms(100, YIELD);
+                // delay_ms(500, YIELD);
         }
         return NULL;
 }
@@ -60,12 +60,13 @@ send_recv_thread(void *arg)
 HAPI int
 init(void)
 {
+        mp_init(&mp);
+
         net_cfg_t net_cfg = {
             .e_type = NET_TYPE_UDP,
             .mp     = &mp,
         };
         int ret = net_init(&net, net_cfg);
-        mp_init(&mp);
 
         // net_broadcast_t resp[255];
         // const char     *tx_buf = "Hello!";
@@ -78,8 +79,8 @@ HAPI int
 exec(void)
 {
         net_ch_t ch = {
-            //     .remote_ip   = "127.0.0.1",
-            .remote_ip   = "192.168.137.101",
+            .remote_ip = "127.0.0.1",
+            //     .remote_ip   = "192.168.137.101",
             .remote_port = 2333,
             //     .local_ip    = "127.0.0.1",
             //     .local_port  = 2334,
@@ -97,7 +98,7 @@ exec(void)
 
         while (true) {
                 net_poll(&net);
-                delay_ms(10, YIELD);
+                // delay_ms(10, YIELD);
         }
 
         pthread_join(tid, NULL);

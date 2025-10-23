@@ -205,6 +205,7 @@ net_add_ch(net_t *net, net_ch_t *ch)
 
         list_add(&ch->ch, &lo->ch);
         return 0;
+
 cleanup:
         CLOSE_SOCKET(ch->fd);
         return ret;
@@ -214,11 +215,10 @@ HAPI int
 net_sync_send(net_ch_t *ch, void *tx_buf, usz nbytes)
 {
 #ifdef __linux__
-        int ret = send(ch->fd, tx_buf, nbytes, 0);
+        return send(ch->fd, tx_buf, nbytes, 0);
 #elif defined(_WIN32)
-        int ret = send(ch->fd, (const char *)tx_buf, nbytes, 0);
+        return send(ch->fd, (const char *)tx_buf, nbytes, 0);
 #endif
-        return ret;
 }
 
 HAPI int
@@ -230,12 +230,11 @@ net_sync_recv_yield(net_ch_t *ch, void *rx_buf, usz cap, u32 timeout_us)
         };
 #ifdef __linux__
         setsockopt(ch->fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
-        int ret = recv(ch->fd, rx_buf, cap, 0);
+        return recv(ch->fd, rx_buf, cap, 0);
 #elif defined(_WIN32)
         setsockopt(ch->fd, SOL_SOCKET, SO_RCVTIMEO, (const char *)&tv, sizeof(tv));
-        int ret = recv(ch->fd, (char *)rx_buf, cap, 0);
+        return recv(ch->fd, (char *)rx_buf, cap, 0);
 #endif
-        return ret;
 }
 
 HAPI int
@@ -278,8 +277,7 @@ net_async_send(net_t *net, net_ch_t *ch, void *tx_buf, usz nbytes)
         io_uring_prep_send(sqe, ch->fd, tx_buf, nbytes, 0);
         io_uring_sqe_set_data(sqe, req);
 
-        int ret = io_uring_submit(&lo->ring);
-        return ret;
+        return io_uring_submit(&lo->ring);
 }
 
 HAPI int
@@ -301,27 +299,26 @@ net_async_recv(net_t *net, net_ch_t *ch, void *rx_buf, usz cap, u32 timeout_us)
         req->nbytes = cap;
         req->f_cb   = ch->f_recv_cb;
 
-        io_uring_prep_recv(sqe, ch->fd, rx_buf, cap, 0);
+        io_uring_prep_recv(sqe, ch->fd, rx_buf, cap, MSG_DONTWAIT);
         io_uring_sqe_set_data(sqe, req);
 
-        struct io_uring_sqe *sqe_to = io_uring_get_sqe(&lo->ring);
-        if (!sqe_to)
-                return -1;
+        // struct io_uring_sqe *sqe_to = io_uring_get_sqe(&lo->ring);
+        // if (!sqe_to)
+        //         return -1;
 
-        struct __kernel_timespec ts;
-        clock_gettime(CLOCK_MONOTONIC, (struct timespec *)&ts);
-        ts.tv_sec  += US2S(timeout_us);
-        ts.tv_nsec += US2NS(timeout_us % 1000000);
-        if (ts.tv_nsec >= 1000000000) {
-                ts.tv_sec++;
-                ts.tv_nsec -= 1000000000;
-        }
+        // struct __kernel_timespec ts;
+        // clock_gettime(CLOCK_MONOTONIC, (struct timespec *)&ts);
+        // ts.tv_sec  += US2S(timeout_us);
+        // ts.tv_nsec += US2NS(timeout_us % 1000000);
+        // if (ts.tv_nsec >= 1000000000) {
+        //         ts.tv_sec++;
+        //         ts.tv_nsec -= 1000000000;
+        // }
 
-        io_uring_prep_timeout(sqe_to, &ts, 0, IORING_TIMEOUT_ABS);
-        io_uring_sqe_set_data(sqe_to, req);
+        // io_uring_prep_timeout(sqe_to, &ts, 0, IORING_TIMEOUT_ABS);
+        // io_uring_sqe_set_data(sqe_to, req);
 
-        int ret = io_uring_submit(&lo->ring);
-        return ret;
+        return io_uring_submit(&lo->ring);
 }
 
 HAPI int
@@ -336,11 +333,7 @@ net_poll(net_t *net)
 
                 int ret = cqe->res;
                 io_uring_cqe_seen(&lo->ring, cqe);
-
-                if (req->op == NET_OP_SEND && req->f_cb)
-                        req->f_cb(req->ch, req->buf, ret);
-                else if (req->op == NET_OP_RECV && req->f_cb)
-                        req->f_cb(req->ch, req->buf, ret);
+                req->f_cb(req->ch, req->buf, ret);
 
                 mp_free(cfg->mp, req->buf);
                 mp_free(cfg->mp, req);
