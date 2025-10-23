@@ -138,10 +138,10 @@ spsc_write_buf(spsc_t *spsc, void *buf, const void *src, usz nbytes)
         if (nbytes == 0)
                 return 0;
 
-        usz mask   = spsc->cap - 1;
-        usz offset = wp & mask;
-        usz first  = MIN(nbytes, spsc->cap - offset);
-        memcpy((u8 *)buf + offset, src, first);
+        usz mask  = spsc->cap - 1;
+        usz off   = wp & mask;
+        usz first = MIN(nbytes, spsc->cap - off);
+        memcpy((u8 *)buf + off, src, first);
         memcpy((u8 *)buf, (u8 *)src + first, nbytes - first);
 
         ATOMIC_STORE_EXPLICIT(&spsc->wp, wp + nbytes, memory_order_release);
@@ -160,10 +160,10 @@ spsc_read_buf(spsc_t *spsc, void *buf, void *dst, usz nbytes)
         if (nbytes == 0)
                 return 0;
 
-        usz mask   = spsc->cap - 1;
-        usz offset = rp & mask;
-        usz first  = MIN(nbytes, spsc->cap - offset);
-        memcpy(dst, (u8 *)buf + offset, first);
+        usz mask  = spsc->cap - 1;
+        usz off   = rp & mask;
+        usz first = MIN(nbytes, spsc->cap - off);
+        memcpy(dst, (u8 *)buf + off, first);
         memcpy((u8 *)dst + first, (u8 *)buf, nbytes - first);
 
         ATOMIC_STORE_EXPLICIT(&spsc->rp, rp + nbytes, memory_order_release);

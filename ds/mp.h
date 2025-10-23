@@ -2,6 +2,7 @@
 #define MP_H
 
 #include <pthread.h>
+#include <string.h>
 
 #include "ds/list.h"
 #include "util/marcodef.h"
@@ -19,15 +20,20 @@ typedef struct {
 typedef struct {
         list_head_t     free;
         u8              pool[MP_SIZE];
-        usz             offset;
+        usz             off;
         pthread_mutex_t lock;
 } mp_t;
+
+HAPI void  mp_init(mp_t *mp);
+HAPI void *mp_alloc(mp_t *mp, usz cap);
+HAPI void *mp_calloc(mp_t *mp, usz cap);
+HAPI void  mp_free(mp_t *mp, void *ptr);
 
 HAPI void
 mp_init(mp_t *mp)
 {
         pthread_mutex_init(&mp->lock, NULL);
-        mp->offset = 0;
+        mp->off = 0;
         list_init(&mp->free);
 }
 
@@ -65,16 +71,27 @@ mp_alloc(mp_t *mp, usz cap)
                 }
         }
 
-        if (mp->offset + total > MP_SIZE) {
+        if (mp->off + total > MP_SIZE) {
                 pthread_mutex_unlock(&mp->lock);
                 return NULL;
         }
 
-        mp_block_t *block  = (mp_block_t *)&mp->pool[mp->offset];
+        mp_block_t *block  = (mp_block_t *)&mp->pool[mp->off];
         block->cap         = total;
-        mp->offset        += total;
+        mp->off           += total;
         void *ptr          = (void *)((u8 *)block + ALIGN(sizeof(mp_block_t)));
         pthread_mutex_unlock(&mp->lock);
+        return ptr;
+}
+
+HAPI void *
+mp_calloc(mp_t *mp, usz cap)
+{
+        void *ptr = mp_alloc(mp, cap);
+        if (!ptr)
+                return NULL;
+
+        memset(ptr, 0, cap);
         return ptr;
 }
 
@@ -102,7 +119,7 @@ HAPI void
 mp_reset(mp_t *mp)
 {
         pthread_mutex_lock(&mp->lock);
-        mp->offset = 0;
+        mp->off = 0;
         list_init(&mp->free);
         pthread_mutex_unlock(&mp->lock);
 }

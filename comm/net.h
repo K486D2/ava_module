@@ -79,8 +79,9 @@ typedef struct {
         net_ch_t      *ch;
         void          *buf;
         usz            nbytes;
-        net_async_cb_f f_cb;
+        u32            refcnt;
         bool           processed;
+        net_async_cb_f f_cb;
 } net_async_req_t;
 
 typedef struct {
@@ -260,11 +261,11 @@ net_async_send(net_t *net, net_ch_t *ch, void *tx_buf, usz nbytes)
 {
         DECL_PTRS(net, cfg, lo);
 
-        struct io_uring_sqe *sqe = io_uring_get_sqe(&lo->ring);
-        if (!sqe)
+        struct io_uring_sqe *send_sqe = io_uring_get_sqe(&lo->ring);
+        if (!send_sqe)
                 return -1;
 
-        net_async_req_t *req = mp_alloc(cfg->mp, sizeof(net_async_req_t));
+        net_async_req_t *req = mp_calloc(cfg->mp, sizeof(net_async_req_t));
         if (!req)
                 return -MEALLOC;
 
@@ -273,8 +274,9 @@ net_async_send(net_t *net, net_ch_t *ch, void *tx_buf, usz nbytes)
         req->nbytes = nbytes;
         req->f_cb   = ch->f_send_cb;
 
-        io_uring_prep_send(sqe, ch->fd, tx_buf, nbytes, 0);
-        io_uring_sqe_set_data(sqe, req);
+        io_uring_prep_send(send_sqe, ch->fd, tx_buf, nbytes, 0);
+        io_uring_sqe_set_data(send_sqe, req);
+        req->refcnt++;
 
         return io_uring_submit(&lo->ring);
 }
@@ -284,11 +286,7 @@ net_async_recv(net_t *net, net_ch_t *ch, void *rx_buf, usz cap, u32 timeout_us)
 {
         DECL_PTRS(net, cfg, lo);
 
-        struct io_uring_sqe *sqe_recv = io_uring_get_sqe(&lo->ring);
-        if (!sqe_recv)
-                return -1;
-
-        net_async_req_t *req = mp_alloc(cfg->mp, sizeof(net_async_req_t));
+        net_async_req_t *req = mp_calloc(cfg->mp, sizeof(net_async_req_t));
         if (!req)
                 return -MEALLOC;
 
@@ -297,12 +295,8 @@ net_async_recv(net_t *net, net_ch_t *ch, void *rx_buf, usz cap, u32 timeout_us)
         req->nbytes = cap;
         req->f_cb   = ch->f_recv_cb;
 
-        io_uring_prep_recv(sqe_recv, ch->fd, rx_buf, cap, 0);
-        io_uring_sqe_set_flags(sqe_recv, IOSQE_IO_LINK);
-        io_uring_sqe_set_data(sqe_recv, req);
-
-        struct io_uring_sqe *sqe_timeout = io_uring_get_sqe(&lo->ring);
-        if (!sqe_timeout)
+        struct io_uring_sqe *timeout_sqe = io_uring_get_sqe(&lo->ring);
+        if (!timeout_sqe)
                 return -1;
 
         struct __kernel_timespec ts;
@@ -313,8 +307,18 @@ net_async_recv(net_t *net, net_ch_t *ch, void *rx_buf, usz cap, u32 timeout_us)
                 ts.tv_sec++;
                 ts.tv_nsec -= 1000000000;
         }
-        io_uring_prep_timeout(sqe_timeout, &ts, 0, IORING_TIMEOUT_ABS);
-        io_uring_sqe_set_data(sqe_timeout, req);
+        io_uring_prep_timeout(timeout_sqe, &ts, 0, IORING_TIMEOUT_ABS);
+        io_uring_sqe_set_data(timeout_sqe, req);
+        req->refcnt++;
+
+        struct io_uring_sqe *recv_sqe = io_uring_get_sqe(&lo->ring);
+        if (!recv_sqe)
+                return -1;
+
+        io_uring_prep_recv(recv_sqe, ch->fd, rx_buf, cap, 0);
+        io_uring_sqe_set_data(recv_sqe, req);
+        io_uring_sqe_set_flags(recv_sqe, IOSQE_IO_LINK);
+        req->refcnt++;
 
         return io_uring_submit(&lo->ring);
 }
@@ -327,16 +331,20 @@ net_poll(net_t *net)
         struct io_uring_cqe *cqe;
         while (io_uring_peek_cqe(&lo->ring, &cqe) == 0) {
                 net_async_req_t *req = io_uring_cqe_get_data(cqe);
-                if (!req || req->processed)
+                if (!req)
                         continue;
 
                 int ret = cqe->res;
-                req->f_cb(req->ch, req->buf, ret);
-                req->processed = true;
+                if (!req->processed) {
+                        req->f_cb(req->ch, req->buf, ret);
+                        req->processed = true;
+                }
                 io_uring_cqe_seen(&lo->ring, cqe);
 
-                mp_free(cfg->mp, req->buf);
-                mp_free(cfg->mp, req);
+                if (--req->refcnt == 0) {
+                        mp_free(cfg->mp, req->buf);
+                        mp_free(cfg->mp, req);
+                }
         }
         return 0;
 }

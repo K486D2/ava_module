@@ -43,7 +43,7 @@ HAPI mpsc_p_t *mpsc_reg(mpsc_t *mpsc, usz id);
 HAPI void      mpsc_unreg(mpsc_p_t *p);
 HAPI isz       mpsc_acquire(mpsc_t *mpsc, mpsc_p_t *p, usz nbytes);
 HAPI void      mpsc_push(mpsc_p_t *p);
-HAPI usz       mpsc_pop(mpsc_t *mpsc, usz *offset);
+HAPI usz       mpsc_pop(mpsc_t *mpsc, usz *off);
 HAPI void      mpsc_release(mpsc_t *mpsc, usz nbytes);
 
 HAPI void
@@ -107,27 +107,27 @@ retry:
  * @param mpsc
  * @param p
  * @param nbytes
- * @return 写入偏移 (逻辑 offset) 或者 -1 (表示空间不足)
+ * @return 写入偏移 (逻辑 off) 或者 -1 (表示空间不足)
  */
 HAPI isz
 mpsc_acquire(mpsc_t *mpsc, mpsc_p_t *p, usz nbytes)
 {
-        usz wp, offset, target;
+        usz wp, off, target;
 
         do {
                 // 读取全局写指针
                 wp = mpsc_get_wp(mpsc);
 
                 // 提取实际偏移
-                offset = wp & MPSC_OFFSET_MASK;
+                off = wp & MPSC_OFFSET_MASK;
 
                 // 标记正在申请写入
-                ATOMIC_STORE_EXPLICIT(&p->reserve_pos, offset | MPSC_WRAP_LOCK_BIT, memory_order_relaxed);
+                ATOMIC_STORE_EXPLICIT(&p->reserve_pos, off | MPSC_WRAP_LOCK_BIT, memory_order_relaxed);
 
                 // 尝试申请的终点位置
-                target = offset + nbytes;
+                target = off + nbytes;
                 usz rp = ATOMIC_LOAD_EXPLICIT(&mpsc->rp, memory_order_relaxed);
-                if (offset < rp && target >= rp) {
+                if (off < rp && target >= rp) {
                         ATOMIC_STORE_EXPLICIT(&p->reserve_pos, MPSC_OFFSET_MAX, memory_order_release);
                         return -1;
                 }
@@ -149,11 +149,11 @@ mpsc_acquire(mpsc_t *mpsc, mpsc_p_t *p, usz nbytes)
 
         // 如果申请触发 wrap
         if (target & MPSC_WRAP_LOCK_BIT) {
-                mpsc->warp_end = offset;
+                mpsc->warp_end = off;
                 ATOMIC_STORE_EXPLICIT(&mpsc->wp, (target & ~MPSC_WRAP_LOCK_BIT), memory_order_release);
-                offset = 0;
+                off = 0;
         }
-        return (isz)offset;
+        return (isz)off;
 }
 
 HAPI void
@@ -163,7 +163,7 @@ mpsc_push(mpsc_p_t *p)
 }
 
 HAPI usz
-mpsc_pop(mpsc_t *mpsc, usz *offset)
+mpsc_pop(mpsc_t *mpsc, usz *off)
 {
         usz rp = ATOMIC_LOAD_EXPLICIT(&mpsc->rp, memory_order_relaxed);
         usz wp;
@@ -206,7 +206,7 @@ retry:
                 ready = (ready < wp) ? ready : wp;
 
         usz write_nbytes = ready - rp;
-        *offset          = rp;
+        *off             = rp;
         return write_nbytes;
 }
 
@@ -220,36 +220,36 @@ mpsc_release(mpsc_t *mpsc, usz nbytes)
 HAPI isz
 mpsc_write(mpsc_t *mpsc, mpsc_p_t *p, const void *src, usz nbytes)
 {
-        isz offset = mpsc_acquire(mpsc, p, nbytes);
-        if (offset < 0)
+        isz off = mpsc_acquire(mpsc, p, nbytes);
+        if (off < 0)
                 return -1;
 
-        if ((usz)offset + nbytes <= mpsc->cap)
-                memcpy((u8 *)mpsc->buf + (usz)offset, src, nbytes);
+        if ((usz)off + nbytes <= mpsc->cap)
+                memcpy((u8 *)mpsc->buf + (usz)off, src, nbytes);
         else {
-                usz first = mpsc->cap - (usz)offset;
-                memcpy((u8 *)mpsc->buf + (usz)offset, src, first);
+                usz first = mpsc->cap - (usz)off;
+                memcpy((u8 *)mpsc->buf + (usz)off, src, first);
                 memcpy((u8 *)mpsc->buf, (u8 *)src + first, nbytes - first);
         }
 
         mpsc_push(p);
-        return offset;
+        return off;
 }
 
 HAPI usz
 mpsc_read(mpsc_t *mpsc, void *dst, usz nbytes)
 {
-        usz offset, avail_nbytes = mpsc_pop(mpsc, &offset);
+        usz off, avail_nbytes = mpsc_pop(mpsc, &off);
         if (avail_nbytes == 0)
                 return 0;
 
         usz read_nbytes = (avail_nbytes < nbytes) ? 0 : nbytes;
 
-        if (offset + read_nbytes <= mpsc->cap)
-                memcpy(dst, (u8 *)mpsc->buf + offset, read_nbytes);
+        if (off + read_nbytes <= mpsc->cap)
+                memcpy(dst, (u8 *)mpsc->buf + off, read_nbytes);
         else {
-                usz first = mpsc->cap - offset;
-                memcpy(dst, (u8 *)mpsc->buf + offset, first);
+                usz first = mpsc->cap - off;
+                memcpy(dst, (u8 *)mpsc->buf + off, first);
                 memcpy((u8 *)dst + first, (u8 *)mpsc->buf, read_nbytes - first);
         }
 

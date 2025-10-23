@@ -9,7 +9,7 @@ typedef struct {
         f32 wave_freq;
         f32 amp;
         f32 phase;
-        f32 offset;
+        f32 off;
 } sine_cfg_t;
 
 typedef struct {
@@ -40,7 +40,7 @@ sine_exec(sine_t *sine)
         DECL_PTRS(sine, cfg, out, lo);
 
         lo->phase_incr  = TAU * cfg->wave_freq / cfg->fs;
-        out->val        = cfg->amp * SIN(cfg->phase) + cfg->offset;
+        out->val        = cfg->amp * SIN(cfg->phase) + cfg->off;
         cfg->phase     += lo->phase_incr;
         WARP_TAU(cfg->phase);
 }

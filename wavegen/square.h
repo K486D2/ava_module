@@ -9,7 +9,7 @@ typedef struct {
         f32 wave_freq;  // 方波频率 (Hz)
         f32 amp;        // 方波幅度
         f32 phase;      // 当前相位 (rad)
-        f32 offset;     // 直流偏移量
+        f32 off;        // 直流偏移量
         f32 duty_cycle; // 占空比 (0~1)
 } square_cfg_t;
 
@@ -43,9 +43,9 @@ square_exec(square_t *square)
         lo->phase_incr = TAU * cfg->wave_freq / cfg->fs;
 
         if (cfg->phase < (cfg->duty_cycle * TAU))
-                out->val = cfg->amp + cfg->offset;
+                out->val = cfg->amp + cfg->off;
         else
-                out->val = -cfg->amp + cfg->offset;
+                out->val = -cfg->amp + cfg->off;
 
         cfg->phase += lo->phase_incr;
         WARP_TAU(cfg->phase);
