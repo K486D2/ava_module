@@ -90,9 +90,9 @@ mp_free(mp_t *mp, void *ptr)
 
         // 按地址顺序插入空闲链表
         list_head_t *pos = mp->free.next;
-        while (pos != &mp->free && (u8 *)CONTAINER_OF(pos, mp_block_t, block) < (u8 *)block) {
+        while (pos != &mp->free && (u8 *)CONTAINER_OF(pos, mp_block_t, block) < (u8 *)block)
                 pos = pos->next;
-        }
+
         __list_add(&block->block, pos->prev, pos);
 
         pthread_mutex_unlock(&mp->lock);
