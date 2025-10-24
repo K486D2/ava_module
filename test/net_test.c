@@ -15,7 +15,7 @@ on_send_done(net_ch_t *ch, void *buf, int ret)
 {
         ARG_UNUSED(ch);
 
-        printf("[CALLBACK][%llu] send %d bytes: %.*s\n", get_mono_ts_ms(), ret, ret < 0 ? 0 : ret, (char *)buf);
+        printf("[SEND][%llu] %d bytes: %.*s\n", get_mono_ts_ms(), ret, ret < 0 ? 0 : ret, (char *)buf);
 }
 
 void
@@ -24,9 +24,9 @@ on_recv_done(net_ch_t *ch, void *buf, int ret)
         ARG_UNUSED(ch);
 
         if (ret == -ETIME)
-                print_err("[CALLBACK][%llu] recv timeout occurred\n", get_mono_ts_ms());
+                print_err("[RECV][%llu] timeout occurred\n", get_mono_ts_ms());
         else
-                printf("[CALLBACK][%llu] recv %d bytes: %.*s\n", get_mono_ts_ms(), ret, ret < 0 ? 0 : ret, (char *)buf);
+                printf("[RECV][%llu] %d bytes: %.*s\n", get_mono_ts_ms(), ret, ret < 0 ? 0 : ret, (char *)buf);
 }
 
 void *
@@ -49,7 +49,7 @@ send_recv_thread(void *arg)
                 }
 
                 u64 begin_us = get_mono_ts_us();
-                net_send_recv(&net, ch, tx_buf, strlen(tx_buf), rx_buf, 1024, MS2US(2000));
+                net_send_recv(&net, ch, tx_buf, strlen(tx_buf), rx_buf, 1024, MS2US(200));
                 u64 end_us = get_mono_ts_us();
                 // printf("elapsed: %llu us\n", end_us - begin_us);
                 delay_ms(2000, YIELD);

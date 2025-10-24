@@ -79,9 +79,8 @@ typedef struct {
         net_ch_t      *ch;
         void          *buf;
         usz            nbytes;
-        u32            refcnt;
-        bool           processed;
         net_async_cb_f f_cb;
+        ATOMIC(bool) processed;
 } net_async_req_t;
 
 typedef struct {
@@ -276,7 +275,6 @@ net_async_send(net_t *net, net_ch_t *ch, void *tx_buf, usz nbytes)
 
         io_uring_prep_send(send_sqe, ch->fd, tx_buf, nbytes, 0);
         io_uring_sqe_set_data(send_sqe, req);
-        req->refcnt++;
 
         return io_uring_submit(&lo->ring);
 }
@@ -301,24 +299,14 @@ net_async_recv(net_t *net, net_ch_t *ch, void *rx_buf, usz cap, u32 timeout_us)
 
         io_uring_prep_recv(recv_sqe, ch->fd, rx_buf, cap, 0);
         io_uring_sqe_set_data(recv_sqe, req);
-        // io_uring_sqe_set_flags(recv_sqe, IOSQE_IO_LINK);
-        req->refcnt++;
+        io_uring_sqe_set_flags(recv_sqe, IOSQE_IO_LINK);
 
-        struct io_uring_sqe *timeout_sqe = io_uring_get_sqe(&lo->ring);
-        if (!timeout_sqe)
-                return -1;
-
+        struct io_uring_sqe     *timeout_sqe = io_uring_get_sqe(&lo->ring);
         struct __kernel_timespec ts;
-        clock_gettime(CLOCK_MONOTONIC, (struct timespec *)&ts);
-        ts.tv_sec  += US2S(timeout_us);
-        ts.tv_nsec += US2NS(timeout_us % 1000000);
-        if (ts.tv_nsec >= 1000000000) {
-                ts.tv_sec++;
-                ts.tv_nsec -= 1000000000;
-        }
-        io_uring_prep_timeout(timeout_sqe, &ts, 0, IORING_TIMEOUT_ABS);
+        ts.tv_sec  = US2S(timeout_us);
+        ts.tv_nsec = US2NS(timeout_us % 1000000);
+        io_uring_prep_link_timeout(timeout_sqe, &ts, 0);
         io_uring_sqe_set_data(timeout_sqe, req);
-        req->refcnt++;
 
         return io_uring_submit(&lo->ring);
 }
@@ -331,20 +319,18 @@ net_poll(net_t *net)
         struct io_uring_cqe *cqe;
         while (io_uring_peek_cqe(&lo->ring, &cqe) == 0) {
                 net_async_req_t *req = io_uring_cqe_get_data(cqe);
-                if (!req)
+                if (!req) {
+                        io_uring_cqe_seen(&lo->ring, cqe);
                         continue;
-
-                int ret = cqe->res;
-                if (!req->processed) {
-                        req->f_cb(req->ch, req->buf, ret);
-                        req->processed = true;
                 }
-                io_uring_cqe_seen(&lo->ring, cqe);
 
-                if (--req->refcnt == 0) {
+                if (atomic_exchange(&req->processed, 1) == 0) {
+                        req->f_cb(req->ch, req->buf, cqe->res);
                         mp_free(cfg->mp, req->buf);
                         mp_free(cfg->mp, req);
                 }
+
+                io_uring_cqe_seen(&lo->ring, cqe);
         }
         return 0;
 }
