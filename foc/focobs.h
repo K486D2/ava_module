@@ -28,6 +28,9 @@ foc_obs_i_dq(foc_t *foc)
 
         switch (lo->e_obs) {
                 case FOC_OBS_HFI: {
+                        if (foc->lo.e_state != FOC_STATE_ENABLE)
+                                break;
+
                         DECL_PTR_RENAME(&lo->hfi, hfi);
                         hfi_exec_in(hfi, in->i_dq);
                         in->rotor.obs_theta = hfi->out.est_theta;
