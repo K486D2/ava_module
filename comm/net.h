@@ -295,6 +295,15 @@ net_async_recv(net_t *net, net_ch_t *ch, void *rx_buf, usz cap, u32 timeout_us)
         req->nbytes = cap;
         req->f_cb   = ch->f_recv_cb;
 
+        struct io_uring_sqe *recv_sqe = io_uring_get_sqe(&lo->ring);
+        if (!recv_sqe)
+                return -1;
+
+        io_uring_prep_recv(recv_sqe, ch->fd, rx_buf, cap, 0);
+        io_uring_sqe_set_data(recv_sqe, req);
+        // io_uring_sqe_set_flags(recv_sqe, IOSQE_IO_LINK);
+        req->refcnt++;
+
         struct io_uring_sqe *timeout_sqe = io_uring_get_sqe(&lo->ring);
         if (!timeout_sqe)
                 return -1;
@@ -309,15 +318,6 @@ net_async_recv(net_t *net, net_ch_t *ch, void *rx_buf, usz cap, u32 timeout_us)
         }
         io_uring_prep_timeout(timeout_sqe, &ts, 0, IORING_TIMEOUT_ABS);
         io_uring_sqe_set_data(timeout_sqe, req);
-        req->refcnt++;
-
-        struct io_uring_sqe *recv_sqe = io_uring_get_sqe(&lo->ring);
-        if (!recv_sqe)
-                return -1;
-
-        io_uring_prep_recv(recv_sqe, ch->fd, rx_buf, cap, 0);
-        io_uring_sqe_set_data(recv_sqe, req);
-        io_uring_sqe_set_flags(recv_sqe, IOSQE_IO_LINK);
         req->refcnt++;
 
         return io_uring_submit(&lo->ring);
