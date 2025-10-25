@@ -14,6 +14,8 @@
                 __set_PRIMASK(_primask);                 \
         } while (0)
 
+#define HAPI            static inline
+
 #define ARG_UNUSED(arg) (void)(arg)
 
 #define ARG_CHECK(arg)                   \
@@ -43,7 +45,6 @@
 
 #define GET_MACRO(_1, _2, _3, _4, _5, _6, _7, _8, NAME, ...) NAME
 
-#define DUMMY(...)
 #define DECL_PTRS(p, ...)      \
         GET_MACRO(__VA_ARGS__, \
                   DECL_PTRS_8, \
@@ -54,14 +55,12 @@
                   DECL_PTRS_3, \
                   DECL_PTRS_2, \
                   DECL_PTRS_1, \
-                  DUMMY)       \
+                  ...)         \
         (p, __VA_ARGS__)
 
 #define DECL_PTR_RENAME(p, name) \
         typeof((p)) name = p;    \
         ARG_UNUSED(name);
-
-#define HAPI static inline
 
 #ifdef __MINGW32__
 #define IS_SAME_TYPE(a, b) __mingw_types_compatible_p(__typeof__(a), __typeof__(b))
