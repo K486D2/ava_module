@@ -9,9 +9,9 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "ds/mpsc.h"
-#include "util/marcodef.h"
-#include "util/typedef.h"
+#include "../ds/mpsc.h"
+#include "../util/marcodef.h"
+#include "../util/typedef.h"
 
 typedef enum {
         LOG_LEVEL_DATA,  // 数据
@@ -51,7 +51,7 @@ typedef struct {
 } log_lo_t;
 
 typedef u64 (*log_get_ts_f)(void);
-typedef void (*log_flush_f)(void *fp, const u8 *src, size_t nbytes);
+typedef void (*log_flush_f)(void *fp, const u8 *src, size_t size);
 
 typedef struct {
         log_get_ts_f f_get_ts;

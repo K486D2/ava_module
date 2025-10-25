@@ -4,9 +4,9 @@
 #include <pthread.h>
 #include <string.h>
 
-#include "ds/list.h"
-#include "util/marcodef.h"
-#include "util/typedef.h"
+#include "../ds/list.h"
+#include "../util/marcodef.h"
+#include "../util/typedef.h"
 
 #define MP_SIZE     (64 * 1024)
 #define ALIGNMENT   (8)

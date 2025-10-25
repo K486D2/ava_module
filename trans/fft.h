@@ -10,9 +10,10 @@
 
 #include <string.h>
 
-#include "ds/spsc.h"
-#include "util/marcodef.h"
-#include "util/mathdef.h"
+#include "../ds/spsc.h"
+#include "../util/marcodef.h"
+#include "../util/mathdef.h"
+#include "../util/timeops.h"
 
 typedef enum {
         FFT_POINT_32      = 32,

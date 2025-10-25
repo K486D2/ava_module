@@ -3,9 +3,9 @@
 
 #include <string.h>
 
-#include "ds/rbtree.h"
-#include "util/errdef.h"
-#include "util/timeops.h"
+#include "../ds/rbtree.h"
+#include "../util/errdef.h"
+#include "../util/timeops.h"
 
 #include "thread.h"
 

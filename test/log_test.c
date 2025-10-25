@@ -15,9 +15,9 @@ u8       LOGGER_BUF[1024 * 1024];
 mpsc_p_t PRODUCERS[WRITE_THREAD_NUM];
 
 HAPI void
-log_stdout(void *fp, const u8 *src, size_t nbytes)
+log_stdout(void *fp, const u8 *src, size_t size)
 {
-        fwrite(src, nbytes, 1, fp);
+        fwrite(src, size, 1, fp);
         fflush(fp);
 }
 

@@ -3,7 +3,8 @@
 
 #include <stdio.h>
 
-#include "util/typedef.h"
+#include "../util/marcodef.h"
+#include "../util/typedef.h"
 
 struct sched;
 HAPI int sched_exec(struct sched *sched);

@@ -1,7 +1,7 @@
 #ifndef ADRC_H
 #define ADRC_H
 
-#include "util/typedef.h"
+#include "../util/typedef.h"
 
 typedef struct {
         f32 fs;

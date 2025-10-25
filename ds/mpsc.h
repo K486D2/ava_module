@@ -2,9 +2,10 @@
 #define MPSC_H
 
 #include <stdint.h>
+#include <string.h>
 
-#include "util/marcodef.h"
-#include "util/typedef.h"
+#include "../util/marcodef.h"
+#include "../util/typedef.h"
 
 #ifdef MCU
 #define MPSC_OFFSET_MASK   (0x0000FFFFU)
@@ -36,15 +37,15 @@ typedef struct {
 } mpsc_t;
 
 HAPI void mpsc_init(mpsc_t *mpsc, void *buf, usz cap, mpsc_p_t *producers, usz nproducers);
-HAPI isz  mpsc_write(mpsc_t *mpsc, mpsc_p_t *p, const void *src, usz nbytes);
-HAPI usz  mpsc_read(mpsc_t *mpsc, void *dst, usz nbytes);
+HAPI isz  mpsc_write(mpsc_t *mpsc, mpsc_p_t *p, const void *src, usz size);
+HAPI usz  mpsc_read(mpsc_t *mpsc, void *dst, usz size);
 
 HAPI mpsc_p_t *mpsc_reg(mpsc_t *mpsc, usz id);
 HAPI void      mpsc_unreg(mpsc_p_t *p);
-HAPI isz       mpsc_acquire(mpsc_t *mpsc, mpsc_p_t *p, usz nbytes);
+HAPI isz       mpsc_acquire(mpsc_t *mpsc, mpsc_p_t *p, usz size);
 HAPI void      mpsc_push(mpsc_p_t *p);
 HAPI usz       mpsc_pop(mpsc_t *mpsc, usz *off);
-HAPI void      mpsc_release(mpsc_t *mpsc, usz nbytes);
+HAPI void      mpsc_release(mpsc_t *mpsc, usz size);
 
 HAPI void
 mpsc_init(mpsc_t *mpsc, void *buf, usz cap, mpsc_p_t *producers, usz nproducers)
@@ -102,15 +103,15 @@ retry:
 }
 
 /**
- * @brief 生产者申请在 MPSC 环形缓冲区中写入 nbytes 的空间
+ * @brief 生产者申请在 MPSC 环形缓冲区中写入 size 的空间
  *
  * @param mpsc
  * @param p
- * @param nbytes
+ * @param size
  * @return 写入偏移 (逻辑 off) 或者 -1 (表示空间不足)
  */
 HAPI isz
-mpsc_acquire(mpsc_t *mpsc, mpsc_p_t *p, usz nbytes)
+mpsc_acquire(mpsc_t *mpsc, mpsc_p_t *p, usz size)
 {
         usz wp, off, target;
 
@@ -125,7 +126,7 @@ mpsc_acquire(mpsc_t *mpsc, mpsc_p_t *p, usz nbytes)
                 ATOMIC_STORE_EXPLICIT(&p->reserve_pos, off | MPSC_WRAP_LOCK_BIT, memory_order_relaxed);
 
                 // 尝试申请的终点位置
-                target = off + nbytes;
+                target = off + size;
                 usz rp = ATOMIC_LOAD_EXPLICIT(&mpsc->rp, memory_order_relaxed);
                 if (off < rp && target >= rp) {
                         ATOMIC_STORE_EXPLICIT(&p->reserve_pos, MPSC_OFFSET_MAX, memory_order_release);
@@ -134,7 +135,7 @@ mpsc_acquire(mpsc_t *mpsc, mpsc_p_t *p, usz nbytes)
 
                 // 如果申请空间超过环尾
                 if (target >= mpsc->cap) {
-                        target = (target > mpsc->cap) ? (MPSC_WRAP_LOCK_BIT | nbytes) : 0;
+                        target = (target > mpsc->cap) ? (MPSC_WRAP_LOCK_BIT | size) : 0;
                         if ((target & MPSC_OFFSET_MASK) >= rp) {
                                 ATOMIC_STORE_EXPLICIT(&p->reserve_pos, MPSC_OFFSET_MAX, memory_order_release);
                                 return -1;
@@ -211,25 +212,25 @@ retry:
 }
 
 HAPI void
-mpsc_release(mpsc_t *mpsc, usz nbytes)
+mpsc_release(mpsc_t *mpsc, usz size)
 {
-        usz write_nbytes = mpsc->rp + nbytes;
+        usz write_nbytes = mpsc->rp + size;
         mpsc->rp         = (write_nbytes == mpsc->cap) ? 0 : write_nbytes;
 }
 
 HAPI isz
-mpsc_write(mpsc_t *mpsc, mpsc_p_t *p, const void *src, usz nbytes)
+mpsc_write(mpsc_t *mpsc, mpsc_p_t *p, const void *src, usz size)
 {
-        isz off = mpsc_acquire(mpsc, p, nbytes);
+        isz off = mpsc_acquire(mpsc, p, size);
         if (off < 0)
                 return -1;
 
-        if ((usz)off + nbytes <= mpsc->cap)
-                memcpy((u8 *)mpsc->buf + (usz)off, src, nbytes);
+        if ((usz)off + size <= mpsc->cap)
+                memcpy((u8 *)mpsc->buf + (usz)off, src, size);
         else {
                 usz first = mpsc->cap - (usz)off;
                 memcpy((u8 *)mpsc->buf + (usz)off, src, first);
-                memcpy((u8 *)mpsc->buf, (u8 *)src + first, nbytes - first);
+                memcpy((u8 *)mpsc->buf, (u8 *)src + first, size - first);
         }
 
         mpsc_push(p);
@@ -237,13 +238,13 @@ mpsc_write(mpsc_t *mpsc, mpsc_p_t *p, const void *src, usz nbytes)
 }
 
 HAPI usz
-mpsc_read(mpsc_t *mpsc, void *dst, usz nbytes)
+mpsc_read(mpsc_t *mpsc, void *dst, usz size)
 {
         usz off, avail_nbytes = mpsc_pop(mpsc, &off);
         if (avail_nbytes == 0)
                 return 0;
 
-        usz read_nbytes = (avail_nbytes < nbytes) ? 0 : nbytes;
+        usz read_nbytes = (avail_nbytes < size) ? 0 : size;
 
         if (off + read_nbytes <= mpsc->cap)
                 memcpy(dst, (u8 *)mpsc->buf + off, read_nbytes);

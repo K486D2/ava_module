@@ -10,8 +10,8 @@
 #include <windows.h>
 #endif
 
-#include "ds/spsc.h"
-#include "util/util.h"
+#include "../ds/spsc.h"
+#include "../util/util.h"
 
 typedef enum {
 #ifdef __linux__
@@ -113,19 +113,19 @@ shm_init(shm_t *shm, shm_cfg_t shm_cfg)
 }
 
 HAPI void
-shm_read(shm_t *shm, void *dst, usz nbytes)
+shm_read(shm_t *shm, void *dst, usz size)
 {
         DECL_PTRS(shm, lo);
 
-        spsc_read_buf(lo->spsc, (u8 *)lo->base + sizeof(*lo->spsc), dst, nbytes);
+        spsc_read_buf(lo->spsc, (u8 *)lo->base + sizeof(*lo->spsc), dst, size);
 }
 
 HAPI void
-shm_write(shm_t *shm, void *src, usz nbytes)
+shm_write(shm_t *shm, void *src, usz size)
 {
         DECL_PTRS(shm, lo);
 
-        spsc_write_buf(lo->spsc, (u8 *)lo->base + sizeof(*lo->spsc), src, nbytes);
+        spsc_write_buf(lo->spsc, (u8 *)lo->base + sizeof(*lo->spsc), src, size);
 }
 
 #endif // !SHM_H

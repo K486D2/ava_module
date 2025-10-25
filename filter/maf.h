@@ -1,8 +1,8 @@
 #ifndef MAF_H
 #define MAF_H
 
-#include "ds/spsc.h"
-#include "util/util.h"
+#include "../ds/spsc.h"
+#include "../util/util.h"
 
 typedef struct {
         f32 *buf;

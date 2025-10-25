@@ -3,8 +3,8 @@
 
 #include <stddef.h>
 
-#include "util/marcodef.h"
-#include "util/typedef.h"
+#include "../util/marcodef.h"
+#include "../util/typedef.h"
 
 typedef enum {
         RB_RED   = 0,

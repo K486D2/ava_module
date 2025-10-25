@@ -1,7 +1,7 @@
 #ifndef COGCOMP_H
 #define COGCOMP_H
 
-#include "util/typedef.h"
+#include "../util/typedef.h"
 
 #define COGCOMP_MAP_SIZE 360
 typedef struct {
