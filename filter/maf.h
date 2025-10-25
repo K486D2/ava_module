@@ -19,7 +19,7 @@ typedef struct {
 
 typedef struct {
         spsc_t spsc;
-        f64    x_sum;
+        f64    sum;
 } maf_lo_t;
 
 typedef struct {
@@ -45,12 +45,12 @@ maf_exec(maf_filter_t *maf)
 
         f32 prev_x;
         spsc_read(&lo->spsc, &prev_x, sizeof(prev_x));
-        lo->x_sum -= prev_x;
+        lo->sum -= prev_x;
 
         spsc_write(&lo->spsc, &in->x, sizeof(in->x));
 
-        lo->x_sum += in->x;
-        lo->x_sum /= (f32)cfg->cap;
+        lo->sum += in->x;
+        lo->sum /= (f32)cfg->cap;
 }
 
 HAPI void
