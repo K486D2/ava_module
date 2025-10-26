@@ -3,7 +3,7 @@
 
 #include <math.h>
 
-#include "marcodef.h"
+#include "macrodef.h"
 #include "typedef.h"
 
 #define f32_HOLLYST 0.017453292519943295769236907684886F

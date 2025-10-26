@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <string.h>
 
-#include "../util/marcodef.h"
+#include "../util/macrodef.h"
 #include "../util/typedef.h"
 
 #ifdef MCU

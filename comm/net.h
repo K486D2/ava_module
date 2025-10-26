@@ -258,6 +258,7 @@ net_sync_recv_spin(net_ch_t *ch, void *rx_buf, usz cap, u32 timeout_us)
 HAPI int
 net_async_send(net_t *net, net_ch_t *ch, void *tx_buf, usz size)
 {
+#ifdef __linux__
         DECL_PTRS(net, cfg, lo);
 
         struct io_uring_sqe *send_sqe = io_uring_get_sqe(&lo->ring);
@@ -277,11 +278,18 @@ net_async_send(net_t *net, net_ch_t *ch, void *tx_buf, usz size)
         io_uring_sqe_set_data(send_sqe, req);
 
         return io_uring_submit(&lo->ring);
+#endif
+        ARG_UNUSED(net);
+        ARG_UNUSED(ch);
+        ARG_UNUSED(tx_buf);
+        ARG_UNUSED(size);
+        return 0;
 }
 
 HAPI int
 net_async_recv(net_t *net, net_ch_t *ch, void *rx_buf, usz cap, u32 timeout_us)
 {
+#ifdef __linux__
         DECL_PTRS(net, cfg, lo);
 
         net_async_req_t *req = (net_async_req_t *)mp_calloc(cfg->mp, sizeof(net_async_req_t));
@@ -309,11 +317,18 @@ net_async_recv(net_t *net, net_ch_t *ch, void *rx_buf, usz cap, u32 timeout_us)
         io_uring_sqe_set_data(timeout_sqe, req);
 
         return io_uring_submit(&lo->ring);
+#endif
+        ARG_UNUSED(net);
+        ARG_UNUSED(ch);
+        ARG_UNUSED(rx_buf);
+        ARG_UNUSED(cap);
+        return 0;
 }
 
 HAPI int
 net_poll(net_t *net)
 {
+#ifdef __linux__
         DECL_PTRS(net, cfg, lo);
 
         struct io_uring_cqe *cqe;
@@ -332,6 +347,9 @@ net_poll(net_t *net)
 
                 io_uring_cqe_seen(&lo->ring, cqe);
         }
+        return 0;
+#endif
+        ARG_UNUSED(net);
         return 0;
 }
 
@@ -369,7 +387,7 @@ net_recv(net_t *net, net_ch_t *ch, void *rx_buf, usz cap, u32 timeout_us)
 HAPI int
 net_send_recv(net_t *net, net_ch_t *ch, void *tx_buf, usz size, void *rx_buf, usz cap, u32 timeout_us)
 {
-        int ret = net_send(net, ch, tx_buf, size);
+        const int ret = net_send(net, ch, tx_buf, size);
         if (ret <= 0)
                 return ret;
 

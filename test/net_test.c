@@ -35,24 +35,24 @@ send_recv_thread(void *arg)
         net_ch_t *ch  = (net_ch_t *)arg;
         u64       cnt = 0;
         while (true) {
-                char *tx_buf = mp_alloc(&mp, 64);
+                char *tx_buf = mp_calloc(&mp, 64);
                 if (!tx_buf) {
                         printf("mempool full!\n");
                         continue;
                 }
                 sprintf(tx_buf, "CNT_%llu", cnt++);
 
-                char *rx_buf = mp_alloc(&mp, 64);
+                char *rx_buf = mp_calloc(&mp, 64);
                 if (!rx_buf) {
                         printf("mempool full!\n");
                         continue;
                 }
 
-                u64 begin_us = get_mono_ts_us();
+                const u64 begin_us = get_mono_ts_us();
                 net_send_recv(&net, ch, tx_buf, strlen(tx_buf), rx_buf, 1024, MS2US(200));
-                u64 end_us = get_mono_ts_us();
-                // printf("elapsed: %llu us\n", end_us - begin_us);
-                delay_ms(2, YIELD);
+                const u64 end_us = get_mono_ts_us();
+                printf("cnt: %llu, elapsed: %llu us\n", cnt, end_us - begin_us);
+                // delay_ms(2, YIELD);
         }
         return NULL;
 }

@@ -4,7 +4,7 @@
 #include <string.h>
 
 #include "../ds/list.h"
-#include "../util/marcodef.h"
+#include "../util/macrodef.h"
 #include "../util/typedef.h"
 
 #define MP_SIZE              (64 * 1024)

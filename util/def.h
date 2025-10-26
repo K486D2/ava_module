@@ -2,7 +2,7 @@
 #define DEF_H
 
 #include "errdef.h"
-#include "marcodef.h"
+#include "macrodef.h"
 #include "mathdef.h"
 #include "typedef.h"
 

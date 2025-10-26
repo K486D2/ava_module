@@ -4,7 +4,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 
-#include "marcodef.h"
+#include "macrodef.h"
 
 // ANSI颜色代码
 #define COLOR_RESET     "\033[0m"

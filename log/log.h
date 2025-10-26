@@ -10,7 +10,7 @@
 #include <string.h>
 
 #include "../ds/mpsc.h"
-#include "../util/marcodef.h"
+#include "../util/macrodef.h"
 #include "../util/typedef.h"
 
 typedef enum {

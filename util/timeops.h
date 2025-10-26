@@ -9,7 +9,7 @@
 
 #include <time.h>
 
-#include "marcodef.h"
+#include "macrodef.h"
 #include "typedef.h"
 
 #define NANO_PER_SEC      (1000000000ULL) // 10^9

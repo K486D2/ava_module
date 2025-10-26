@@ -3,7 +3,7 @@
 
 #include <stdio.h>
 
-#include "../util/marcodef.h"
+#include "../util/macrodef.h"
 #include "../util/typedef.h"
 
 struct sched;

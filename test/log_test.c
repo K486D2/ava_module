@@ -38,7 +38,7 @@ write_thread_func(void *arg)
 
         while (true) {
 #ifdef _WIN32
-                log_debug(&log, "Thread %10u, cnt: %10llu\n", (u32)GetCurrentThreadId(), PRODUCERS_CNTS[id]++);
+                log_debug(&g_log, id, "Thread %10u, cnt: %10llu\n", (u32)GetCurrentThreadId(), PRODUCERS_CNTS[id]++);
 #else
                 log_debug(&g_log, id, "Thread %10u, cnt: %10llu\n", (u32)pthread_self(), PRODUCERS_CNTS[id]++);
 #endif

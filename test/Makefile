@@ -9,10 +9,7 @@ CC       := gcc
 FLAGS_C  += -Wall -Wextra
 FLAGS_C  += -g
 FLAGS_C  += -D_GNU_SOURCE
-FLAGS_LD += -lpthread -lm -luring
-
-FLAGS_C  += -fsanitize=address -fno-omit-frame-pointer
-FLAGS_LD += -fsanitize=address
+FLAGS_LD += -lpthread -lm
 
 ifeq ($(OS), Windows_NT)
 	SHELL    := cmd.exe
@@ -20,8 +17,11 @@ ifeq ($(OS), Windows_NT)
 	RMDIR    := rd /s /q
 	FLAGS_LD += -lkernel32 -lws2_32
 else
-	MKDIR := mkdir -p
-	RMDIR := rm -rf
+	MKDIR    := mkdir -p
+	RMDIR    := rm -rf
+	FLAGS_LD += -luring
+	FLAGS_C  += -fsanitize=address -fno-omit-frame-pointer
+	FLAGS_LD += -fsanitize=address
 endif
 
 .PHONY: all clean $(TARGETS)

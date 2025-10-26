@@ -1,5 +1,5 @@
-#ifndef MARCODEF_H
-#define MARCODEF_H
+#ifndef MACRODEF_H
+#define MACRODEF_H
 
 #include <stddef.h>
 #include <string.h>
@@ -119,11 +119,7 @@ constexpr auto memory_order_acq_rel = std::memory_order_acq_rel;
 
 #define SPIN_UNLOCK(lock_ptr) ATOMIC_STORE_EXPLICIT((lock_ptr), 0, memory_order_release)
 
-#ifdef __MINGW32__
-#define IS_SAME_TYPE(a, b) __mingw_types_compatible_p(__typeof__(a), __typeof__(b))
-#else
-#define IS_SAME_TYPE(a, b) __builtin_types_compatible_p(__typeof__(a), __typeof__(b))
-#endif
+#define IS_SAME_TYPE(a, b)    __builtin_types_compatible_p(__typeof__(a), __typeof__(b))
 
 #ifdef __cplusplus
 #define BUILD_BUG_ON_ZERO(e) ((sizeof(char[1 - 2 * !!(e)])) - 1)
@@ -136,4 +132,4 @@ constexpr auto memory_order_acq_rel = std::memory_order_acq_rel;
 
 #define CONTAINER_OF(ptr, type, member) (type *)((char *)(ptr) - offsetof(type, member))
 
-#endif // !MARCODEF_H
+#endif // !MACRODEF_H

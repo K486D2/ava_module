@@ -173,7 +173,7 @@ sched_cfs_remove_task(sched_t *sched, sched_task_t *task)
         DECL_PTRS(sched, lo);
 
         rb_root_t *rb_root = &lo->algo_ctx.cfs.rb_root;
-        if (task->rb_node.__rb_parent_color) {
+        if (task->rb_node.rb_parent_color) {
                 rb_erase(&task->rb_node, rb_root);
                 memset(&task->rb_node, 0, sizeof(rb_node_t));
         }
