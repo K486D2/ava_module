@@ -26,7 +26,7 @@ def udp_echo_server(host="0.0.0.0", port=2333):
                     message = data.decode("utf-8")
                     print(f"收到来自 {addr[0]}:{addr[1]} 的消息: {message}")
 
-                    time.sleep(1)  # 模拟处理延迟
+                    # time.sleep(1)  # 模拟处理延迟
 
                     # 原样返回消息
                     sock.sendto(data, addr)
