@@ -11,7 +11,7 @@
 #include <string.h>
 
 #include "../ds/spsc.h"
-#include "../util/marcodef.h"
+#include "../util/macrodef.h"
 #include "../util/mathdef.h"
 #include "../util/timeops.h"
 

@@ -2,7 +2,7 @@
 #define IIR_H
 
 #include "../util/errdef.h"
-#include "../util/marcodef.h"
+#include "../util/macrodef.h"
 #include "../util/util.h"
 
 typedef enum {

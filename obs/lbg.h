@@ -2,7 +2,7 @@
 #define LBG_H
 
 #include "../filter/pll.h"
-#include "../util/marcodef.h"
+#include "../util/macrodef.h"
 
 typedef struct {
         f32         fs;
