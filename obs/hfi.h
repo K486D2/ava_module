@@ -115,6 +115,11 @@ hfi_exec(hfi_obs_t *hfi)
 {
         DECL_PTRS(hfi, cfg, in, out, lo);
 
+        // 注入
+        INTEGRATOR(lo->hfi_theta, TAU * cfg->fh, 1.0f, cfg->fs);
+        WARP_TAU(lo->hfi_theta);
+        out->vd = cfg->hfi_vd * COS(lo->hfi_theta);
+
         DECL_PTR_RENAME(&lo->id_bpf, id_bpf);
         iir_exec_in(id_bpf, in->i_dq.d);
         lo->hfi_id = id_bpf->out.y * SIN(lo->hfi_theta);
@@ -122,11 +127,6 @@ hfi_exec(hfi_obs_t *hfi)
 
         // 极性辨识
         hfi_polar_idf(hfi);
-
-        // 注入
-        INTEGRATOR(lo->hfi_theta, TAU * cfg->fh, 1.0f, cfg->fs);
-        WARP_TAU(lo->hfi_theta);
-        out->vd = cfg->hfi_vd * COS(lo->hfi_theta);
 
         DECL_PTR_RENAME(&lo->iq_bpf, iq_bpf);
         iir_exec_in(iq_bpf, in->i_dq.q);
