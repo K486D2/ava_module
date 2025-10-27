@@ -78,8 +78,8 @@ iir_init(iir_filter_t *iir, iir_cfg_t iir_cfg)
                                 default:
                                         break;
                         }
-                } break;
-
+                        break;
+                }
                 case IIR_2: {
                         lo->w0     = TAU * cfg->fc / cfg->fs;
                         lo->sin_w0 = SIN(lo->w0);
