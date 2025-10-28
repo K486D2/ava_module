@@ -137,7 +137,7 @@ net_init(net_t *net, net_cfg_t net_cfg)
 
         list_init(&lo->ch_root);
 
-        int ret;
+        int ret = 0;
 #ifdef __linux__
         ret = io_uring_queue_init(cfg->ring_len, &lo->ring, 0);
 #elif defined(_WIN32)
@@ -227,6 +227,11 @@ net_add_ch(net_t *net, net_ch_t *ch)
                 goto cleanup;
 
         list_add(&ch->ch_node, &lo->ch_root);
+
+#ifdef _WIN32
+        CreateIoCompletionPort((HANDLE)ch->fd, lo->iocp, (ULONG_PTR)ch, 0);
+#endif
+
         return 0;
 
 cleanup:
@@ -302,8 +307,6 @@ net_async_send(net_t *net, net_ch_t *ch, void *tx_buf, usz size)
 
         return io_uring_submit(&lo->ring);
 #elif defined(_WIN32)
-        CreateIoCompletionPort((HANDLE)ch->fd, lo->iocp, (ULONG_PTR)ch, 0);
-
         net_async_req_t *req = (net_async_req_t *)mp_calloc(cfg->mp, sizeof(net_async_req_t));
         if (!req)
                 return -MEALLOC;
@@ -366,8 +369,6 @@ net_async_recv(net_t *net, net_ch_t *ch, void *rx_buf, usz cap, u32 timeout_us)
 
         return io_uring_submit(&lo->ring);
 #elif defined(_WIN32)
-        CreateIoCompletionPort((HANDLE)ch->fd, lo->iocp, (ULONG_PTR)ch, 0);
-
         net_async_req_t *req = (net_async_req_t *)mp_calloc(cfg->mp, sizeof(net_async_req_t));
         if (!req)
                 return -MEALLOC;

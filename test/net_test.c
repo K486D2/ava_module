@@ -56,7 +56,7 @@ send_recv_thread(void *arg)
                 net_send_recv(&net, ch, tx_buf, strlen(tx_buf), rx_buf, 1024, MS2US(200));
                 const u64 end_us = get_mono_ts_us();
                 printf("cnt: %llu, elapsed: %llu us\n", cnt, end_us - begin_us);
-                // delay_ms(2, YIELD);
+                delay_s(2, SPIN);
         }
         return NULL;
 }
