@@ -16,6 +16,8 @@ on_send_done(net_ch_t *ch, void *buf, int ret)
         ARG_UNUSED(ch);
 
         printf("[SEND][%llu] %d bytes: %.*s\n", get_mono_ts_ms(), ret, ret < 0 ? 0 : ret, (char *)buf);
+
+        mp_free(&mp, buf);
 }
 
 void
@@ -27,6 +29,8 @@ on_recv_done(net_ch_t *ch, void *buf, int ret)
                 print_err("[RECV][%llu] timeout occurred\n", get_mono_ts_ms());
         else
                 printf("[RECV][%llu] %d bytes: %.*s\n", get_mono_ts_ms(), ret, ret < 0 ? 0 : ret, (char *)buf);
+
+        mp_free(&mp, buf);
 }
 
 void *

@@ -331,6 +331,7 @@ net_async_send(net_t *net, net_ch_t *ch, void *tx_buf, usz size)
 
         ov->Pointer = req;
         return 0;
+#endif
 }
 
 HAPI int
@@ -394,6 +395,7 @@ net_async_recv(net_t *net, net_ch_t *ch, void *rx_buf, usz cap, u32 timeout_us)
 
         ov->Pointer = req;
         return 0;
+#endif
 }
 
 HAPI int
@@ -443,6 +445,7 @@ net_poll(net_t *net)
                 ok = GetQueuedCompletionStatus(lo->iocp, &size, &key, &ov, 0);
         }
         return 0;
+#endif
 }
 
 HAPI int
