@@ -63,7 +63,7 @@ typedef void (*net_async_cb_f)(struct net_ch *ch, void *buf, int ret);
 typedef void (*net_log_cb_f)(FILE *fd, const net_log_meta_t *log_meta, const void *log_data);
 
 typedef struct net_ch {
-        list_head_t ch;
+        list_head_t ch_node;
         net_mode_e  e_mode;
         char        remote_ip[MAX_IP_SIZE], local_ip[MAX_IP_SIZE];
         u16         remote_port, local_port;
@@ -86,14 +86,15 @@ typedef struct {
 typedef struct {
         net_type_e e_type;
         mp_t      *mp;
+        u32        ring_len;
 } net_cfg_t;
 
 typedef struct {
-        list_head_t ch;
+        list_head_t ch_root;
 #ifdef __linux__
         struct io_uring ring;
 #elif defined(_WIN32)
-        // Windows 异步实现待补充
+        HANDLE iocp;
 #endif
 } net_lo_t;
 
@@ -107,9 +108,10 @@ typedef struct {
         char resp[MAX_RESP_BUF_SIZE];
 } net_broadcast_t;
 
-HAPI int net_init(net_t *net, net_cfg_t net_cfg);
-HAPI int net_set_nonblock(net_ch_t *ch);
-HAPI int net_add_ch(net_t *net, net_ch_t *ch);
+HAPI int  net_init(net_t *net, net_cfg_t net_cfg);
+HAPI void net_destory(net_t *net);
+HAPI int  net_set_nonblock(net_ch_t *ch);
+HAPI int  net_add_ch(net_t *net, net_ch_t *ch);
 
 HAPI int net_sync_send(net_ch_t *ch, void *tx_buf, usz size);
 HAPI int net_sync_recv_yield(net_ch_t *ch, void *rx_buf, usz cap, u32 timeout_us);
@@ -133,17 +135,36 @@ net_init(net_t *net, net_cfg_t net_cfg)
 
         *cfg = net_cfg;
 
-        list_init(&lo->ch);
+        list_init(&lo->ch_root);
 
+        int ret;
 #ifdef __linux__
-        int ret = io_uring_queue_init(64, &lo->ring, 0);
-        if (ret < 0)
-                return ret;
+        ret = io_uring_queue_init(cfg->ring_len, &lo->ring, 0);
 #elif defined(_WIN32)
         WSADATA wsaData;
         WSAStartup(MAKEWORD(2, 2), &wsaData);
+        lo->iocp = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, 0, 1);
 #endif
-        return 0;
+        return ret;
+}
+
+HAPI void
+net_destory(net_t *net)
+{
+        DECL_PTRS(net, cfg, lo);
+
+        list_head_t *node;
+        LIST_FOR_EACH(node, &lo->ch_root)
+        {
+                net_ch_t *ch = CONTAINER_OF(node, net_ch_t, ch_node);
+                CLOSE_SOCKET(ch->fd);
+        }
+
+#ifdef __linux__
+        io_uring_queue_exit(&lo->ring);
+#elif defined(_WIN32)
+
+#endif
 }
 
 HAPI int
@@ -182,17 +203,19 @@ net_add_ch(net_t *net, net_ch_t *ch)
                         return -MEINVAL;
         }
 
-        struct sockaddr_in remote_addr = {0};
-        remote_addr.sin_family         = AF_INET;
-        remote_addr.sin_port           = htons(ch->remote_port);
-        remote_addr.sin_addr.s_addr    = inet_addr(ch->remote_ip);
+        struct sockaddr_in remote_addr;
+        memset(&remote_addr, 0, sizeof(remote_addr));
+        remote_addr.sin_family      = AF_INET;
+        remote_addr.sin_port        = htons(ch->remote_port);
+        remote_addr.sin_addr.s_addr = inet_addr(ch->remote_ip);
 
         int ret;
         if (strlen(ch->local_ip) != 0 && ch->local_port != 0) {
-                struct sockaddr_in local_addr = {0};
-                local_addr.sin_family         = AF_INET;
-                local_addr.sin_port           = htons(ch->local_port);
-                local_addr.sin_addr.s_addr    = inet_addr(ch->local_ip);
+                struct sockaddr_in local_addr;
+                memset(&local_addr, 0, sizeof(local_addr));
+                local_addr.sin_family      = AF_INET;
+                local_addr.sin_port        = htons(ch->local_port);
+                local_addr.sin_addr.s_addr = inet_addr(ch->local_ip);
 
                 ret = bind(ch->fd, (struct sockaddr *)&local_addr, sizeof(local_addr));
                 if (ret < 0)
@@ -203,7 +226,7 @@ net_add_ch(net_t *net, net_ch_t *ch)
         if (ret < 0)
                 goto cleanup;
 
-        list_add(&ch->ch, &lo->ch);
+        list_add(&ch->ch_node, &lo->ch_root);
         return 0;
 
 cleanup:
@@ -258,9 +281,9 @@ net_sync_recv_spin(net_ch_t *ch, void *rx_buf, usz cap, u32 timeout_us)
 HAPI int
 net_async_send(net_t *net, net_ch_t *ch, void *tx_buf, usz size)
 {
-#ifdef __linux__
         DECL_PTRS(net, cfg, lo);
 
+#ifdef __linux__
         struct io_uring_sqe *send_sqe = io_uring_get_sqe(&lo->ring);
         if (!send_sqe)
                 return -1;
@@ -278,20 +301,44 @@ net_async_send(net_t *net, net_ch_t *ch, void *tx_buf, usz size)
         io_uring_sqe_set_data(send_sqe, req);
 
         return io_uring_submit(&lo->ring);
-#endif
-        ARG_UNUSED(net);
-        ARG_UNUSED(ch);
-        ARG_UNUSED(tx_buf);
-        ARG_UNUSED(size);
+#elif defined(_WIN32)
+        CreateIoCompletionPort((HANDLE)ch->fd, lo->iocp, (ULONG_PTR)ch, 0);
+
+        net_async_req_t *req = (net_async_req_t *)mp_calloc(cfg->mp, sizeof(net_async_req_t));
+        if (!req)
+                return -MEALLOC;
+
+        req->ch   = ch;
+        req->buf  = tx_buf;
+        req->size = size;
+        req->f_cb = ch->f_send_cb;
+
+        OVERLAPPED *ov = (OVERLAPPED *)mp_calloc(cfg->mp, sizeof(OVERLAPPED));
+        memset(ov, 0, sizeof(OVERLAPPED));
+        ov->hEvent = NULL;
+
+        WSABUF buf;
+        buf.buf = (CHAR *)tx_buf;
+        buf.len = (ULONG)size;
+
+        DWORD tx_size = 0;
+        int   ret     = WSASend(ch->fd, &buf, 1, &tx_size, 0, ov, NULL);
+        if (ret == SOCKET_ERROR && WSAGetLastError() != WSA_IO_PENDING) {
+                mp_free(cfg->mp, ov);
+                mp_free(cfg->mp, req);
+                return -1;
+        }
+
+        ov->Pointer = req;
         return 0;
 }
 
 HAPI int
 net_async_recv(net_t *net, net_ch_t *ch, void *rx_buf, usz cap, u32 timeout_us)
 {
-#ifdef __linux__
         DECL_PTRS(net, cfg, lo);
 
+#ifdef __linux__
         net_async_req_t *req = (net_async_req_t *)mp_calloc(cfg->mp, sizeof(net_async_req_t));
         if (!req)
                 return -MEALLOC;
@@ -317,20 +364,44 @@ net_async_recv(net_t *net, net_ch_t *ch, void *rx_buf, usz cap, u32 timeout_us)
         io_uring_sqe_set_data(timeout_sqe, req);
 
         return io_uring_submit(&lo->ring);
-#endif
-        ARG_UNUSED(net);
-        ARG_UNUSED(ch);
-        ARG_UNUSED(rx_buf);
-        ARG_UNUSED(cap);
+#elif defined(_WIN32)
+        CreateIoCompletionPort((HANDLE)ch->fd, lo->iocp, (ULONG_PTR)ch, 0);
+
+        net_async_req_t *req = (net_async_req_t *)mp_calloc(cfg->mp, sizeof(net_async_req_t));
+        if (!req)
+                return -MEALLOC;
+
+        req->ch   = ch;
+        req->buf  = rx_buf;
+        req->size = cap;
+        req->f_cb = ch->f_recv_cb;
+
+        OVERLAPPED *ov = (OVERLAPPED *)mp_calloc(cfg->mp, sizeof(OVERLAPPED));
+        memset(ov, 0, sizeof(OVERLAPPED));
+
+        WSABUF buf;
+        buf.buf = (CHAR *)rx_buf;
+        buf.len = (ULONG)cap;
+
+        DWORD flags = 0;
+        DWORD rx_size;
+        int   ret = WSARecv(ch->fd, &buf, 1, &rx_size, &flags, ov, NULL);
+        if (ret == SOCKET_ERROR && WSAGetLastError() != WSA_IO_PENDING) {
+                mp_free(cfg->mp, ov);
+                mp_free(cfg->mp, req);
+                return -1;
+        }
+
+        ov->Pointer = req;
         return 0;
 }
 
 HAPI int
 net_poll(net_t *net)
 {
-#ifdef __linux__
         DECL_PTRS(net, cfg, lo);
 
+#ifdef __linux__
         struct io_uring_cqe *cqe;
         while (io_uring_peek_cqe(&lo->ring, &cqe) == 0) {
                 net_async_req_t *req = (net_async_req_t *)io_uring_cqe_get_data(cqe);
@@ -341,15 +412,36 @@ net_poll(net_t *net)
 
                 if (atomic_exchange(&req->processed, 1) == 0) {
                         req->f_cb(req->ch, req->buf, cqe->res);
-                        mp_free(cfg->mp, req->buf);
                         mp_free(cfg->mp, req);
                 }
 
                 io_uring_cqe_seen(&lo->ring, cqe);
         }
         return 0;
-#endif
-        ARG_UNUSED(net);
+#elif defined(_WIN32)
+        DWORD       size;
+        ULONG_PTR   key;
+        OVERLAPPED *ov = NULL;
+
+        BOOL ok = GetQueuedCompletionStatus(lo->iocp, &size, &key, &ov, 0);
+
+        while (ok || (ov != NULL)) {
+                if (!ov)
+                        break;
+
+                net_async_req_t *req = (net_async_req_t *)ov->Pointer;
+                if (!req)
+                        break;
+
+                if (atomic_exchange(&req->processed, 1) == 0) {
+                        req->f_cb(req->ch, req->buf, ok ? (int)size : -1);
+                        mp_free(cfg->mp, req);
+                        mp_free(cfg->mp, ov);
+                }
+
+                ov = NULL;
+                ok = GetQueuedCompletionStatus(lo->iocp, &size, &key, &ov, 0);
+        }
         return 0;
 }
 

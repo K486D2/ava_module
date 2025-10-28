@@ -45,7 +45,7 @@ foc_obs_i_dq(foc_t *foc)
                         in->rotor.obs_omega   = lbg->out.est_omega;
                         lo->fdb_pvct.load_tor = lbg->out.est_load_tor;
                         lo->comp_i_dq.q       = CPYSGN(poly_eval(cfg->motor_cfg.tor2cur,
-                                                           ARRAY_SIZE(cfg->motor_cfg.tor2cur) - 1,
+                                                           ARRAY_LEN(cfg->motor_cfg.tor2cur) - 1,
                                                            ABS(lo->fdb_pvct.load_tor)),
                                                  lo->fdb_pvct.load_tor);
                         break;

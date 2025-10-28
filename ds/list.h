@@ -11,23 +11,23 @@ typedef struct list_head {
 } list_head_t;
 
 /* 获取链表首节点所在的宿主结构体指针 */
-#define LIST_FIRST_ENTRY(ptr, type, member) CONTAINER_OF((ptr)->next, type, member)
+#define LIST_FIRST_ENTRY(entry, type, member) CONTAINER_OF((entry)->next, type, member)
 
 /* 正向遍历链表节点指针 */
-#define LIST_FOR_EACH(pos, head)            for (pos = (head)->next; pos != (head); pos = pos->next)
+#define LIST_FOR_EACH(entry, head)            for (entry = (head)->next; entry != (head); entry = entry->next)
 
 /* 正向遍历链表，并将节点转换为宿主结构体 */
-#define LIST_FOR_EACH_ENTRY(pos, head, member)                                               \
-        for (pos = CONTAINER_OF((head)->next, typeof(*pos), member); &pos->member != (head); \
-             pos = CONTAINER_OF(pos->member.next, typeof(*pos), member))
+#define LIST_FOR_EACH_ENTRY(entry, head, member)                                                   \
+        for (entry = CONTAINER_OF((head)->next, typeof(*entry), member); &entry->member != (head); \
+             entry = CONTAINER_OF(entry->member.next, typeof(*entry), member))
 
 /* 反向遍历链表节点指针 */
-#define LIST_FOR_EACH_PREV(pos, head) for (pos = (head)->prev; pos != (head); pos = pos->prev)
+#define LIST_FOR_EACH_PREV(entry, head) for (entry = (head)->prev; entry != (head); entry = entry->prev)
 
 /* 反向遍历链表，并将节点转换为宿主结构体 */
-#define LIST_FOR_EACH_ENTRY_REVERSE(pos, head, member)                                       \
-        for (pos = CONTAINER_OF((head)->prev, typeof(*pos), member); &pos->member != (head); \
-             pos = CONTAINER_OF(pos->member.prev, typeof(*pos), member))
+#define LIST_FOR_EACH_ENTRY_REVERSE(entry, head, member)                                           \
+        for (entry = CONTAINER_OF((head)->prev, typeof(*entry), member); &entry->member != (head); \
+             entry = CONTAINER_OF(entry->member.prev, typeof(*entry), member))
 
 /* -------------------------------------------------------------------------- */
 /*                                   声明                                     */
@@ -116,7 +116,6 @@ HAPI void list_replace(list_head_t *old_entry, list_head_t *new_entry);
  *
  * @param old_entry
  * @param new_entry
- * @return HAPI
  */
 HAPI void list_replace_init(list_head_t *old_entry, list_head_t *new_entry);
 
@@ -125,7 +124,6 @@ HAPI void list_replace_init(list_head_t *old_entry, list_head_t *new_entry);
  *
  * @param entry
  * @param head
- * @return HAPI
  */
 HAPI void list_move(list_head_t *entry, list_head_t *head);
 
@@ -134,7 +132,6 @@ HAPI void list_move(list_head_t *entry, list_head_t *head);
  *
  * @param entry
  * @param head
- * @return HAPI
  */
 HAPI void list_move_tail(list_head_t *entry, list_head_t *head);
 

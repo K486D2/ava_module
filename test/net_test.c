@@ -63,8 +63,9 @@ init(void)
         mp_init(&mp);
 
         net_cfg_t net_cfg = {
-            .e_type = NET_TYPE_UDP,
-            .mp     = &mp,
+            .e_type   = NET_TYPE_UDP,
+            .mp       = &mp,
+            .ring_len = 256,
         };
         int ret = net_init(&net, net_cfg);
 

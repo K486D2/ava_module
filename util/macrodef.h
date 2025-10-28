@@ -128,7 +128,7 @@ constexpr auto memory_order_acq_rel = std::memory_order_acq_rel;
 #endif
 
 #define MUST_BE_ARRAY(arr)              BUILD_BUG_ON_ZERO(IS_SAME_TYPE((arr), &(arr)[0]))
-#define ARRAY_SIZE(arr)                 (sizeof(arr) / sizeof(arr[0]) + MUST_BE_ARRAY(arr))
+#define ARRAY_LEN(arr)                  (sizeof(arr) / sizeof(arr[0]) + MUST_BE_ARRAY(arr))
 
 #define CONTAINER_OF(ptr, type, member) (type *)((char *)(ptr) - offsetof(type, member))
 

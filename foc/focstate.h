@@ -110,7 +110,7 @@ foc_enable(foc_t *foc)
 
         // 电磁力矩计算
         lo->fdb_pvct.elec_tor =
-            CPYSGN(poly_eval(cfg->motor_cfg.cur2tor, ARRAY_SIZE(cfg->motor_cfg.cur2tor) - 1, ABS(in->i_dq.q)), in->i_dq.q);
+            CPYSGN(poly_eval(cfg->motor_cfg.cur2tor, ARRAY_LEN(cfg->motor_cfg.cur2tor) - 1, ABS(in->i_dq.q)), in->i_dq.q);
 
         // 无感观测器(idq)
         foc_obs_i_dq(foc);

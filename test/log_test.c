@@ -61,7 +61,7 @@ main()
             .flush_buf  = LOGGER_FLUSH_BUF,
             .flush_cap  = sizeof(LOGGER_FLUSH_BUF),
             .producers  = (mpsc_p_t *)&PRODUCERS,
-            .nproducers = ARRAY_SIZE(PRODUCERS),
+            .nproducers = ARRAY_LEN(PRODUCERS),
         };
         g_log.ops.f_flush  = log_stdout;
         g_log.ops.f_get_ts = get_mono_ts_us;
