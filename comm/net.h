@@ -81,6 +81,9 @@ typedef struct {
         usz            size;
         net_async_cb_f f_cb;
         ATOMIC(bool) processed;
+#ifdef _WIN32
+        OVERLAPPED ov;
+#endif
 } net_async_req_t;
 
 typedef struct {
@@ -316,23 +319,18 @@ net_async_send(net_t *net, net_ch_t *ch, void *tx_buf, usz size)
         req->size = size;
         req->f_cb = ch->f_send_cb;
 
-        OVERLAPPED *ov = (OVERLAPPED *)mp_calloc(cfg->mp, sizeof(OVERLAPPED));
-        memset(ov, 0, sizeof(OVERLAPPED));
-        ov->hEvent = NULL;
-
         WSABUF buf;
         buf.buf = (CHAR *)tx_buf;
         buf.len = (ULONG)size;
 
         DWORD tx_size = 0;
-        int   ret     = WSASend(ch->fd, &buf, 1, &tx_size, 0, ov, NULL);
+        int   ret     = WSASend(ch->fd, &buf, 1, &tx_size, 0, &req->ov, NULL);
         if (ret == SOCKET_ERROR && WSAGetLastError() != WSA_IO_PENDING) {
-                mp_free(cfg->mp, ov);
                 mp_free(cfg->mp, req);
                 return -1;
         }
 
-        ov->Pointer = req;
+        req->ov.Pointer = req;
         return 0;
 #endif
 }
@@ -378,18 +376,15 @@ net_async_recv(net_t *net, net_ch_t *ch, void *rx_buf, usz cap, u32 timeout_us)
         req->size = cap;
         req->f_cb = ch->f_recv_cb;
 
-        OVERLAPPED *ov = (OVERLAPPED *)mp_calloc(cfg->mp, sizeof(OVERLAPPED));
-        memset(ov, 0, sizeof(OVERLAPPED));
-
         WSABUF buf;
         buf.buf = (CHAR *)rx_buf;
         buf.len = (ULONG)cap;
 
-        DWORD flags = 0;
-        DWORD rx_size;
-        int   ret = WSARecv(ch->fd, &buf, 1, &rx_size, &flags, ov, NULL);
+        DWORD       flags = 0;
+        DWORD       rx_size;
+        OVERLAPPED *ov  = NULL;
+        int         ret = WSARecv(ch->fd, &buf, 1, &rx_size, &flags, ov, NULL);
         if (ret == SOCKET_ERROR && WSAGetLastError() != WSA_IO_PENDING) {
-                mp_free(cfg->mp, ov);
                 mp_free(cfg->mp, req);
                 return -1;
         }
@@ -426,24 +421,19 @@ net_poll(net_t *net)
         ULONG_PTR   key;
         OVERLAPPED *ov = NULL;
 
-        BOOL ok = GetQueuedCompletionStatus(lo->iocp, &size, &key, &ov, 0);
-
-        while (ok || (ov != NULL)) {
-                if (!ov)
+        for (;;) {
+                BOOL ok = GetQueuedCompletionStatus(lo->iocp, &size, &key, &ov, 0);
+                if (!ok && ov == NULL)
                         break;
 
                 net_async_req_t *req = (net_async_req_t *)ov->Pointer;
                 if (!req)
-                        break;
+                        continue;
 
                 if (atomic_exchange(&req->processed, 1) == 0) {
                         req->f_cb(req->ch, req->buf, ok ? (int)size : -1);
                         mp_free(cfg->mp, req);
-                        mp_free(cfg->mp, ov);
                 }
-
-                ov = NULL;
-                ok = GetQueuedCompletionStatus(lo->iocp, &size, &key, &ov, 0);
         }
         return 0;
 #endif
