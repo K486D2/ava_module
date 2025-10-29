@@ -331,8 +331,8 @@ net_async_send(net_t *net, net_ch_t *ch, void *tx_buf, usz size)
         buf.buf = (CHAR *)tx_buf;
         buf.len = (ULONG)size;
 
-        DWORD tx_size = 0;
-        int   ret     = WSASend(ch->fd, &buf, 1, &tx_size, 0, &req->ov, NULL);
+        DWORD tx_size;
+        int   ret = WSASend(ch->fd, &buf, 1, &tx_size, 0, &req->ov, NULL);
         if (ret == SOCKET_ERROR && WSAGetLastError() != WSA_IO_PENDING) {
                 mp_free(cfg->mp, req);
                 return -1;
@@ -375,6 +375,7 @@ net_async_recv(net_t *net, net_ch_t *ch, void *rx_buf, usz cap, u32 timeout_us)
 
         return io_uring_submit(&lo->ring);
 #elif defined(_WIN32)
+        printf("recv\n");
         net_async_req_t *req = (net_async_req_t *)mp_calloc(cfg->mp, sizeof(net_async_req_t));
         if (!req)
                 return -MEALLOC;
@@ -388,16 +389,15 @@ net_async_recv(net_t *net, net_ch_t *ch, void *rx_buf, usz cap, u32 timeout_us)
         buf.buf = (CHAR *)rx_buf;
         buf.len = (ULONG)cap;
 
-        DWORD       flags = 0;
-        DWORD       rx_size;
-        OVERLAPPED *ov  = NULL;
-        int         ret = WSARecv(ch->fd, &buf, 1, &rx_size, &flags, ov, NULL);
+        DWORD flags = 0;
+        DWORD rx_size;
+        int   ret = WSARecv(ch->fd, &buf, 1, &rx_size, &flags, &req->ov, NULL);
         if (ret == SOCKET_ERROR && WSAGetLastError() != WSA_IO_PENDING) {
                 mp_free(cfg->mp, req);
                 return -1;
         }
 
-        ov->Pointer = req;
+        req->ov.Pointer = req;
         return 0;
 #endif
 }
