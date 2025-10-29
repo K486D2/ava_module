@@ -14,7 +14,7 @@ typedef int socket_t;
 #include <io.h>
 #include <winsock2.h>
 #include <ws2tcpip.h>
-typedef SOCKET socket_t;
+typedef SOCKET sockfd_t;
 #define CLOSE_SOCKET closesocket
 #endif
 
@@ -68,7 +68,7 @@ typedef struct net_ch {
         char        remote_ip[MAX_IP_SIZE], local_ip[MAX_IP_SIZE];
         u16         remote_port, local_port;
 
-        socket_t     fd;
+        sockfd_t     fd;
         net_log_cb_f f_log_cb;
 
         net_op_e       e_op;
@@ -146,7 +146,7 @@ net_init(net_t *net, net_cfg_t net_cfg)
 #elif defined(_WIN32)
         WSADATA wsaData;
         WSAStartup(MAKEWORD(2, 2), &wsaData);
-        lo->iocp = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, 0, 1);
+        lo->iocp = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, 0, 0);
 #endif
         return ret;
 }
@@ -166,7 +166,7 @@ net_destory(net_t *net)
 #ifdef __linux__
         io_uring_queue_exit(&lo->ring);
 #elif defined(_WIN32)
-
+        WSACleanup();
 #endif
 }
 
@@ -195,11 +195,19 @@ net_add_ch(net_t *net, net_ch_t *ch)
 
         switch (cfg->e_type) {
                 case NET_TYPE_UDP: {
+#ifdef __linux__
                         ch->fd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+#elif defined(_WIN32)
+                        ch->fd = WSASocketW(AF_INET, SOCK_DGRAM, IPPROTO_UDP, NULL, 0, WSA_FLAG_OVERLAPPED);
+#endif
                         break;
                 }
                 case NET_TYPE_TCP: {
+#ifdef __linux__
                         ch->fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+#elif defined(_WIN32)
+                        ch->fd = WSASocketW(AF_INET, SOCK_STREAM, IPPROTO_TCP, NULL, 0, WSA_FLAG_OVERLAPPED);
+#endif
                         break;
                 }
                 default:
@@ -422,7 +430,7 @@ net_poll(net_t *net)
         OVERLAPPED *ov = NULL;
 
         for (;;) {
-                BOOL ok = GetQueuedCompletionStatus(lo->iocp, &size, &key, &ov, 0);
+                BOOL ok = GetQueuedCompletionStatus(lo->iocp, &size, &key, &ov, INFINITE);
                 if (!ok && ov == NULL)
                         break;
 
