@@ -339,7 +339,7 @@ net_async_send(net_t *net, net_ch_t *ch, void *tx_buf, usz size)
         }
 
         req->ov.Pointer = req;
-        return 0;
+        return tx_size;
 #endif
 }
 
@@ -375,7 +375,6 @@ net_async_recv(net_t *net, net_ch_t *ch, void *rx_buf, usz cap, u32 timeout_us)
 
         return io_uring_submit(&lo->ring);
 #elif defined(_WIN32)
-        printf("recv\n");
         net_async_req_t *req = (net_async_req_t *)mp_calloc(cfg->mp, sizeof(net_async_req_t));
         if (!req)
                 return -MEALLOC;
@@ -398,7 +397,7 @@ net_async_recv(net_t *net, net_ch_t *ch, void *rx_buf, usz cap, u32 timeout_us)
         }
 
         req->ov.Pointer = req;
-        return 0;
+        return rx_size;
 #endif
 }
 
