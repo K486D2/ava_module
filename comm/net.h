@@ -212,17 +212,23 @@ net_add_ch(net_t *net, net_ch_t *ch)
         }
 
         struct sockaddr_in remote_addr = {
-            .sin_family      = AF_INET,
-            .sin_port        = htons(ch->remote_port),
-            .sin_addr.s_addr = inet_addr(ch->remote_ip),
+            .sin_family = AF_INET,
+            .sin_port   = htons(ch->remote_port),
+            .sin_addr =
+                {
+                    .s_addr = inet_addr(ch->remote_ip),
+                },
         };
 
         int ret;
         if (strlen(ch->local_ip) != 0 && ch->local_port != 0) {
                 struct sockaddr_in local_addr = {
-                    .sin_family      = AF_INET,
-                    .sin_port        = htons(ch->local_port),
-                    .sin_addr.s_addr = inet_addr(ch->local_ip),
+                    .sin_family = AF_INET,
+                    .sin_port   = htons(ch->local_port),
+                    .sin_addr =
+                        {
+                            .s_addr = inet_addr(ch->local_ip),
+                        },
                 };
 
                 ret = bind(ch->fd, (struct sockaddr *)&local_addr, sizeof(local_addr));
@@ -415,7 +421,7 @@ net_poll(net_t *net)
                         continue;
                 }
 
-                if (atomic_exchange(&req->processed, 1) == 0) {
+                if (ATOMIC_EXCHANGE(&req->processed, 1) == 0) {
                         req->f_cb(req->ch, req->buf, cqe->res);
                         mp_free(cfg->mp, req);
                 }
@@ -437,7 +443,7 @@ net_poll(net_t *net)
                 if (!req)
                         continue;
 
-                if (atomic_exchange(&req->processed, 1) == 0) {
+                if (ATOMIC_EXCHANGE(&req->processed, 1) == 0) {
                         req->f_cb(req->ch, req->buf, ok ? (int)size : -1);
                         mp_free(cfg->mp, req);
                 }

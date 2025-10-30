@@ -64,19 +64,8 @@
         ARG_UNUSED(name);
 
 /* 原子操作 */
-#ifndef __cplusplus
-#include <stdatomic.h>
-
-#define ATOMIC(type)                              _Atomic type
-#define ATOMIC_LOAD(a)                            atomic_load(a)
-#define ATOMIC_LOAD_EXPLICIT(a, m)                atomic_load_explicit(a, m)
-#define ATOMIC_STORE(a, v)                        atomic_store(a, v)
-#define ATOMIC_STORE_EXPLICIT(a, v, m)            atomic_store_explicit(a, v, m)
-#define ATOMIC_CAS_WEAK_EXPLICIT(a, o, n, s, f)   atomic_compare_exchange_weak_explicit(a, o, n, s, f)
-#define ATOMIC_CAS_STRONG_EXPLICIT(a, o, n, s, f) atomic_compare_exchange_strong_explicit(a, o, n, s, f)
-#else
+#ifdef __cplusplus
 #include <atomic>
-
 #define ATOMIC(type)                              std::atomic<type>
 #define ATOMIC_LOAD(a)                            std::atomic_load(a)
 #define ATOMIC_LOAD_EXPLICIT(a, m)                std::atomic_load_explicit(a, m)
@@ -84,10 +73,21 @@
 #define ATOMIC_STORE_EXPLICIT(a, v, m)            std::atomic_store_explicit(a, v, m)
 #define ATOMIC_CAS_WEAK_EXPLICIT(a, o, n, s, f)   std::atomic_compare_exchange_weak_explicit(a, o, n, s, f)
 #define ATOMIC_CAS_STRONG_EXPLICIT(a, o, n, s, f) std::atomic_compare_exchange_strong_explicit(a, o, n, s, f)
+#define ATOMIC_EXCHANGE(a, v)                     std::atomic_exchange(a, v)
 constexpr auto memory_order_relaxed = std::memory_order_relaxed;
 constexpr auto memory_order_acquire = std::memory_order_acquire;
 constexpr auto memory_order_release = std::memory_order_release;
 constexpr auto memory_order_acq_rel = std::memory_order_acq_rel;
+#else
+#include <stdatomic.h>
+#define ATOMIC(type)                              _Atomic type
+#define ATOMIC_LOAD(a)                            atomic_load(a)
+#define ATOMIC_LOAD_EXPLICIT(a, m)                atomic_load_explicit(a, m)
+#define ATOMIC_STORE(a, v)                        atomic_store(a, v)
+#define ATOMIC_STORE_EXPLICIT(a, v, m)            atomic_store_explicit(a, v, m)
+#define ATOMIC_CAS_WEAK_EXPLICIT(a, o, n, s, f)   atomic_compare_exchange_weak_explicit(a, o, n, s, f)
+#define ATOMIC_CAS_STRONG_EXPLICIT(a, o, n, s, f) atomic_compare_exchange_strong_explicit(a, o, n, s, f)
+#define ATOMIC_EXCHANGE(a, v)                     atomic_exchange(a, v)
 #endif
 
 #define SPINLOCK_BACKOFF_MIN (4)
