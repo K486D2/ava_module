@@ -167,10 +167,9 @@ HAPI usz
 mpsc_pop(mpsc_t *mpsc, usz *off)
 {
         usz rp = ATOMIC_LOAD_EXPLICIT(&mpsc->rp, memory_order_relaxed);
-        usz wp;
 
 retry:
-        wp = mpsc_get_wp(mpsc) & MPSC_OFFSET_MASK;
+        const usz wp = mpsc_get_wp(mpsc) & MPSC_OFFSET_MASK;
         if (rp == wp)
                 return 0;
 
@@ -185,7 +184,7 @@ retry:
                 if (!ATOMIC_LOAD_EXPLICIT(&p->flag, memory_order_relaxed))
                         continue;
 
-                usz reserve_pos = mpsc_get_reserve_pos(p);
+                const usz reserve_pos = mpsc_get_reserve_pos(p);
                 if (reserve_pos >= rp) {
                         if (reserve_pos < ready)
                                 ready = reserve_pos;
@@ -194,7 +193,7 @@ retry:
 
         // 处理环形缓冲 wrap
         if (wp < rp) {
-                usz warp_end = (mpsc->warp_end == MPSC_OFFSET_MAX) ? mpsc->cap : mpsc->warp_end;
+                const usz warp_end = (mpsc->warp_end == MPSC_OFFSET_MAX) ? mpsc->cap : mpsc->warp_end;
                 if (ready == MPSC_OFFSET_MAX && rp == warp_end) {
                         if (mpsc->warp_end != MPSC_OFFSET_MAX)
                                 mpsc->warp_end = MPSC_OFFSET_MAX;
@@ -206,29 +205,29 @@ retry:
         } else
                 ready = (ready < wp) ? ready : wp;
 
-        usz write_nbytes = ready - rp;
-        *off             = rp;
+        const usz write_nbytes = ready - rp;
+        *off                   = rp;
         return write_nbytes;
 }
 
 HAPI void
 mpsc_release(mpsc_t *mpsc, usz size)
 {
-        usz write_nbytes = mpsc->rp + size;
-        mpsc->rp         = (write_nbytes == mpsc->cap) ? 0 : write_nbytes;
+        const usz write_nbytes = mpsc->rp + size;
+        mpsc->rp               = (write_nbytes == mpsc->cap) ? 0 : write_nbytes;
 }
 
 HAPI isz
 mpsc_write(mpsc_t *mpsc, mpsc_p_t *p, const void *src, usz size)
 {
-        isz off = mpsc_acquire(mpsc, p, size);
+        const isz off = mpsc_acquire(mpsc, p, size);
         if (off < 0)
                 return -1;
 
         if ((usz)off + size <= mpsc->cap)
                 memcpy((u8 *)mpsc->buf + (usz)off, src, size);
         else {
-                usz first = mpsc->cap - (usz)off;
+                const usz first = mpsc->cap - (usz)off;
                 memcpy((u8 *)mpsc->buf + (usz)off, src, first);
                 memcpy((u8 *)mpsc->buf, (u8 *)src + first, size - first);
         }
@@ -240,16 +239,17 @@ mpsc_write(mpsc_t *mpsc, mpsc_p_t *p, const void *src, usz size)
 HAPI usz
 mpsc_read(mpsc_t *mpsc, void *dst, usz size)
 {
-        usz off, avail_nbytes = mpsc_pop(mpsc, &off);
+        usz       off;
+        const usz avail_nbytes = mpsc_pop(mpsc, &off);
         if (avail_nbytes == 0)
                 return 0;
 
-        usz read_nbytes = (avail_nbytes < size) ? 0 : size;
+        const usz read_nbytes = (avail_nbytes < size) ? 0 : size;
 
         if (off + read_nbytes <= mpsc->cap)
                 memcpy(dst, (u8 *)mpsc->buf + off, read_nbytes);
         else {
-                usz first = mpsc->cap - off;
+                const usz first = mpsc->cap - off;
                 memcpy(dst, (u8 *)mpsc->buf + off, first);
                 memcpy((u8 *)dst + first, (u8 *)mpsc->buf, read_nbytes - first);
         }

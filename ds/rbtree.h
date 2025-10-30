@@ -318,7 +318,8 @@ rb_erase(rb_node_t *node, rb_root_t *root)
         } else if (!node->rb_right)
                 child = node->rb_left;
         else {
-                rb_node_t *old = node, *left;
+                const rb_node_t *old = node;
+                rb_node_t       *left;
 
                 node = node->rb_right;
                 while ((left = node->rb_left))

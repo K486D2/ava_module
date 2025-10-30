@@ -40,9 +40,9 @@ HAPI usz spsc_read_buf(spsc_t *spsc, void *buf, void *dst, usz size);
 /* -------------------------------------------------------------------------- */
 
 HAPI int
-spsc_init(spsc_t *spsc, void *buf, usz cap, spsc_policy_e e_policy)
+spsc_init(spsc_t *spsc, void *buf, const usz cap, const spsc_policy_e e_policy)
 {
-        int ret = spsc_init_buf(spsc, cap, e_policy);
+        const int ret = spsc_init_buf(spsc, cap, e_policy);
         if (ret != 0)
                 return ret;
 
@@ -51,7 +51,7 @@ spsc_init(spsc_t *spsc, void *buf, usz cap, spsc_policy_e e_policy)
 }
 
 HAPI int
-spsc_init_buf(spsc_t *spsc, usz cap, spsc_policy_e e_policy)
+spsc_init_buf(spsc_t *spsc, const usz cap, const spsc_policy_e e_policy)
 {
         if (!IS_POWER_OF_2(cap))
                 return -1;
@@ -95,7 +95,7 @@ spsc_free(spsc_t *spsc)
 }
 
 HAPI usz
-spsc_policy(spsc_t *spsc, usz wp, usz rp, usz size)
+spsc_policy(spsc_t *spsc, const usz wp, const usz rp, usz size)
 {
         usz free = spsc->cap - (wp - rp);
         if (size <= free)
@@ -117,13 +117,13 @@ spsc_policy(spsc_t *spsc, usz wp, usz rp, usz size)
 }
 
 HAPI usz
-spsc_write(spsc_t *spsc, const void *src, usz size)
+spsc_write(spsc_t *spsc, const void *src, const usz size)
 {
         return spsc_write_buf(spsc, spsc->buf, src, size);
 }
 
 HAPI usz
-spsc_read(spsc_t *spsc, void *dst, usz size)
+spsc_read(spsc_t *spsc, void *dst, const usz size)
 {
         return spsc_read_buf(spsc, spsc->buf, dst, size);
 }
@@ -138,9 +138,9 @@ spsc_write_buf(spsc_t *spsc, void *buf, const void *src, usz size)
         if (size == 0)
                 return 0;
 
-        usz mask  = spsc->cap - 1;
-        usz off   = wp & mask;
-        usz first = MIN(size, spsc->cap - off);
+        const usz mask  = spsc->cap - 1;
+        const usz off   = wp & mask;
+        const usz first = MIN(size, spsc->cap - off);
         memcpy((u8 *)buf + off, src, first);
         memcpy((u8 *)buf, (u8 *)src + first, size - first);
 
@@ -160,9 +160,9 @@ spsc_read_buf(spsc_t *spsc, void *buf, void *dst, usz size)
         if (size == 0)
                 return 0;
 
-        usz mask  = spsc->cap - 1;
-        usz off   = rp & mask;
-        usz first = MIN(size, spsc->cap - off);
+        const usz mask  = spsc->cap - 1;
+        const usz off   = rp & mask;
+        const usz first = MIN(size, spsc->cap - off);
         memcpy(dst, (u8 *)buf + off, first);
         memcpy((u8 *)dst + first, (u8 *)buf, size - first);
 

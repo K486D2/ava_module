@@ -93,7 +93,7 @@ HAPI bool list_empty(const list_head_t *head);
  * @param list
  * @param head
  */
-HAPI void __list_splice(list_head_t *list, list_head_t *head);
+HAPI void __list_splice(const list_head_t *list, list_head_t *head);
 
 /**
  * @brief 若 list 非空，则拼接到 head
@@ -109,7 +109,7 @@ HAPI void list_splice(list_head_t *list, list_head_t *head);
  * @param old_entry
  * @param new_entry
  */
-HAPI void list_replace(list_head_t *old_entry, list_head_t *new_entry);
+HAPI void list_replace(const list_head_t *old_entry, list_head_t *new_entry);
 
 /**
  * @brief 替换后重置 old_entry 为独立链表
@@ -189,7 +189,7 @@ list_empty(const list_head_t *head)
 }
 
 HAPI void
-__list_splice(list_head_t *list, list_head_t *head)
+__list_splice(const list_head_t *list, list_head_t *head)
 {
         list_head_t *first = list->next;
         list_head_t *last  = list->prev;
@@ -210,7 +210,7 @@ list_splice(list_head_t *list, list_head_t *head)
 }
 
 HAPI void
-list_replace(list_head_t *old_entry, list_head_t *new_entry)
+list_replace(const list_head_t *old_entry, list_head_t *new_entry)
 {
         new_entry->next       = old_entry->next;
         new_entry->next->prev = new_entry;

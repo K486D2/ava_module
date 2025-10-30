@@ -124,7 +124,7 @@ mp_alloc(mp_t *mp, usz cap)
 }
 
 HAPI void *
-mp_calloc(mp_t *mp, usz cap)
+mp_calloc(mp_t *mp, const usz cap)
 {
         void *ptr = mp_alloc(mp, cap);
         if (!ptr)

@@ -8,10 +8,9 @@
 #include <sys/epoll.h>
 #include <sys/socket.h>
 #include <unistd.h>
-typedef int socket_t;
+typedef int sockfd_t;
 #define CLOSE_SOCKET close
 #elif defined(_WIN32)
-#include <io.h>
 #include <winsock2.h>
 #include <ws2tcpip.h>
 typedef SOCKET sockfd_t;
@@ -112,27 +111,27 @@ typedef struct {
 } net_broadcast_t;
 
 HAPI int  net_init(net_t *net, net_cfg_t net_cfg);
-HAPI void net_destory(net_t *net);
+HAPI void net_destroy(net_t *net);
 HAPI int  net_set_nonblock(net_ch_t *ch);
 HAPI int  net_add_ch(net_t *net, net_ch_t *ch);
 
-HAPI int net_sync_send(net_ch_t *ch, void *tx_buf, usz size);
-HAPI int net_sync_recv_yield(net_ch_t *ch, void *rx_buf, usz cap, u32 timeout_us);
-HAPI int net_sync_recv_spin(net_ch_t *ch, void *rx_buf, usz cap, u32 timeout_us);
+HAPI isz net_sync_send(const net_ch_t *ch, const void *tx_buf, usz size);
+HAPI isz net_sync_recv_yield(const net_ch_t *ch, void *rx_buf, usz cap, u32 timeout_us);
+HAPI isz net_sync_recv_spin(const net_ch_t *ch, void *rx_buf, usz cap, u32 timeout_us);
 
-HAPI int net_async_send(net_t *net, net_ch_t *ch, void *tx_buf, usz size);
-HAPI int net_async_recv(net_t *net, net_ch_t *ch, void *rx_buf, usz cap, u32 timeout_us);
+HAPI isz net_async_send(net_t *net, net_ch_t *ch, void *tx_buf, usz size);
+HAPI isz net_async_recv(net_t *net, net_ch_t *ch, void *rx_buf, usz cap, u32 timeout_us);
 HAPI int net_poll(net_t *net);
 
-HAPI int net_send(net_t *net, net_ch_t *ch, void *tx_buf, usz size);
-HAPI int net_recv(net_t *net, net_ch_t *ch, void *rx_buf, usz cap, u32 timeout_us);
-HAPI int net_send_recv(net_t *net, net_ch_t *ch, void *tx_buf, usz size, void *rx_buf, usz cap, u32 timeout_us);
+HAPI isz net_send(net_t *net, net_ch_t *ch, void *tx_buf, usz size);
+HAPI isz net_recv(net_t *net, net_ch_t *ch, void *rx_buf, usz cap, u32 timeout_us);
+HAPI isz net_send_recv(net_t *net, net_ch_t *ch, void *tx_buf, usz size, void *rx_buf, usz cap, u32 timeout_us);
 
 HAPI int net_broadcast(
     net_t *net, const char *remote_ip, u16 remote_port, const void *tx_buf, u32 size, net_broadcast_t *resp, u32 timeout_us);
 
 HAPI int
-net_init(net_t *net, net_cfg_t net_cfg)
+net_init(net_t *net, const net_cfg_t net_cfg)
 {
         DECL_PTRS(net, cfg, lo);
 
@@ -152,14 +151,14 @@ net_init(net_t *net, net_cfg_t net_cfg)
 }
 
 HAPI void
-net_destory(net_t *net)
+net_destroy(net_t *net)
 {
         DECL_PTRS(net, cfg, lo);
 
         list_head_t *node;
         LIST_FOR_EACH(node, &lo->ch_root)
         {
-                net_ch_t *ch = CONTAINER_OF(node, net_ch_t, ch_node);
+                const net_ch_t *ch = CONTAINER_OF(node, net_ch_t, ch_node);
                 CLOSE_SOCKET(ch->fd);
         }
 
@@ -178,13 +177,11 @@ net_set_nonblock(net_ch_t *ch)
         if (flags < 0)
                 return flags;
 
-        flags   |= O_NONBLOCK;
-        int ret  = fcntl(ch->fd, F_SETFL, flags);
-        return ret;
+        flags |= O_NONBLOCK;
+        return fcntl(ch->fd, F_SETFL, flags);
 #elif defined(_WIN32)
         unsigned long mode = 1;
-        int           ret  = ioctlsocket(ch->fd, FIONBIO, &mode);
-        return ret;
+        return ioctlsocket(ch->fd, FIONBIO, &mode);
 #endif
 }
 
@@ -214,19 +211,19 @@ net_add_ch(net_t *net, net_ch_t *ch)
                         return -MEINVAL;
         }
 
-        struct sockaddr_in remote_addr;
-        memset(&remote_addr, 0, sizeof(remote_addr));
-        remote_addr.sin_family      = AF_INET;
-        remote_addr.sin_port        = htons(ch->remote_port);
-        remote_addr.sin_addr.s_addr = inet_addr(ch->remote_ip);
+        struct sockaddr_in remote_addr = {
+            .sin_family      = AF_INET,
+            .sin_port        = htons(ch->remote_port),
+            .sin_addr.s_addr = inet_addr(ch->remote_ip),
+        };
 
         int ret;
         if (strlen(ch->local_ip) != 0 && ch->local_port != 0) {
-                struct sockaddr_in local_addr;
-                memset(&local_addr, 0, sizeof(local_addr));
-                local_addr.sin_family      = AF_INET;
-                local_addr.sin_port        = htons(ch->local_port);
-                local_addr.sin_addr.s_addr = inet_addr(ch->local_ip);
+                struct sockaddr_in local_addr = {
+                    .sin_family      = AF_INET,
+                    .sin_port        = htons(ch->local_port),
+                    .sin_addr.s_addr = inet_addr(ch->local_ip),
+                };
 
                 ret = bind(ch->fd, (struct sockaddr *)&local_addr, sizeof(local_addr));
                 if (ret < 0)
@@ -250,41 +247,43 @@ cleanup:
         return ret;
 }
 
-HAPI int
-net_sync_send(net_ch_t *ch, void *tx_buf, usz size)
+HAPI isz
+net_sync_send(const net_ch_t *ch, const void *tx_buf, const usz size)
 {
 #ifdef __linux__
         return send(ch->fd, tx_buf, size, 0);
 #elif defined(_WIN32)
-        return send(ch->fd, (const char *)tx_buf, size, 0);
+        return send(ch->fd, tx_buf, (int)size, 0);
 #endif
 }
 
-HAPI int
-net_sync_recv_yield(net_ch_t *ch, void *rx_buf, usz cap, u32 timeout_us)
+HAPI isz
+net_sync_recv_yield(const net_ch_t *ch, void *rx_buf, const usz cap, const u32 timeout_us)
 {
-        struct timeval tv;
-        tv.tv_sec  = US2S(timeout_us);
-        tv.tv_usec = (timeout_us % 1000000);
+        const struct timeval tv = {
+            .tv_sec  = (int)US2S(timeout_us),
+            .tv_usec = (int)(timeout_us % 1000000),
+        };
+
 #ifdef __linux__
         setsockopt(ch->fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
         return recv(ch->fd, rx_buf, cap, 0);
 #elif defined(_WIN32)
         setsockopt(ch->fd, SOL_SOCKET, SO_RCVTIMEO, (const char *)&tv, sizeof(tv));
-        return recv(ch->fd, (char *)rx_buf, cap, 0);
+        return recv(ch->fd, rx_buf, (int)cap, 0);
 #endif
 }
 
-HAPI int
-net_sync_recv_spin(net_ch_t *ch, void *rx_buf, usz cap, u32 timeout_us)
+HAPI isz
+net_sync_recv_spin(const net_ch_t *ch, void *rx_buf, const usz cap, const u32 timeout_us)
 {
-        u64 begin_ns = get_mono_ts_ns();
-        u64 curr_ns  = 0;
+        const u64 begin_ns = get_mono_ts_ns();
+        u64       curr_ns  = 0;
         while (curr_ns < begin_ns + US2NS(timeout_us)) {
 #ifdef __linux__
-                int ret = recv(ch->fd, rx_buf, cap, MSG_DONTWAIT);
+                const int ret = recv(ch->fd, rx_buf, cap, MSG_DONTWAIT);
 #elif defined(_WIN32)
-                int ret = recv(ch->fd, (char *)rx_buf, cap, 0);
+                const int ret = recv(ch->fd, rx_buf, (int)cap, 0);
 #endif
                 if (ret > 0)
                         return ret;
@@ -294,7 +293,7 @@ net_sync_recv_spin(net_ch_t *ch, void *rx_buf, usz cap, u32 timeout_us)
         return -METIMEOUT;
 }
 
-HAPI int
+HAPI isz
 net_async_send(net_t *net, net_ch_t *ch, void *tx_buf, usz size)
 {
         DECL_PTRS(net, cfg, lo);
@@ -318,7 +317,7 @@ net_async_send(net_t *net, net_ch_t *ch, void *tx_buf, usz size)
 
         return io_uring_submit(&lo->ring);
 #elif defined(_WIN32)
-        net_async_req_t *req = (net_async_req_t *)mp_calloc(cfg->mp, sizeof(net_async_req_t));
+        net_async_req_t *req = mp_calloc(cfg->mp, sizeof(net_async_req_t));
         if (!req)
                 return -MEALLOC;
 
@@ -331,8 +330,8 @@ net_async_send(net_t *net, net_ch_t *ch, void *tx_buf, usz size)
         buf.buf = (CHAR *)tx_buf;
         buf.len = (ULONG)size;
 
-        DWORD tx_size;
-        int   ret = WSASend(ch->fd, &buf, 1, &tx_size, 0, &req->ov, NULL);
+        DWORD     tx_size;
+        const int ret = WSASend(ch->fd, &buf, 1, &tx_size, 0, &req->ov, NULL);
         if (ret == SOCKET_ERROR && WSAGetLastError() != WSA_IO_PENDING) {
                 mp_free(cfg->mp, req);
                 return -1;
@@ -343,7 +342,7 @@ net_async_send(net_t *net, net_ch_t *ch, void *tx_buf, usz size)
 #endif
 }
 
-HAPI int
+HAPI isz
 net_async_recv(net_t *net, net_ch_t *ch, void *rx_buf, usz cap, u32 timeout_us)
 {
         DECL_PTRS(net, cfg, lo);
@@ -367,15 +366,16 @@ net_async_recv(net_t *net, net_ch_t *ch, void *rx_buf, usz cap, u32 timeout_us)
         io_uring_sqe_set_flags(recv_sqe, IOSQE_IO_LINK);
 
         struct io_uring_sqe     *timeout_sqe = io_uring_get_sqe(&lo->ring);
-        struct __kernel_timespec ts;
-        ts.tv_sec  = US2S(timeout_us);
-        ts.tv_nsec = US2NS(timeout_us % 1000000);
+        struct __kernel_timespec ts          = {
+                     .tv_sec  = (int)US2S(timeout_us),
+                     .tv_nsec = (int)US2NS(timeout_us % 1000000),
+        };
         io_uring_prep_link_timeout(timeout_sqe, &ts, 0);
         io_uring_sqe_set_data(timeout_sqe, req);
 
         return io_uring_submit(&lo->ring);
 #elif defined(_WIN32)
-        net_async_req_t *req = (net_async_req_t *)mp_calloc(cfg->mp, sizeof(net_async_req_t));
+        net_async_req_t *req = mp_calloc(cfg->mp, sizeof(net_async_req_t));
         if (!req)
                 return -MEALLOC;
 
@@ -388,9 +388,9 @@ net_async_recv(net_t *net, net_ch_t *ch, void *rx_buf, usz cap, u32 timeout_us)
         buf.buf = (CHAR *)rx_buf;
         buf.len = (ULONG)cap;
 
-        DWORD flags = 0;
-        DWORD rx_size;
-        int   ret = WSARecv(ch->fd, &buf, 1, &rx_size, &flags, &req->ov, NULL);
+        DWORD     flags = 0;
+        DWORD     rx_size;
+        const int ret = WSARecv(ch->fd, &buf, 1, &rx_size, &flags, &req->ov, NULL);
         if (ret == SOCKET_ERROR && WSAGetLastError() != WSA_IO_PENDING) {
                 mp_free(cfg->mp, req);
                 return -1;
@@ -429,11 +429,11 @@ net_poll(net_t *net)
         OVERLAPPED *ov = NULL;
 
         for (;;) {
-                BOOL ok = GetQueuedCompletionStatus(lo->iocp, &size, &key, &ov, INFINITE);
+                const BOOL ok = GetQueuedCompletionStatus(lo->iocp, &size, &key, &ov, INFINITE);
                 if (!ok && ov == NULL)
                         break;
 
-                net_async_req_t *req = (net_async_req_t *)ov->Pointer;
+                net_async_req_t *req = ov->Pointer;
                 if (!req)
                         continue;
 
@@ -446,8 +446,8 @@ net_poll(net_t *net)
 #endif
 }
 
-HAPI int
-net_send(net_t *net, net_ch_t *ch, void *tx_buf, usz size)
+HAPI isz
+net_send(net_t *net, net_ch_t *ch, void *tx_buf, const usz size)
 {
         ch->e_op = NET_OP_SEND;
         switch (ch->e_mode) {
@@ -461,8 +461,8 @@ net_send(net_t *net, net_ch_t *ch, void *tx_buf, usz size)
         }
 }
 
-HAPI int
-net_recv(net_t *net, net_ch_t *ch, void *rx_buf, usz cap, u32 timeout_us)
+HAPI isz
+net_recv(net_t *net, net_ch_t *ch, void *rx_buf, const usz cap, const u32 timeout_us)
 {
         ch->e_op = NET_OP_RECV;
         switch (ch->e_mode) {
@@ -477,10 +477,10 @@ net_recv(net_t *net, net_ch_t *ch, void *rx_buf, usz cap, u32 timeout_us)
         }
 }
 
-HAPI int
-net_send_recv(net_t *net, net_ch_t *ch, void *tx_buf, usz size, void *rx_buf, usz cap, u32 timeout_us)
+HAPI isz
+net_send_recv(net_t *net, net_ch_t *ch, void *tx_buf, const usz size, void *rx_buf, const usz cap, const u32 timeout_us)
 {
-        const int ret = net_send(net, ch, tx_buf, size);
+        const isz ret = net_send(net, ch, tx_buf, size);
         if (ret <= 0)
                 return ret;
 
@@ -488,8 +488,13 @@ net_send_recv(net_t *net, net_ch_t *ch, void *tx_buf, usz size, void *rx_buf, us
 }
 
 HAPI int
-net_broadcast(
-    net_t *net, const char *remote_ip, u16 remote_port, const void *tx_buf, u32 size, net_broadcast_t *resp, u32 timeout_us)
+net_broadcast(net_t           *net,
+              const char      *remote_ip,
+              const u16        remote_port,
+              const void      *tx_buf,
+              const u32        size,
+              net_broadcast_t *resp,
+              const u32        timeout_us)
 {
         net_ch_t ch = {
             .e_mode      = NET_MODE_SYNC_YIELD,
@@ -497,7 +502,7 @@ net_broadcast(
         };
         strncpy(ch.remote_ip, remote_ip, MAX_IP_SIZE - 1);
 
-        int ret = net_add_ch(net, &ch);
+        isz ret = net_add_ch(net, &ch);
         if (ret < 0)
                 goto cleanup;
 
@@ -516,7 +521,7 @@ net_broadcast(
 
 cleanup:
         CLOSE_SOCKET(ch.fd);
-        return ret;
+        return (int)ret;
 }
 
 #endif // !NET_H
