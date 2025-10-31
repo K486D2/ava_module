@@ -127,8 +127,8 @@ HAPI isz net_send(net_t *net, net_ch_t *ch, void *tx_buf, usz size);
 HAPI isz net_recv(net_t *net, net_ch_t *ch, void *rx_buf, usz cap, u32 timeout_us);
 HAPI isz net_send_recv(net_t *net, net_ch_t *ch, void *tx_buf, usz size, void *rx_buf, usz cap, u32 timeout_us);
 
-HAPI int net_broadcast(
-    net_t *net, const char *remote_ip, u16 remote_port, const void *tx_buf, u32 size, net_broadcast_t *resp, u32 timeout_us);
+HAPI int
+net_broadcast(net_t *net, const char *ip, u16 port, const void *tx_buf, u32 size, net_broadcast_t *resp, u32 timeout_us);
 
 HAPI int
 net_init(net_t *net, const net_cfg_t net_cfg)
@@ -494,19 +494,14 @@ net_send_recv(net_t *net, net_ch_t *ch, void *tx_buf, const usz size, void *rx_b
 }
 
 HAPI int
-net_broadcast(net_t           *net,
-              const char      *remote_ip,
-              const u16        remote_port,
-              const void      *tx_buf,
-              const u32        size,
-              net_broadcast_t *resp,
-              const u32        timeout_us)
+net_broadcast(
+    net_t *net, const char *ip, const u16 port, const void *tx_buf, const u32 size, net_broadcast_t *resp, const u32 timeout_us)
 {
         net_ch_t ch = {
             .e_mode      = NET_MODE_SYNC_YIELD,
-            .remote_port = remote_port,
+            .remote_port = port,
         };
-        strncpy(ch.remote_ip, remote_ip, MAX_IP_SIZE - 1);
+        strncpy(ch.remote_ip, ip, MAX_IP_SIZE - 1);
 
         isz ret = net_add_ch(net, &ch);
         if (ret < 0)
@@ -516,14 +511,17 @@ net_broadcast(net_t           *net,
         if (ret <= 0)
                 goto cleanup;
 
-        ret = net_recv(net, &ch, resp->resp, MAX_RESP_BUF_SIZE, timeout_us);
-        if (ret <= 0)
+        int resp_cnt = 0;
+        while ((ret = net_recv(net, &ch, resp->resp, MAX_RESP_BUF_SIZE, timeout_us)) > 0) {
+                resp_cnt++;
+                strncpy(resp->remote_ip, ip, MAX_IP_SIZE - 1);
+                resp->resp[ret] = '\0';
+        }
+
+        if (resp_cnt == 0)
                 goto cleanup;
 
-        strncpy(resp->remote_ip, remote_ip, MAX_IP_SIZE - 1);
-        resp->resp[ret] = '\0';
-
-        return 0;
+        return resp_cnt;
 
 cleanup:
         CLOSE_SOCKET(ch.fd);
