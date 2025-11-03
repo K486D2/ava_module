@@ -73,9 +73,13 @@ init(void)
         };
         int ret = net_init(&net, net_cfg);
 
-        net_resp_t  resp[255];
-        const char *tx_buf = "Hello!";
-        net_broadcast(&net, "127.0.0.255", 2333, tx_buf, strlen(tx_buf), resp, 1000);
+        net_broadcast_t devs[255];
+        const char     *tx_buf = "{\"method\":\"GET\",\"reqTarget\":\"/custom\",\"cnt\":\"    "
+                                 "0\",\"type\":true,\"mcu_fw_version\":true,\"mac_address\":true,\"static_IP\":true}";
+        net_broadcast(&net, "192.168.137.255", 2334, tx_buf, strlen(tx_buf), devs, 1000);
+
+        for (int i = 0; i < 255; i++)
+                printf("%s\n", devs[i].resp);
 
         return ret;
 }
