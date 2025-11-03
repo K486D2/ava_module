@@ -10,8 +10,8 @@ log_t g_log;
 #define WRITE_THREAD_NUM 1000
 u64 PRODUCERS_CNTS[WRITE_THREAD_NUM];
 
-u8       LOGGER_FLUSH_BUF[128];
-u8       LOGGER_BUF[1024 * 1024];
+u8       LOG_FLUSH_BUF[128];
+u8       LOG_BUF[1024 * 1024];
 mpsc_p_t PRODUCERS[WRITE_THREAD_NUM];
 
 HAPI void
@@ -54,17 +54,17 @@ main()
         log_cfg_t log_cfg = {
             .e_mode     = LOG_MODE_SYNC,
             .e_level    = LOG_LEVEL_DEBUG,
-            .end_sign   = '\n',
             .fp         = stdout,
-            .buf        = (void *)LOGGER_BUF,
-            .cap        = sizeof(LOGGER_BUF),
-            .flush_buf  = LOGGER_FLUSH_BUF,
-            .flush_cap  = sizeof(LOGGER_FLUSH_BUF),
+            .buf        = (void *)LOG_BUF,
+            .cap        = sizeof(LOG_BUF),
+            .flush_buf  = LOG_FLUSH_BUF,
+            .flush_cap  = sizeof(LOG_FLUSH_BUF),
             .producers  = (mpsc_p_t *)&PRODUCERS,
             .nproducers = ARRAY_LEN(PRODUCERS),
+            .f_flush    = log_stdout,
+            .f_get_ts   = get_mono_ts_us,
         };
-        g_log.ops.f_flush  = log_stdout;
-        g_log.ops.f_get_ts = get_mono_ts_us;
+
         log_init(&g_log, log_cfg);
 
         pthread_t flush_thread;

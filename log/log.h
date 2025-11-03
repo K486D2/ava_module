@@ -1,5 +1,5 @@
-#ifndef LOGGER_H
-#define LOGGER_H
+#ifndef LOG_H
+#define LOG_H
 
 #include <stdarg.h>
 #include <stdatomic.h>
@@ -18,7 +18,7 @@ typedef enum {
         LOG_LEVEL_DEBUG, // 调试
         LOG_LEVEL_INFO,  // 一般
         LOG_LEVEL_WARN,  // 警告
-        LOG_LEVEL_ERROR, // 错误
+        LOG_LEVEL_ERR,   // 错误
 } log_level_e;
 
 typedef enum {
@@ -32,17 +32,22 @@ typedef struct {
         usz msg_nbytes;
 } log_entry_t;
 
+typedef u64 (*log_get_ts_f)(void);
+typedef void (*log_flush_f)(void *fp, const u8 *src, size_t size);
+
 typedef struct {
-        log_mode_e  e_mode;
-        log_level_e e_level;
-        char        end_sign;
-        void       *fp;
-        void       *buf;
-        size_t      cap;
-        u8         *flush_buf;
-        size_t      flush_cap;
-        mpsc_p_t   *producers;
-        size_t      nproducers;
+        log_mode_e   e_mode;
+        log_level_e  e_level;
+        char         end_sign;
+        void        *fp;
+        void        *buf;
+        size_t       cap;
+        u8          *flush_buf;
+        size_t       flush_cap;
+        mpsc_p_t    *producers;
+        size_t       nproducers;
+        log_get_ts_f f_get_ts;
+        log_flush_f  f_flush;
 } log_cfg_t;
 
 typedef struct {
@@ -50,18 +55,9 @@ typedef struct {
         bool   busy;
 } log_lo_t;
 
-typedef u64 (*log_get_ts_f)(void);
-typedef void (*log_flush_f)(void *fp, const u8 *src, size_t size);
-
-typedef struct {
-        log_get_ts_f f_get_ts;
-        log_flush_f  f_flush;
-} log_ops_t;
-
 typedef struct {
         log_cfg_t cfg;
         log_lo_t  lo;
-        log_ops_t ops;
 } log_t;
 
 HAPI void log_init(log_t *log, log_cfg_t log_cfg);
@@ -72,7 +68,7 @@ HAPI void log_data(log_t *log, usz id, const char *fmt, ...);
 HAPI void log_debug(log_t *log, usz id, const char *fmt, ...);
 HAPI void log_info(log_t *log, usz id, const char *fmt, ...);
 HAPI void log_warn(log_t *log, usz id, const char *fmt, ...);
-HAPI void log_error(log_t *log, usz id, const char *fmt, ...);
+HAPI void log_err(log_t *log, usz id, const char *fmt, ...);
 
 HAPI void
 log_init(log_t *log, log_cfg_t log_cfg)
@@ -86,12 +82,12 @@ log_init(log_t *log, log_cfg_t log_cfg)
 HAPI void
 log_write(log_t *log, usz id, const char *fmt, va_list args)
 {
-        DECL_PTRS(log, cfg, ops, lo);
+        DECL_PTRS(log, cfg, lo);
 
         va_list args_entry;
         va_copy(args_entry, args);
         log_entry_t entry = {
-            .ts         = ops->f_get_ts(),
+            .ts         = cfg->f_get_ts(),
             .id         = id,
             .msg_nbytes = (usz)vsnprintf(NULL, 0, fmt, args_entry) + 1,
         };
@@ -126,7 +122,7 @@ log_write(log_t *log, usz id, const char *fmt, va_list args)
 HAPI void
 log_flush(log_t *log)
 {
-        DECL_PTRS(log, cfg, ops, lo);
+        DECL_PTRS(log, cfg, lo);
 
         while (!lo->busy) {
                 log_entry_t entry        = {0};
@@ -142,7 +138,7 @@ log_flush(log_t *log)
 
                 total_nbytes += mpsc_read(&lo->mpsc, cfg->flush_buf + total_nbytes, entry.msg_nbytes);
 
-                ops->f_flush(cfg->fp, cfg->flush_buf, total_nbytes);
+                cfg->f_flush(cfg->fp, cfg->flush_buf, total_nbytes);
                 lo->busy = (cfg->e_mode == LOG_MODE_ASYNC);
         }
 }
@@ -204,11 +200,11 @@ log_warn(log_t *log, usz id, const char *fmt, ...)
 }
 
 HAPI void
-log_error(log_t *log, usz id, const char *fmt, ...)
+log_err(log_t *log, usz id, const char *fmt, ...)
 {
         DECL_PTRS(log, cfg);
 
-        if (cfg->e_level > LOG_LEVEL_ERROR)
+        if (cfg->e_level > LOG_LEVEL_ERR)
                 return;
 
         va_list args;
@@ -217,4 +213,4 @@ log_error(log_t *log, usz id, const char *fmt, ...)
         va_end(args);
 }
 
-#endif // !LOGGER_H
+#endif // !LOG_H

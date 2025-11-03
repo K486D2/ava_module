@@ -22,6 +22,7 @@ typedef SOCKET sockfd_t;
 
 #include "../ds/list.h"
 #include "../ds/mp.h"
+#include "../log/log.h"
 #include "../util/errdef.h"
 #include "../util/timeops.h"
 
@@ -41,36 +42,29 @@ typedef enum {
         NET_MODE_ASYNC,
 } net_mode_e;
 
-typedef enum {
-        NET_OP_NULL,
-        NET_OP_SEND,
-        NET_OP_RECV,
-} net_op_e;
-
 #pragma pack(push, 1)
 typedef struct {
-        u64 ts;          // 时间戳
-        u8  type;        // 事件类型
-        u32 remote_ip;   // 设备IP
-        u16 remote_port; // 设备端口
-        u32 size;        // 数据长度
+        u64 ts;                 // 时间戳
+        u32 src_ip, dst_ip;     // 设备IP
+        u16 src_port, dst_port; // 设备端口
+        u32 size;               // 数据长度
 } net_log_meta_t;
 #pragma pack(pop)
 
+typedef struct {
+        char ip[MAX_IP_SIZE];
+        char buf[MAX_RESP_BUF_SIZE];
+} net_resp_t;
+
 struct net_ch;
 typedef void (*net_async_cb_f)(struct net_ch *ch, void *buf, int ret);
-typedef void (*net_log_cb_f)(FILE *fd, const net_log_meta_t *log_meta, const void *log_data);
 
 typedef struct net_ch {
-        list_head_t ch_node;
-        net_mode_e  e_mode;
-        char        remote_ip[MAX_IP_SIZE], local_ip[MAX_IP_SIZE];
-        u16         remote_port, local_port;
-
-        sockfd_t     fd;
-        net_log_cb_f f_log_cb;
-
-        net_op_e       e_op;
+        list_head_t    ch_node;
+        net_mode_e     e_mode;
+        char           dst_ip[MAX_IP_SIZE], src_ip[MAX_IP_SIZE];
+        u16            dst_port, src_port;
+        sockfd_t       fd;
         net_async_cb_f f_send_cb, f_recv_cb;
 } net_ch_t;
 
@@ -89,10 +83,12 @@ typedef struct {
         net_type_e e_type;
         mp_t      *mp;
         u32        ring_len;
+        log_cfg_t  log_cfg;
 } net_cfg_t;
 
 typedef struct {
         list_head_t ch_root;
+        log_t       log;
 #ifdef __linux__
         struct io_uring ring;
 #elif defined(_WIN32)
@@ -104,11 +100,6 @@ typedef struct net {
         net_cfg_t cfg;
         net_lo_t  lo;
 } net_t;
-
-typedef struct {
-        char ip[MAX_IP_SIZE];
-        char buf[MAX_RESP_BUF_SIZE];
-} net_resp_t;
 
 HAPI int  net_init(net_t *net, net_cfg_t net_cfg);
 HAPI void net_destroy(net_t *net);
@@ -146,6 +137,10 @@ net_init(net_t *net, const net_cfg_t net_cfg)
         WSAStartup(MAKEWORD(2, 2), &wsaData);
         lo->iocp = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, 0, 0);
 #endif
+
+        if (cfg->log_cfg.fp)
+                log_init(&lo->log, cfg->log_cfg);
+
         return ret;
 }
 
@@ -210,32 +205,32 @@ net_add_ch(net_t *net, net_ch_t *ch)
                         return -MEINVAL;
         }
 
-        struct sockaddr_in remote_addr = {
+        struct sockaddr_in dst_addr = {
             .sin_family = AF_INET,
-            .sin_port   = htons(ch->remote_port),
+            .sin_port   = htons(ch->dst_port),
             .sin_addr =
                 {
-                    .s_addr = inet_addr(ch->remote_ip),
+                    .s_addr = inet_addr(ch->dst_ip),
                 },
         };
 
         int ret;
-        if (strlen(ch->local_ip) != 0 && ch->local_port != 0) {
-                struct sockaddr_in local_addr = {
+        if (strlen(ch->src_ip) != 0 && ch->src_port != 0) {
+                struct sockaddr_in src_addr = {
                     .sin_family = AF_INET,
-                    .sin_port   = htons(ch->local_port),
+                    .sin_port   = htons(ch->src_port),
                     .sin_addr =
                         {
-                            .s_addr = inet_addr(ch->local_ip),
+                            .s_addr = inet_addr(ch->src_ip),
                         },
                 };
 
-                ret = bind(ch->fd, (struct sockaddr *)&local_addr, sizeof(local_addr));
+                ret = bind(ch->fd, (struct sockaddr *)&src_addr, sizeof(src_addr));
                 if (ret < 0)
                         goto cleanup;
         }
 
-        ret = connect(ch->fd, (struct sockaddr *)&remote_addr, sizeof(remote_addr));
+        ret = connect(ch->fd, (struct sockaddr *)&dst_addr, sizeof(dst_addr));
         if (ret < 0)
                 goto cleanup;
 
@@ -457,32 +452,70 @@ net_poll(net_t *net)
 HAPI isz
 net_send(net_t *net, net_ch_t *ch, void *tx_buf, const usz size)
 {
-        ch->e_op = NET_OP_SEND;
+        DECL_PTRS(net, lo);
+        DECL_PTR_RENAME(&lo->log, log);
+
+        isz tx_size;
         switch (ch->e_mode) {
                 case NET_MODE_SYNC_SPIN:
-                case NET_MODE_SYNC_YIELD:
-                        return net_sync_send(ch, tx_buf, size);
-                case NET_MODE_ASYNC:
-                        return net_async_send(net, ch, tx_buf, size);
+                case NET_MODE_SYNC_YIELD: {
+                        tx_size = net_sync_send(ch, tx_buf, size);
+                        break;
+                }
+                case NET_MODE_ASYNC: {
+                        tx_size = net_async_send(net, ch, tx_buf, size);
+                        break;
+                }
                 default:
                         return -MEINVAL;
         }
+
+        net_log_meta_t log_meta = {
+            .ts       = get_real_ts_ms(),
+            .dst_ip   = inet_addr(ch->dst_ip),
+            .dst_port = ch->dst_port,
+            .size     = tx_size,
+        };
+        log->cfg.f_flush(log->cfg.fp, (u8 *)&log_meta, tx_size);
+        log->cfg.f_flush(log->cfg.fp, tx_buf, tx_size);
+
+        return tx_size;
 }
 
 HAPI isz
 net_recv(net_t *net, net_ch_t *ch, void *rx_buf, const usz cap, const u32 timeout_us)
 {
-        ch->e_op = NET_OP_RECV;
+        DECL_PTRS(net, lo);
+        DECL_PTR_RENAME(&lo->log, log);
+
+        isz rx_size;
         switch (ch->e_mode) {
-                case NET_MODE_SYNC_YIELD:
-                        return net_sync_recv_yield(ch, rx_buf, cap, timeout_us);
-                case NET_MODE_SYNC_SPIN:
-                        return net_sync_recv_spin(ch, rx_buf, cap, timeout_us);
-                case NET_MODE_ASYNC:
-                        return net_async_recv(net, ch, rx_buf, cap, timeout_us);
+                case NET_MODE_SYNC_YIELD: {
+                        rx_size = net_sync_recv_yield(ch, rx_buf, cap, timeout_us);
+                        break;
+                }
+                case NET_MODE_SYNC_SPIN: {
+                        rx_size = net_sync_recv_spin(ch, rx_buf, cap, timeout_us);
+                        break;
+                }
+                case NET_MODE_ASYNC: {
+                        rx_size = net_async_recv(net, ch, rx_buf, cap, timeout_us);
+                        break;
+                }
                 default:
                         return -MEINVAL;
         }
+
+        net_log_meta_t log_meta = {
+            .ts       = get_real_ts_ms(),
+            .src_ip   = inet_addr(ch->dst_ip),
+            .src_port = ch->dst_port,
+            .size     = rx_size,
+        };
+        log->cfg.f_flush(log->cfg.fp, (u8 *)&log_meta, rx_size);
+        log->cfg.f_flush(log->cfg.fp, rx_buf, rx_size);
+
+        return rx_size;
 }
 
 HAPI isz
@@ -500,10 +533,10 @@ net_broadcast(
     net_t *net, const char *ip, const u16 port, const void *tx_buf, const u32 size, net_resp_t *resp, const u32 timeout_us)
 {
         net_ch_t ch = {
-            .e_mode      = NET_MODE_SYNC_YIELD,
-            .remote_port = port,
+            .e_mode   = NET_MODE_SYNC_YIELD,
+            .dst_port = port,
         };
-        strncpy(ch.remote_ip, ip, MAX_IP_SIZE - 1);
+        strncpy(ch.dst_ip, ip, MAX_IP_SIZE - 1);
 
         isz ret = net_add_ch(net, &ch);
         if (ret < 0)

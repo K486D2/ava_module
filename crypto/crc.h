@@ -1,7 +1,7 @@
 #ifndef CRC_H
 #define CRC_H
 
-#include "../util/marcodef.h"
+#include "../util/macrodef.h"
 #include "../util/typedef.h"
 
 // CRC32 查找表，使用的多项式是 0xEDB88320
@@ -35,7 +35,7 @@ static const u32 CRC32_TABLE[256] = {
 };
 
 HAPI u32
-crc32(const u8 *data, usz size)
+crc32(const u8 *data, const usz size)
 {
         u32 crc = 0xFFFFFFFF;
         for (usz i = 0; i < size; i++)
