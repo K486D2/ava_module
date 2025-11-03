@@ -73,9 +73,9 @@ init(void)
         };
         int ret = net_init(&net, net_cfg);
 
-        // net_broadcast_t resp[255];
-        // const char     *tx_buf = "Hello!";
-        // net_broadcast(&net, "127.0.0.255", 2333, tx_buf, strlen(tx_buf), resp, 1000);
+        net_resp_t  resp[255];
+        const char *tx_buf = "Hello!";
+        net_broadcast(&net, "127.0.0.255", 2333, tx_buf, strlen(tx_buf), resp, 1000);
 
         return ret;
 }

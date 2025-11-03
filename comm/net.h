@@ -106,9 +106,9 @@ typedef struct net {
 } net_t;
 
 typedef struct {
-        char remote_ip[MAX_IP_SIZE];
-        char resp[MAX_RESP_BUF_SIZE];
-} net_broadcast_t;
+        char ip[MAX_IP_SIZE];
+        char buf[MAX_RESP_BUF_SIZE];
+} net_resp_t;
 
 HAPI int  net_init(net_t *net, net_cfg_t net_cfg);
 HAPI void net_destroy(net_t *net);
@@ -127,8 +127,7 @@ HAPI isz net_send(net_t *net, net_ch_t *ch, void *tx_buf, usz size);
 HAPI isz net_recv(net_t *net, net_ch_t *ch, void *rx_buf, usz cap, u32 timeout_us);
 HAPI isz net_send_recv(net_t *net, net_ch_t *ch, void *tx_buf, usz size, void *rx_buf, usz cap, u32 timeout_us);
 
-HAPI int
-net_broadcast(net_t *net, const char *ip, u16 port, const void *tx_buf, u32 size, net_broadcast_t *resp, u32 timeout_us);
+HAPI int net_broadcast(net_t *net, const char *ip, u16 port, const void *tx_buf, u32 size, net_resp_t *resp, u32 timeout_us);
 
 HAPI int
 net_init(net_t *net, const net_cfg_t net_cfg)
@@ -266,16 +265,19 @@ net_sync_send(const net_ch_t *ch, const void *tx_buf, const usz size)
 HAPI isz
 net_sync_recv_yield(const net_ch_t *ch, void *rx_buf, const usz cap, const u32 timeout_us)
 {
+#ifdef __linux__
         const struct timeval tv = {
             .tv_sec  = (int)US2S(timeout_us),
             .tv_usec = (int)(timeout_us % 1000000),
         };
-
-#ifdef __linux__
         setsockopt(ch->fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
         return recv(ch->fd, rx_buf, cap, 0);
 #elif defined(_WIN32)
-        setsockopt(ch->fd, SOL_SOCKET, SO_RCVTIMEO, (const char *)&tv, sizeof(tv));
+        DWORD tv_ms = US2MS(timeout_us);
+        if (tv_ms == 0 && timeout_us > 0)
+                tv_ms = 1;
+
+        setsockopt(ch->fd, SOL_SOCKET, SO_RCVTIMEO, (const char *)&tv_ms, sizeof(tv_ms));
         return recv(ch->fd, rx_buf, (int)cap, 0);
 #endif
 }
@@ -495,7 +497,7 @@ net_send_recv(net_t *net, net_ch_t *ch, void *tx_buf, const usz size, void *rx_b
 
 HAPI int
 net_broadcast(
-    net_t *net, const char *ip, const u16 port, const void *tx_buf, const u32 size, net_broadcast_t *resp, const u32 timeout_us)
+    net_t *net, const char *ip, const u16 port, const void *tx_buf, const u32 size, net_resp_t *resp, const u32 timeout_us)
 {
         net_ch_t ch = {
             .e_mode      = NET_MODE_SYNC_YIELD,
@@ -507,17 +509,24 @@ net_broadcast(
         if (ret < 0)
                 goto cleanup;
 
+        const char opt = 1;
+        setsockopt(ch.fd, SOL_SOCKET, SO_BROADCAST, &opt, sizeof(opt));
+
         ret = net_send(net, &ch, (void *)tx_buf, size);
         if (ret <= 0)
                 goto cleanup;
 
-        int resp_cnt = 0;
-        while ((ret = net_recv(net, &ch, resp->resp, MAX_RESP_BUF_SIZE, timeout_us)) > 0) {
-                resp_cnt++;
-                strncpy(resp->remote_ip, ip, MAX_IP_SIZE - 1);
-                resp->resp[ret] = '\0';
-        }
+        struct sockaddr_in src_addr;
+        socklen_t          addrlen = sizeof(src_addr);
+        recvfrom(ch.fd, resp->buf, sizeof(resp->buf), 0, (struct sockaddr *)&src_addr, &addrlen);
 
+        int resp_cnt = 0;
+        // while ((ret = net_recv(net, &ch, resp->buf, MAX_RESP_BUF_SIZE, timeout_us)) > 0) {
+        //         resp_cnt++;
+        //         strncpy(resp->ip, ip, MAX_IP_SIZE - 1);
+        //         resp->buf[ret] = '\0';
+        // }
+        //
         if (resp_cnt == 0)
                 goto cleanup;
 
