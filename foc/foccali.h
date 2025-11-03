@@ -8,17 +8,17 @@
 HAPI int
 foc_adc_cali(foc_t *foc)
 {
-        DECL_PTRS(foc, cfg, ops, in, lo);
+        DECL_PTRS(foc, cfg, in, lo);
 
-        ops->f_set_drv(true);
-        in->adc_raw = ops->f_get_adc();
+        cfg->f_set_drv(true);
+        in->adc_raw = cfg->f_get_adc();
 
         UVW_ADD_VEC_IP(cfg->adc_offset.i32_i_uvw, in->adc_raw.i32_i_uvw);
         if (++lo->adc_cali_cnt >= LF(cfg->periph_cfg.adc_cali_cnt_max)) {
                 cfg->adc_offset.i32_i_uvw.u >>= cfg->periph_cfg.adc_cali_cnt_max;
                 cfg->adc_offset.i32_i_uvw.v >>= cfg->periph_cfg.adc_cali_cnt_max;
                 cfg->adc_offset.i32_i_uvw.w >>= cfg->periph_cfg.adc_cali_cnt_max;
-                ops->f_set_drv(false);
+                cfg->f_set_drv(false);
                 return 0;
         }
         return -MEBUSY;

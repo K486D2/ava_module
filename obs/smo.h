@@ -21,10 +21,9 @@ typedef struct {
 } smo_out_t;
 
 typedef struct {
-        f32_ab_t est_i_ab;
-        f32_ab_t est_i_ab_err;
-        f32_ab_t est_emf_v_ab;
-
+        f32_ab_t     est_i_ab;
+        f32_ab_t     est_i_ab_err;
+        f32_ab_t     est_emf_v_ab;
         pll_filter_t pll;
 } smo_lo_t;
 
@@ -36,7 +35,7 @@ typedef struct {
 } smo_obs_t;
 
 HAPI void
-smo_init(smo_obs_t *smo, smo_cfg_t smo_cfg)
+smo_init(smo_obs_t *smo, const smo_cfg_t smo_cfg)
 {
         DECL_PTRS(smo, cfg, lo);
 
@@ -92,7 +91,7 @@ smo_exec(smo_obs_t *smo)
 }
 
 HAPI void
-smo_exec_in(smo_obs_t *smo, f32_ab_t i_ab, f32_ab_t v_ab)
+smo_exec_in(smo_obs_t *smo, const f32_ab_t i_ab, const f32_ab_t v_ab)
 {
         DECL_PTRS(smo, in);
 

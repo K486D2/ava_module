@@ -2,6 +2,7 @@
 #define ERRDEF_H
 
 enum errdef_e {
+        MOK,
         MEINVAL,
         MEBUSY,
         MEACCES,

@@ -29,7 +29,7 @@ typedef enum {
 typedef struct {
         u64 ts;
         usz id;
-        usz msg_nbytes;
+        usz size;
 } log_entry_t;
 
 typedef u64 (*log_get_ts_f)(void);
@@ -38,7 +38,6 @@ typedef void (*log_flush_f)(void *fp, const u8 *src, size_t size);
 typedef struct {
         log_mode_e   e_mode;
         log_level_e  e_level;
-        char         end_sign;
         void        *fp;
         void        *buf;
         size_t       cap;
@@ -71,7 +70,7 @@ HAPI void log_warn(log_t *log, usz id, const char *fmt, ...);
 HAPI void log_err(log_t *log, usz id, const char *fmt, ...);
 
 HAPI void
-log_init(log_t *log, log_cfg_t log_cfg)
+log_init(log_t *log, const log_cfg_t log_cfg)
 {
         DECL_PTRS(log, cfg, lo);
 
@@ -80,25 +79,44 @@ log_init(log_t *log, log_cfg_t log_cfg)
 }
 
 HAPI void
-log_write(log_t *log, usz id, const char *fmt, va_list args)
+log_write_bin(log_t *log, const usz id, const void *data, const usz size)
+{
+        DECL_PTRS(log, cfg, lo);
+
+        mpsc_p_t *p   = mpsc_reg(&lo->mpsc, id);
+        const isz off = mpsc_acquire(&lo->mpsc, p, size);
+        if (off < 0) {
+                mpsc_unreg(p);
+                return;
+        }
+
+        u8 *buf = (u8 *)lo->mpsc.buf + (usz)off;
+        memcpy(buf, data, size);
+
+        mpsc_push(p);
+        mpsc_unreg(p);
+}
+
+HAPI void
+log_write(log_t *log, const usz id, const char *fmt, va_list args)
 {
         DECL_PTRS(log, cfg, lo);
 
         va_list args_entry;
         va_copy(args_entry, args);
-        log_entry_t entry = {
-            .ts         = cfg->f_get_ts(),
-            .id         = id,
-            .msg_nbytes = (usz)vsnprintf(NULL, 0, fmt, args_entry) + 1,
+        const log_entry_t entry = {
+            .ts   = cfg->f_get_ts(),
+            .id   = id,
+            .size = (usz)vsnprintf(NULL, 0, fmt, args_entry) + 1,
         };
         va_end(args_entry);
 
-        usz total_nbytes = sizeof(entry) + entry.msg_nbytes;
-        if (total_nbytes > cfg->cap)
+        const usz total_size = sizeof(entry) + entry.size;
+        if (total_size > cfg->cap)
                 return;
 
         mpsc_p_t *p   = mpsc_reg(&lo->mpsc, id);
-        isz       off = mpsc_acquire(&lo->mpsc, p, total_nbytes);
+        const isz off = mpsc_acquire(&lo->mpsc, p, total_size);
         if (off < 0) {
                 mpsc_unreg(p);
                 return;
@@ -109,13 +127,13 @@ log_write(log_t *log, usz id, const char *fmt, va_list args)
 
         va_list args_msg;
         va_copy(args_msg, args);
-        int msg_nbytes = vsnprintf((char *)buf + sizeof(entry), entry.msg_nbytes, fmt, args_msg);
+        const int msg_size = vsnprintf((char *)buf + sizeof(entry), entry.size, fmt, args_msg);
         va_end(args_msg);
 
         mpsc_push(p);
         mpsc_unreg(p);
 
-        if (msg_nbytes != (int)entry.msg_nbytes)
+        if (msg_size != (int)entry.size)
                 return;
 }
 
@@ -125,26 +143,26 @@ log_flush(log_t *log)
         DECL_PTRS(log, cfg, lo);
 
         while (!lo->busy) {
-                log_entry_t entry        = {0};
-                usz         entry_nbytes = mpsc_read(&lo->mpsc, &entry, sizeof(entry));
-                if (entry_nbytes == 0)
+                log_entry_t entry      = {0};
+                const usz   entry_size = mpsc_read(&lo->mpsc, &entry, sizeof(entry));
+                if (entry_size == 0)
                         break;
 
 #ifdef MCU
-                usz total_nbytes = snprintf((char *)cfg->flush_buf, cfg->flush_cap, "[%llu][%u]", entry.ts, entry.id);
+                usz total_size = snprintf((char *)cfg->flush_buf, cfg->flush_cap, "[%llu][%u]", entry.ts, entry.id);
 #else
-                usz total_nbytes = snprintf((char *)cfg->flush_buf, cfg->flush_cap, "[%llu][%llu]", entry.ts, entry.id);
+                usz total_size = snprintf((char *)cfg->flush_buf, cfg->flush_cap, "[%llu][%llu]", entry.ts, entry.id);
 #endif
 
-                total_nbytes += mpsc_read(&lo->mpsc, cfg->flush_buf + total_nbytes, entry.msg_nbytes);
+                total_size += mpsc_read(&lo->mpsc, cfg->flush_buf + total_size, entry.size);
 
-                cfg->f_flush(cfg->fp, cfg->flush_buf, total_nbytes);
+                cfg->f_flush(cfg->fp, cfg->flush_buf, total_size);
                 lo->busy = (cfg->e_mode == LOG_MODE_ASYNC);
         }
 }
 
 HAPI void
-log_data(log_t *log, usz id, const char *fmt, ...)
+log_data(log_t *log, const usz id, const char *fmt, ...)
 {
         DECL_PTRS(log, cfg);
 
@@ -158,7 +176,7 @@ log_data(log_t *log, usz id, const char *fmt, ...)
 }
 
 HAPI void
-log_debug(log_t *log, usz id, const char *fmt, ...)
+log_debug(log_t *log, const usz id, const char *fmt, ...)
 {
         DECL_PTRS(log, cfg);
 
@@ -172,7 +190,7 @@ log_debug(log_t *log, usz id, const char *fmt, ...)
 }
 
 HAPI void
-log_info(log_t *log, usz id, const char *fmt, ...)
+log_info(log_t *log, const usz id, const char *fmt, ...)
 {
         DECL_PTRS(log, cfg);
 
@@ -186,7 +204,7 @@ log_info(log_t *log, usz id, const char *fmt, ...)
 }
 
 HAPI void
-log_warn(log_t *log, usz id, const char *fmt, ...)
+log_warn(log_t *log, const usz id, const char *fmt, ...)
 {
         DECL_PTRS(log, cfg);
 
@@ -200,7 +218,7 @@ log_warn(log_t *log, usz id, const char *fmt, ...)
 }
 
 HAPI void
-log_err(log_t *log, usz id, const char *fmt, ...)
+log_err(log_t *log, const usz id, const char *fmt, ...)
 {
         DECL_PTRS(log, cfg);
 

@@ -5,7 +5,7 @@
 #include "focstate.h"
 
 HAPI void
-foc_init(foc_t *foc, foc_cfg_t foc_cfg)
+foc_init(foc_t *foc, const foc_cfg_t foc_cfg)
 {
         DECL_PTRS(foc, cfg, lo);
 
@@ -22,7 +22,7 @@ foc_init(foc_t *foc, foc_cfg_t foc_cfg)
         lo->lbg.cfg.fs        = cfg->exec_freq;
         lo->lbg.cfg.motor     = cfg->motor_cfg;
 
-        pid_cfg_t cur_pid_cfg = {
+        const pid_cfg_t cur_pid_cfg = {
             .fs = cfg->exec_freq / cfg->cur_div,
             .kp = cfg->motor_cfg.wc * cfg->motor_cfg.ld,
             .ki = cfg->motor_cfg.wc * cfg->motor_cfg.rs,
@@ -46,10 +46,10 @@ foc_init(foc_t *foc, foc_cfg_t foc_cfg)
 HAPI void
 foc_rotor_cal(foc_t *foc)
 {
-        DECL_PTRS(foc, cfg, ops, in, lo);
+        DECL_PTRS(foc, cfg, in, lo);
 
         // 机械角度获取与圈数计算
-        in->rotor.mech_theta = ops->f_get_theta();
+        in->rotor.mech_theta = cfg->f_get_theta();
         if (in->rotor.mech_theta - in->rotor.mech_prev_theta < -TAU * 0.5f)
                 in->rotor.mech_cycle_cnt++;
         else if (in->rotor.mech_theta - in->rotor.mech_prev_theta > TAU * 0.5f)

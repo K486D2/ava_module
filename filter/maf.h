@@ -30,7 +30,7 @@ typedef struct {
 } maf_filter_t;
 
 HAPI void
-maf_init(maf_filter_t *maf, maf_cfg_t maf_cfg)
+maf_init(maf_filter_t *maf, const maf_cfg_t maf_cfg)
 {
         DECL_PTRS(maf, cfg, lo);
 
@@ -54,7 +54,7 @@ maf_exec(maf_filter_t *maf)
 }
 
 HAPI void
-maf_exec_in(maf_filter_t *maf, f32 x)
+maf_exec_in(maf_filter_t *maf, const f32 x)
 {
         DECL_PTRS(maf, in);
 

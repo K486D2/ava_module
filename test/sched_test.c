@@ -25,9 +25,10 @@ int
 main(void)
 {
         sched_cfg_t cfg_cfg = {
-            .cpu_id = 19,
-            .e_type = SCHED_TYPE_CFS,
-            .e_tick = SCHED_TICK_US,
+            .cpu_id   = 19,
+            .e_type   = SCHED_TYPE_CFS,
+            .e_tick   = SCHED_TICK_US,
+            .f_get_ts = get_ts_us,
         };
         sched_init(&cfs, cfg_cfg);
 
@@ -60,8 +61,6 @@ main(void)
                 .arg          = "C",
             },
         };
-
-        cfs.ops.f_get_ts = get_ts_us;
 
         for (int i = 0; i < 3; i++)
                 sched_add_task(&cfs, tasks[i]);

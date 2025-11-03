@@ -50,7 +50,7 @@ typedef struct {
 } iir_filter_t;
 
 HAPI int
-iir_init(iir_filter_t *iir, iir_cfg_t iir_cfg)
+iir_init(iir_filter_t *iir, const iir_cfg_t iir_cfg)
 {
         ARG_CHECK(iir);
         DECL_PTRS(iir, cfg, lo);
@@ -164,7 +164,7 @@ iir_exec(iir_filter_t *iir)
 }
 
 HAPI int
-iir_exec_in(iir_filter_t *iir, f32 x)
+iir_exec_in(iir_filter_t *iir, const f32 x)
 {
         ARG_CHECK(iir);
         DECL_PTRS(iir, in);

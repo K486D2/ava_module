@@ -41,7 +41,7 @@ typedef struct {
 } lbg_obs_t;
 
 static void
-lbg_init(lbg_obs_t *lbg, lbg_cfg_t lbg_cfg)
+lbg_init(lbg_obs_t *lbg, const lbg_cfg_t lbg_cfg)
 {
         DECL_PTRS(lbg, cfg, lo);
 
@@ -80,7 +80,7 @@ lbg_exec(lbg_obs_t *lbg)
 }
 
 static void
-lbg_exec_in(lbg_obs_t *lbg, f32 theta, f32 elec_tor)
+lbg_exec_in(lbg_obs_t *lbg, const f32 theta, const f32 elec_tor)
 {
         DECL_PTRS(lbg, in);
 

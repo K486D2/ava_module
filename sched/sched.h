@@ -90,34 +90,30 @@ typedef enum {
 } sched_tick_e;
 
 typedef struct {
-        u8           cpu_id;
-        sched_type_e e_type;
-        sched_tick_e e_tick;
+        u8             cpu_id;
+        sched_type_e   e_type;
+        sched_tick_e   e_tick;
+        sched_get_ts_f f_get_ts;
 } sched_cfg_t;
 
 typedef struct {
-        f32            elapsed_us;
-        usz            curr_ts;
-        usz            ntasks;
-        sched_task_t   tasks[SCHED_TASK_MAX];
-        sched_algo_ctx algo_ctx;
-} sched_lo_t;
-
-typedef struct {
-        sched_get_ts_f      f_get_ts;
+        f32                 elapsed_us;
+        usz                 curr_ts;
+        usz                 task_num;
+        sched_task_t        tasks[SCHED_TASK_MAX];
+        sched_algo_ctx      algo_ctx;
         sched_get_task_f    f_get_task;
         sched_insert_task_f f_insert_task;
         sched_remove_task_f f_remove_task;
-} sched_ops_t;
+} sched_lo_t;
 
 typedef struct sched {
         sched_cfg_t cfg;
         sched_lo_t  lo;
-        sched_ops_t ops;
 } sched_t;
 
 HAPI u64
-sched_hz2tick(sched_t *sched, f32 hz)
+sched_hz2tick(sched_t *sched, const f32 hz)
 {
         DECL_PTRS(sched, cfg);
 
@@ -197,8 +193,8 @@ sched_fcfs_get_task(sched_t *sched)
         DECL_PTRS(sched, lo);
 
         usz prev_idx = lo->algo_ctx.fcfs.prev_idx;
-        for (usz i = 0; i < lo->ntasks; ++i) {
-                usz           idx = (prev_idx + i) % lo->ntasks;
+        for (usz i = 0; i < lo->task_num; ++i) {
+                usz           idx = (prev_idx + i) % lo->task_num;
                 sched_task_t *t   = &lo->tasks[idx];
                 if (t->status.e_state == SCHED_TASK_STATE_RUNNING) {
                         lo->algo_ctx.fcfs.prev_idx = idx + 1;
@@ -211,17 +207,17 @@ sched_fcfs_get_task(sched_t *sched)
 HAPI int
 sched_add_task(sched_t *sched, sched_task_cfg_t task_cfg)
 {
-        DECL_PTRS(sched, lo, ops);
+        DECL_PTRS(sched, cfg, lo);
 
-        sched_task_t *task        = &lo->tasks[lo->ntasks];
+        sched_task_t *task        = &lo->tasks[lo->task_num];
         task->cfg                 = task_cfg;
         task->status.e_state      = SCHED_TASK_STATE_RUNNING;
-        task->status.create_ts    = ops->f_get_ts();
+        task->status.create_ts    = cfg->f_get_ts();
         task->status.next_exec_ts = task->status.create_ts + task->cfg.delay_tick;
 
-        lo->ntasks++;
+        lo->task_num++;
         if (sched->cfg.e_type == SCHED_TYPE_CFS)
-                ops->f_insert_task(sched, task);
+                lo->f_insert_task(sched, task);
 
         return 0;
 }
@@ -229,21 +225,21 @@ sched_add_task(sched_t *sched, sched_task_cfg_t task_cfg)
 HAPI int
 sched_init(sched_t *sched, sched_cfg_t sched_cfg)
 {
-        DECL_PTRS(sched, cfg, ops);
+        DECL_PTRS(sched, cfg, lo);
 
         *cfg = sched_cfg;
 
         switch (cfg->e_type) {
                 case SCHED_TYPE_FCFS: {
-                        ops->f_get_task    = sched_fcfs_get_task;
-                        ops->f_insert_task = NULL;
-                        ops->f_remove_task = NULL;
+                        lo->f_get_task    = sched_fcfs_get_task;
+                        lo->f_insert_task = NULL;
+                        lo->f_remove_task = NULL;
                         break;
                 }
                 case SCHED_TYPE_CFS: {
-                        ops->f_get_task    = sched_cfs_get_task;
-                        ops->f_insert_task = sched_cfs_insert_task;
-                        ops->f_remove_task = sched_cfs_remove_task;
+                        lo->f_get_task    = sched_cfs_get_task;
+                        lo->f_insert_task = sched_cfs_insert_task;
+                        lo->f_remove_task = sched_cfs_remove_task;
                         break;
                 }
                 default:
@@ -258,11 +254,11 @@ sched_init(sched_t *sched, sched_cfg_t sched_cfg)
 HAPI int
 sched_exec(sched_t *sched)
 {
-        DECL_PTRS(sched, ops, lo);
+        DECL_PTRS(sched, cfg, lo);
 
-        lo->curr_ts = ops->f_get_ts();
+        lo->curr_ts = cfg->f_get_ts();
 
-        sched_task_t *task = ops->f_get_task(sched);
+        sched_task_t *task = lo->f_get_task(sched);
         if (!task || !task->cfg.f_cb)
                 return -MEINVAL;
 
@@ -275,15 +271,15 @@ sched_exec(sched_t *sched)
         if (sched->cfg.e_type == SCHED_TYPE_CFS)
                 sched_cfs_remove_task(sched, task);
 
-        u64 begin_ts = lo->curr_ts;
+        const u64 begin_ts = lo->curr_ts;
         task->cfg.f_cb(task->cfg.arg);
-        u64 end_ts = ops->f_get_ts();
+        const u64 end_ts = cfg->f_get_ts();
 
         task->status.exec_cnt++;
         task->status.elapsed_us = (f32)(end_ts - begin_ts);
 
         if (task->cfg.exec_cnt_max == 0 || task->status.exec_cnt < task->cfg.exec_cnt_max) {
-                task->status.next_exec_ts = end_ts + sched_hz2tick(sched, task->cfg.exec_freq);
+                task->status.next_exec_ts = end_ts + sched_hz2tick(sched, (f32)task->cfg.exec_freq);
                 if (sched->cfg.e_type == SCHED_TYPE_CFS)
                         sched_cfs_insert_task(sched, task);
         } else

@@ -97,7 +97,7 @@ spsc_free(spsc_t *spsc)
 HAPI usz
 spsc_policy(spsc_t *spsc, const usz wp, const usz rp, usz size)
 {
-        usz free = spsc->cap - (wp - rp);
+        const usz free = spsc->cap - (wp - rp);
         if (size <= free)
                 return size;
 
@@ -131,8 +131,8 @@ spsc_read(spsc_t *spsc, void *dst, const usz size)
 HAPI usz
 spsc_write_buf(spsc_t *spsc, void *buf, const void *src, usz size)
 {
-        usz wp = ATOMIC_LOAD_EXPLICIT(&spsc->wp, memory_order_relaxed);
-        usz rp = ATOMIC_LOAD_EXPLICIT(&spsc->rp, memory_order_acquire);
+        const usz wp = ATOMIC_LOAD_EXPLICIT(&spsc->wp, memory_order_relaxed);
+        const usz rp = ATOMIC_LOAD_EXPLICIT(&spsc->rp, memory_order_acquire);
 
         size = spsc_policy(spsc, wp, rp, size);
         if (size == 0)
@@ -151,10 +151,10 @@ spsc_write_buf(spsc_t *spsc, void *buf, const void *src, usz size)
 HAPI usz
 spsc_read_buf(spsc_t *spsc, void *buf, void *dst, usz size)
 {
-        usz rp = ATOMIC_LOAD_EXPLICIT(&spsc->rp, memory_order_relaxed);
-        usz wp = ATOMIC_LOAD_EXPLICIT(&spsc->wp, memory_order_acquire);
+        const usz rp = ATOMIC_LOAD_EXPLICIT(&spsc->rp, memory_order_relaxed);
+        const usz wp = ATOMIC_LOAD_EXPLICIT(&spsc->wp, memory_order_acquire);
 
-        usz avail = wp - rp;
+        const usz avail = wp - rp;
         if (size > avail)
                 size = avail;
         if (size == 0)

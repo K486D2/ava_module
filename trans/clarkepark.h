@@ -15,7 +15,7 @@
  */
 // clang-format on
 HAPI f32_ab_t
-clarke(f32_uvw_t f32_abc, f32 mi)
+clarke(const f32_uvw_t f32_abc, const f32 mi)
 {
         f32_ab_t f32_ab;
         f32_ab.a = mi * (f32_abc.u - 0.5f * (f32_abc.v + f32_abc.w));
@@ -24,7 +24,7 @@ clarke(f32_uvw_t f32_abc, f32 mi)
 }
 
 HAPI f32_uvw_t
-inv_clarke(f32_ab_t f32_ab)
+inv_clarke(const f32_ab_t f32_ab)
 {
         f32_uvw_t f32_uvw;
         f32       f32_a = -(f32_ab.a * 0.5f);
@@ -36,7 +36,7 @@ inv_clarke(f32_ab_t f32_ab)
 }
 
 HAPI f32_dq_t
-park(f32_ab_t f32_ab, f32 theta)
+park(const f32_ab_t f32_ab, const f32 theta)
 {
         f32_dq_t f32_dq;
         f32_dq.d = COS(theta) * f32_ab.a + SIN(theta) * f32_ab.b;
@@ -45,7 +45,7 @@ park(f32_ab_t f32_ab, f32 theta)
 }
 
 HAPI f32_ab_t
-inv_park(f32_dq_t f32_dq, f32 theta)
+inv_park(const f32_dq_t f32_dq, const f32 theta)
 {
         f32_ab_t f32_ab;
         f32_ab.a = COS(theta) * f32_dq.d - SIN(theta) * f32_dq.q;

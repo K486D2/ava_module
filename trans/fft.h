@@ -37,7 +37,7 @@ typedef enum {
 typedef struct {
         f32    fs;
         u8     flag;
-        size_t npoints;
+        size_t points_num;
         f32   *buf;
         f32   *in_buf;
 #if defined(__linux__) || defined(_WIN32)
@@ -87,18 +87,18 @@ fft_init(fft_t *fft, fft_cfg_t fft_cfg)
 
         *cfg = fft_cfg;
 
-        spsc_init(&lo->spsc, cfg->buf, cfg->npoints * sizeof(f32), SPSC_POLICY_REJECT);
+        spsc_init(&lo->spsc, cfg->buf, cfg->points_num * sizeof(f32), SPSC_POLICY_REJECT);
 
         in->buf      = cfg->in_buf;
         lo->buf      = cfg->out_buf;
         out->mag_buf = cfg->mag_buf;
 
-        out->fr = cfg->fs / (f32)cfg->npoints;
+        out->fr = cfg->fs / (f32)cfg->points_num;
 
 #if defined(__linux__) || defined(_WIN32)
-        lo->p = fftwf_plan_dft_r2c_1d(cfg->npoints, in->buf, lo->buf, FFTW_ESTIMATE);
+        lo->p = fftwf_plan_dft_r2c_1d(cfg->points_num, in->buf, lo->buf, FFTW_ESTIMATE);
 #elif defined(ARM_MATH)
-        arm_rfft_fast_init_f32(&lo->s, (u16)cfg->npoints);
+        arm_rfft_fast_init_f32(&lo->s, (u16)cfg->points_num);
 #endif
 }
 
@@ -110,27 +110,27 @@ fft_exec(fft_t *fft)
         if (!lo->neet_exec)
                 return;
 
-        u64 start = get_mono_ts_us();
+        const u64 begin_ts = get_mono_ts_us();
 
         memcpy(in->buf, lo->spsc.buf, lo->spsc.cap);
 
 #if defined(__linux__) || defined(_WIN32)
         fftwf_execute(lo->p);
-        for (size_t i = 0; i < cfg->npoints / 2 + 1; i++)
+        for (size_t i = 0; i < cfg->points_num / 2 + 1; i++)
                 out->mag_buf[i] = SQRT(lo->buf[i][0] * lo->buf[i][0] + lo->buf[i][1] * lo->buf[i][1]);
-        find_max(&out->mag_buf[1], cfg->npoints >> 1, &out->max_mag, &out->out_idx);
+        find_max(&out->mag_buf[1], cfg->points_num >> 1, &out->max_mag, &out->out_idx);
 #elif defined(ARM_MATH)
-        arm_hanning_f32(lo->buf, cfg->npoints);
+        arm_hanning_f32(lo->buf, cfg->points_num);
         arm_rfft_fast_f32(&lo->s, in->buf, lo->buf, cfg->flag);
-        arm_cmplx_mag_f32(lo->buf, out->mag_buf, cfg->npoints >> 1);
-        arm_max_f32(&out->mag_buf[1], cfg->npoints >> 1, &out->max_mag, &out->out_idx);
+        arm_cmplx_mag_f32(lo->buf, out->mag_buf, cfg->points_num >> 1);
+        arm_max_f32(&out->mag_buf[1], cfg->points_num >> 1, &out->max_mag, &out->out_idx);
 #endif
 
-        out->ft = out->out_idx * cfg->fs / (f32)cfg->npoints;
+        out->ft = out->out_idx * cfg->fs / (f32)cfg->points_num;
 
         lo->neet_exec = false;
 
-        lo->elapsed_us = (u32)(get_mono_ts_us() - start);
+        lo->elapsed_us = (u32)(get_mono_ts_us() - begin_ts);
 }
 
 HAPI void

@@ -69,7 +69,7 @@ send_recv_thread(void *arg)
                 net_send_recv(&net, ch, tx_buf, strlen(tx_buf), rx_buf, 1024, MS2US(200));
                 const u64 end_us = get_mono_ts_us();
                 printf("cnt: %llu, elapsed: %llu us\n", cnt, end_us - begin_us);
-                delay_s(2, SPIN);
+                delay_ms(2, SPIN);
         }
         return NULL;
 }
@@ -79,6 +79,8 @@ init(void)
 {
         mp_init(&mp);
 
+        FILE *fp = fopen("net_log.bin", "a+");
+
         net_cfg_t net_cfg = {
             .e_type   = NET_TYPE_UDP,
             .mp       = &mp,
@@ -87,7 +89,7 @@ init(void)
                 {
                     .e_mode     = LOG_MODE_SYNC,
                     .e_level    = LOG_LEVEL_DEBUG,
-                    .fp         = stdout,
+                    .fp         = fp,
                     .buf        = (void *)LOG_BUF,
                     .cap        = sizeof(LOG_BUF),
                     .flush_buf  = LOG_FLUSH_BUF,
@@ -100,13 +102,13 @@ init(void)
         };
         int ret = net_init(&net, net_cfg);
 
-        net_resp_t  devs[255];
-        const char *tx_buf = "{\"method\":\"GET\",\"reqTarget\":\"/custom\",\"cnt\":\"    "
-                             "0\",\"type\":true,\"mcu_fw_version\":true,\"mac_address\":true,\"static_IP\":true}";
-        net_broadcast(&net, "192.168.137.255", 2334, tx_buf, strlen(tx_buf), devs, 1000);
+        // net_resp_t  devs[255];
+        // const char *tx_buf = "{\"method\":\"GET\",\"reqTarget\":\"/custom\",\"cnt\":\"    "
+        //                      "0\",\"type\":true,\"mcu_fw_version\":true,\"mac_address\":true,\"static_IP\":true}";
+        // net_broadcast(&net, "192.168.137.255", 2334, tx_buf, strlen(tx_buf), devs, 1000);
 
-        for (int i = 0; i < 255; i++)
-                printf("%s\n", devs[i].buf);
+        // for (int i = 0; i < 255; i++)
+        //         printf("%s\n", devs[i].buf);
 
         return ret;
 }
@@ -120,7 +122,7 @@ exec(void)
             .dst_port = 2333,
             //     .src_ip    = "127.0.0.1",
             //     .src_port  = 2334,
-            .e_mode    = NET_MODE_ASYNC,
+            .e_mode    = NET_MODE_SYNC_YIELD,
             .f_send_cb = on_send_done,
             .f_recv_cb = on_recv_done,
         };
@@ -133,7 +135,7 @@ exec(void)
         pthread_create(&tid, NULL, send_recv_thread, &ch);
 
         while (true) {
-                net_poll(&net);
+                // net_poll(&net);
                 // delay_ms(10, YIELD);
         }
 

@@ -68,9 +68,9 @@ foc_ready(foc_t *foc)
 HAPI void
 foc_disable(foc_t *foc)
 {
-        DECL_PTRS(foc, ops, in);
+        DECL_PTRS(foc, cfg, in);
 
-        ops->f_set_drv(false);
+        cfg->f_set_drv(false);
 
         memset(&in->i_ab, 0, sizeof(in->i_ab));
         memset(&in->i_dq, 0, sizeof(in->i_dq));
@@ -86,12 +86,12 @@ foc_disable(foc_t *foc)
 HAPI void
 foc_enable(foc_t *foc)
 {
-        DECL_PTRS(foc, cfg, ops, in, out, lo);
+        DECL_PTRS(foc, cfg, in, out, lo);
 
-        ops->f_set_drv(true);
+        cfg->f_set_drv(true);
 
         // ADC采样
-        in->adc_raw = ops->f_get_adc();
+        in->adc_raw = cfg->f_get_adc();
         UVW_SUB_VEC_IP(in->adc_raw.i32_i_uvw, cfg->adc_offset.i32_i_uvw);
         UVW_MUL(in->f32_i_uvw, in->adc_raw.i32_i_uvw, cfg->periph_cfg.adc2cur);
         in->v_bus = in->adc_raw.i32_v_bus * cfg->periph_cfg.adc2vbus;
@@ -174,7 +174,7 @@ foc_enable(foc_t *foc)
 
         // 调制发波
         foc_svpwm(foc);
-        ops->f_set_pwm(cfg->periph_cfg.pwm_full_cnt, out->svpwm.u32_pwm_duty);
+        cfg->f_set_pwm(cfg->periph_cfg.pwm_full_cnt, out->svpwm.u32_pwm_duty);
 }
 
 #endif // !FOCSTATE_H

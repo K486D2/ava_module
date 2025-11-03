@@ -40,7 +40,7 @@ typedef struct {
 } pll_filter_t;
 
 HAPI void
-pll_init(pll_filter_t *pll, pll_cfg_t pll_cfg)
+pll_init(pll_filter_t *pll, const pll_cfg_t pll_cfg)
 {
         DECL_PTRS(pll, cfg);
 
@@ -68,7 +68,7 @@ pll_exec(pll_filter_t *pll)
 }
 
 HAPI void
-pll_exec_ab_in(pll_filter_t *pll, f32_ab_t ab)
+pll_exec_ab_in(pll_filter_t *pll, const f32_ab_t ab)
 {
         DECL_PTRS(pll, in, out, lo);
 
@@ -81,7 +81,7 @@ pll_exec_ab_in(pll_filter_t *pll, f32_ab_t ab)
 }
 
 HAPI void
-pll_exec_theta_err_in(pll_filter_t *pll, f32 theta_err)
+pll_exec_theta_err_in(pll_filter_t *pll, const f32 theta_err)
 {
         DECL_PTRS(pll, cfg, in, out, lo);
 
@@ -93,7 +93,7 @@ pll_exec_theta_err_in(pll_filter_t *pll, f32 theta_err)
 }
 
 HAPI void
-pll_exec_theta_in(pll_filter_t *pll, f32 theta)
+pll_exec_theta_in(pll_filter_t *pll, const f32 theta)
 {
         DECL_PTRS(pll, cfg, in, out, lo);
 

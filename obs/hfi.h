@@ -3,8 +3,6 @@
 
 #include "../filter/iir.h"
 #include "../filter/pll.h"
-#include "../trans/clarkepark.h"
-#include "../util/def.h"
 #include "../util/util.h"
 
 typedef struct {

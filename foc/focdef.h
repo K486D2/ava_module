@@ -89,16 +89,25 @@ typedef struct {
         f32 mech_omega;
 } rotor_t;
 
+typedef adc_raw_t (*foc_get_adc_f)(void);
+typedef f32 (*foc_get_theta_f)(void);
+typedef void (*foc_set_pwm_f)(u32 pwm_full_cnt, u32_uvw_t u32_pwm_duty);
+typedef void (*foc_set_drv_f)(bool enable);
+
 typedef struct {
-        f32          exec_freq;
-        motor_cfg_t  motor_cfg;
-        periph_cfg_t periph_cfg;
-        adc_raw_t    adc_offset;
-        f32          theta_offset;
-        f32          ref_theta_cali_id, ref_theta_cali_omega;
-        f32          sensor_theta_comp_gain, theta_comp_gain;
-        pid_cfg_t    vel_cfg, pos_cfg, pd_cfg;
-        u32          cur_div, vel_div, pos_div, pd_div;
+        f32             exec_freq;
+        motor_cfg_t     motor_cfg;
+        periph_cfg_t    periph_cfg;
+        adc_raw_t       adc_offset;
+        f32             theta_offset;
+        f32             ref_theta_cali_id, ref_theta_cali_omega;
+        f32             sensor_theta_comp_gain, theta_comp_gain;
+        pid_cfg_t       vel_cfg, pos_cfg, pd_cfg;
+        u32             cur_div, vel_div, pos_div, pd_div;
+        foc_get_adc_f   f_get_adc;
+        foc_get_theta_f f_get_theta;
+        foc_set_pwm_f   f_set_pwm;
+        foc_set_drv_f   f_set_drv;
 } foc_cfg_t;
 
 typedef struct {
@@ -149,24 +158,11 @@ typedef struct {
         lbg_obs_t    lbg;
 } foc_lo_t;
 
-typedef adc_raw_t (*foc_get_adc_f)(void);
-typedef f32 (*foc_get_theta_f)(void);
-typedef void (*foc_set_pwm_f)(u32 pwm_full_cnt, u32_uvw_t u32_pwm_duty);
-typedef void (*foc_set_drv_f)(bool enable);
-
-typedef struct {
-        foc_get_adc_f   f_get_adc;
-        foc_get_theta_f f_get_theta;
-        foc_set_pwm_f   f_set_pwm;
-        foc_set_drv_f   f_set_drv;
-} foc_ops_t;
-
 typedef struct {
         foc_cfg_t cfg;
         foc_in_t  in;
         foc_out_t out;
         foc_lo_t  lo;
-        foc_ops_t ops;
 } foc_t;
 
 #endif // !FOCDEF_H

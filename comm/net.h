@@ -42,12 +42,18 @@ typedef enum {
         NET_MODE_ASYNC,
 } net_mode_e;
 
+typedef enum {
+        NET_OP_SEND,
+        NET_OP_RECV,
+} net_op_e;
+
 #pragma pack(push, 1)
 typedef struct {
-        u64 ts;                 // 时间戳
-        u32 src_ip, dst_ip;     // 设备IP
-        u16 src_port, dst_port; // 设备端口
-        u32 size;               // 数据长度
+        u64      ts;       // 时间戳
+        net_op_e e_op;     // 收发标志
+        u32      dst_ip;   // 设备IP
+        u16      dst_port; // 设备端口
+        u32      size;     // 数据长度
 } net_log_meta_t;
 #pragma pack(pop)
 
@@ -318,7 +324,8 @@ net_async_send(net_t *net, net_ch_t *ch, void *tx_buf, usz size)
         io_uring_prep_send(send_sqe, ch->fd, tx_buf, size, 0);
         io_uring_sqe_set_data(send_sqe, req);
 
-        return io_uring_submit(&lo->ring);
+        io_uring_submit(&lo->ring);
+        return size;
 #elif defined(_WIN32)
         net_async_req_t *req = mp_calloc(cfg->mp, sizeof(net_async_req_t));
         if (!req)
@@ -459,7 +466,16 @@ net_send(net_t *net, net_ch_t *ch, void *tx_buf, const usz size)
         switch (ch->e_mode) {
                 case NET_MODE_SYNC_SPIN:
                 case NET_MODE_SYNC_YIELD: {
-                        tx_size = net_sync_send(ch, tx_buf, size);
+                        tx_size                 = net_sync_send(ch, tx_buf, size);
+                        net_log_meta_t log_meta = {
+                            .ts       = get_real_ts_ms(),
+                            .e_op     = NET_OP_SEND,
+                            .dst_ip   = inet_addr(ch->dst_ip),
+                            .dst_port = ch->dst_port,
+                            .size     = tx_size,
+                        };
+                        log->cfg.f_flush(log->cfg.fp, (u8 *)&log_meta, sizeof(log_meta));
+                        log->cfg.f_flush(log->cfg.fp, tx_buf, tx_size);
                         break;
                 }
                 case NET_MODE_ASYNC: {
@@ -469,15 +485,6 @@ net_send(net_t *net, net_ch_t *ch, void *tx_buf, const usz size)
                 default:
                         return -MEINVAL;
         }
-
-        net_log_meta_t log_meta = {
-            .ts       = get_real_ts_ms(),
-            .dst_ip   = inet_addr(ch->dst_ip),
-            .dst_port = ch->dst_port,
-            .size     = tx_size,
-        };
-        log->cfg.f_flush(log->cfg.fp, (u8 *)&log_meta, tx_size);
-        log->cfg.f_flush(log->cfg.fp, tx_buf, tx_size);
 
         return tx_size;
 }
@@ -491,11 +498,29 @@ net_recv(net_t *net, net_ch_t *ch, void *rx_buf, const usz cap, const u32 timeou
         isz rx_size;
         switch (ch->e_mode) {
                 case NET_MODE_SYNC_YIELD: {
-                        rx_size = net_sync_recv_yield(ch, rx_buf, cap, timeout_us);
+                        rx_size                 = net_sync_recv_yield(ch, rx_buf, cap, timeout_us);
+                        net_log_meta_t log_meta = {
+                            .ts       = get_real_ts_ms(),
+                            .e_op     = NET_OP_RECV,
+                            .dst_ip   = inet_addr(ch->dst_ip),
+                            .dst_port = ch->dst_port,
+                            .size     = rx_size,
+                        };
+                        log->cfg.f_flush(log->cfg.fp, (u8 *)&log_meta, sizeof(log_meta));
+                        log->cfg.f_flush(log->cfg.fp, rx_buf, rx_size);
                         break;
                 }
                 case NET_MODE_SYNC_SPIN: {
-                        rx_size = net_sync_recv_spin(ch, rx_buf, cap, timeout_us);
+                        rx_size                 = net_sync_recv_spin(ch, rx_buf, cap, timeout_us);
+                        net_log_meta_t log_meta = {
+                            .ts       = get_real_ts_ms(),
+                            .e_op     = NET_OP_RECV,
+                            .dst_ip   = inet_addr(ch->dst_ip),
+                            .dst_port = ch->dst_port,
+                            .size     = rx_size,
+                        };
+                        log->cfg.f_flush(log->cfg.fp, (u8 *)&log_meta, sizeof(log_meta));
+                        log->cfg.f_flush(log->cfg.fp, rx_buf, rx_size);
                         break;
                 }
                 case NET_MODE_ASYNC: {
@@ -505,15 +530,6 @@ net_recv(net_t *net, net_ch_t *ch, void *rx_buf, const usz cap, const u32 timeou
                 default:
                         return -MEINVAL;
         }
-
-        net_log_meta_t log_meta = {
-            .ts       = get_real_ts_ms(),
-            .src_ip   = inet_addr(ch->dst_ip),
-            .src_port = ch->dst_port,
-            .size     = rx_size,
-        };
-        log->cfg.f_flush(log->cfg.fp, (u8 *)&log_meta, rx_size);
-        log->cfg.f_flush(log->cfg.fp, rx_buf, rx_size);
 
         return rx_size;
 }
