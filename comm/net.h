@@ -527,10 +527,8 @@ net_broadcast(
         //         resp->buf[ret] = '\0';
         // }
         //
-        if (resp_cnt == 0)
-                goto cleanup;
 
-        return resp_cnt;
+        ret = resp_cnt;
 
 cleanup:
         CLOSE_SOCKET(ch.fd);
