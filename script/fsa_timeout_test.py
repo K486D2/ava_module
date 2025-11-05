@@ -90,8 +90,6 @@ def get_pvct_v2(fsa: FSA, timeout=0.2):
 
         fsa.loss_rate = (fsa.timeout_cnt / fsa.all_cnt) * 100
 
-        time.sleep(0.001)
-
 
 def get_pvct_v3(fsa: FSA, timeout=0.2):
     print(
@@ -116,8 +114,6 @@ def get_pvct_v3(fsa: FSA, timeout=0.2):
             fsa.timeout_cnt += 1
 
         fsa.loss_rate = (fsa.timeout_cnt / fsa.all_cnt) * 100
-
-        time.sleep(0.001)
 
 
 if __name__ == "__main__":
