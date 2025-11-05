@@ -64,8 +64,15 @@ def boardcast(data: str, port=2334, timeout=1.0):
 
     finally:
         sock.close()
-        print(f"v2: {fsa_v2_list}")
-        print(f"v3: {fsa_v3_list}")
+
+        if fsa_v2_list:
+            print(f"v2: {fsa_v2_list}")
+
+        if fsa_v3_list:
+            print(f"v3: {fsa_v3_list}")
+
+        if not fsa_v2_list and not fsa_v3_list:
+            print(f"未搜索到执行器, 请检查是否连接!")
 
 
 def get_pvct_v2(fsa: FSA, timeout=0.2):
