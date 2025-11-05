@@ -131,7 +131,7 @@ def get_pvct_v3(fsa: FSA, timeout=0.2):
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.settimeout(timeout)
     addr = (fsa.ip, 2340)
-    msg = bytes([0x0, 0x0, 0x00, 0x2, 0x34, 0x83, 0x64, 0x87])
+    msg = bytes([0x00, 0x00, 0x00, 0x02, 0x34, 0x83, 0x64, 0x87])
     udp_timeout_test(fsa, sock, addr, msg)
 
 
