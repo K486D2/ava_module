@@ -108,7 +108,7 @@ def udp_timeout_test(fsa: FSA, sock, addr, msg):
             fsa.timeout_cnt += 1
             fsa.continuous_cnt += 1
             print_summary("丢包退出")
-            os._exit(0)
+            # os._exit(0)
 
         if fsa.continuous_cnt >= fsa.max_continuous_cnt:
             log_print(f"[警告] {fsa.ip} 连续丢包超过 {fsa.continuous_cnt} 个")
