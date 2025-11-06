@@ -60,6 +60,8 @@ typedef struct {
 } log_t;
 
 HAPI void log_init(log_t *log, log_cfg_t log_cfg);
+HAPI void log_write_bin(log_t *log, const usz id, const void *data, const usz size);
+HAPI void log_flush_bin(log_t *log);
 HAPI void log_write(log_t *log, usz id, const char *fmt, va_list args);
 HAPI void log_flush(log_t *log);
 
@@ -83,18 +85,47 @@ log_write_bin(log_t *log, const usz id, const void *data, const usz size)
 {
         DECL_PTRS(log, cfg, lo);
 
+        const log_entry_t entry = {
+            .ts   = cfg->f_get_ts(),
+            .id   = id,
+            .size = size,
+        };
+
+        const usz total_size = sizeof(entry) + entry.size;
+        if (total_size > cfg->cap)
+                return;
+
         mpsc_p_t *p   = mpsc_reg(&lo->mpsc, id);
-        const isz off = mpsc_acquire(&lo->mpsc, p, size);
+        const isz off = mpsc_acquire(&lo->mpsc, p, total_size);
         if (off < 0) {
                 mpsc_unreg(p);
                 return;
         }
 
         u8 *buf = (u8 *)lo->mpsc.buf + (usz)off;
-        memcpy(buf, data, size);
+        memcpy(buf, &entry, sizeof(entry));
+        memcpy((u8 *)buf + sizeof(entry), data, size);
 
         mpsc_push(p);
         mpsc_unreg(p);
+}
+
+HAPI void
+log_flush_bin(log_t *log)
+{
+        DECL_PTRS(log, cfg, lo);
+
+        while (!lo->busy) {
+                log_entry_t entry      = {0};
+                const usz   entry_size = mpsc_read(&lo->mpsc, &entry, sizeof(entry));
+                if (entry_size == 0)
+                        break;
+
+                usz total_size = mpsc_read(&lo->mpsc, cfg->flush_buf, entry.size);
+
+                cfg->f_flush(cfg->fp, cfg->flush_buf, total_size);
+                lo->busy = (cfg->e_mode == LOG_MODE_ASYNC);
+        }
 }
 
 HAPI void

@@ -506,6 +506,7 @@ net_recv(net_t *net, net_ch_t *ch, void *rx_buf, const usz cap, const u32 timeou
                             .dst_port = ch->dst_port,
                             .size     = rx_size,
                         };
+                        // log_write_bin(log, 0, log_meta, sizeof(log_meta));
                         log->cfg.f_flush(log->cfg.fp, (u8 *)&log_meta, sizeof(log_meta));
                         log->cfg.f_flush(log->cfg.fp, rx_buf, rx_size);
                         break;

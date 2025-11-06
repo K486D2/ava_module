@@ -29,6 +29,4 @@ main()
                        ATOMIC_LOAD(&shm.lo.spsc->rp),
                        spsc_free(shm.lo.spsc));
         }
-
-        return 0;
 }

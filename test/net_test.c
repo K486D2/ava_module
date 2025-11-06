@@ -12,9 +12,9 @@ mp_t  mp;
 
 #define WRITE_THREAD_NUM 255
 
-u8       LOG_FLUSH_BUF[128];
-u8       LOG_BUF[1024 * 1024];
-mpsc_p_t PRODUCERS[WRITE_THREAD_NUM];
+u8              LOG_FLUSH_BUF[128];
+u8              LOG_BUF[1024 * 1024];
+static mpsc_p_t PRODUCERS[WRITE_THREAD_NUM];
 
 HAPI void
 log_stdout(void *fp, const u8 *src, size_t size)
@@ -71,7 +71,6 @@ send_recv_thread(void *arg)
                 printf("cnt: %llu, elapsed: %llu us\n", cnt, end_us - begin_us);
                 delay_ms(2, SPIN);
         }
-        return NULL;
 }
 
 HAPI int
@@ -117,9 +116,9 @@ HAPI int
 exec(void)
 {
         net_ch_t ch = {
-            .dst_ip = "127.0.0.1",
-            //     .dst_ip   = "192.168.137.101",
-            .dst_port = 2333,
+            //     .dst_ip = "127.0.0.1",
+            .dst_ip   = "192.168.137.101",
+            .dst_port = 2340,
             //     .src_ip    = "127.0.0.1",
             //     .src_port  = 2334,
             .e_mode    = NET_MODE_SYNC_YIELD,
@@ -138,9 +137,6 @@ exec(void)
                 // net_poll(&net);
                 // delay_ms(10, YIELD);
         }
-
-        pthread_join(tid, NULL);
-        return 0;
 }
 
 int

@@ -10,9 +10,9 @@ log_t g_log;
 #define WRITE_THREAD_NUM 1000
 u64 PRODUCERS_CNTS[WRITE_THREAD_NUM];
 
-u8       LOG_FLUSH_BUF[128];
-u8       LOG_BUF[1024 * 1024];
-mpsc_p_t PRODUCERS[WRITE_THREAD_NUM];
+u8              LOG_FLUSH_BUF[128];
+u8              LOG_BUF[1024 * 1024];
+static mpsc_p_t PRODUCERS[WRITE_THREAD_NUM];
 
 HAPI void
 log_stdout(void *fp, const u8 *src, size_t size)
@@ -28,7 +28,6 @@ flush_thread_func(void *arg)
 
         while (true)
                 log_flush(&g_log);
-        return NULL;
 }
 
 void *
@@ -45,7 +44,6 @@ write_thread_func(void *arg)
 
                 delay_ms(1, YIELD);
         }
-        return NULL;
 }
 
 int
