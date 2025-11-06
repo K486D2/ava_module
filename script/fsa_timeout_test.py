@@ -39,16 +39,17 @@ def print_summary(info: str):
 
 class FSA:
     def __init__(self, ip: str):
-        self.ip = ip
-        self.max_cnt = 20000000
+        self.max_cnt = 10000000
         self.max_continuous_cnt = 2
+        self.ip = ip
         self.all_cnt = 0
         self.timeout_cnt = 0
         self.continuous_cnt = 0
+        self.history_max_continuous_cnt = 0
         self.timeout_rate = 0.0
 
     def __repr__(self):
-        return f"FSA(ip={self.ip}, 总包数={self.all_cnt}, 丢包数={self.timeout_cnt}, 丢包率=万分之{self.timeout_rate:.6f})"
+        return f"FSA(ip: {self.ip}, 总包数: {self.all_cnt}, 丢包数: {self.timeout_cnt}, 最大连续丢包数: {self.history_max_continuous_cnt}, 丢包率: 万分之[{self.timeout_rate:.6f}])"
 
 
 def boardcast(data: str, port=2334, timeout=3.0):
@@ -104,15 +105,14 @@ def udp_timeout_test(fsa: FSA, sock, addr, msg):
         try:
             recv_data, _ = sock.recvfrom(1024)
             fsa.continuous_cnt = 0
+            fsa.timeout_rate = (fsa.timeout_cnt / fsa.all_cnt) * 10000
         except socket.timeout:
             fsa.timeout_cnt += 1
             fsa.continuous_cnt += 1
-            print_summary("丢包")
-
-        if fsa.continuous_cnt >= fsa.max_continuous_cnt:
-            log_print(f"[警告] {fsa.ip} 连续丢包超过 {fsa.continuous_cnt} 个")
-
-        fsa.timeout_rate = (fsa.timeout_cnt / fsa.all_cnt) * 10000
+            if fsa.continuous_cnt > fsa.history_max_continuous_cnt:
+                fsa.history_max_continuous_cnt = fsa.continuous_cnt
+            fsa.timeout_rate = (fsa.timeout_cnt / fsa.all_cnt) * 10000
+            print_summary("丢包记录")
 
     sock.close()
 
