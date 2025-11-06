@@ -39,7 +39,7 @@ def print_summary(info: str):
 
 class FSA:
     def __init__(self, ip: str):
-        self.max_cnt = 10000000
+        self.max_cnt = 100000
         self.max_continuous_cnt = 2
         self.ip = ip
         self.all_cnt = 0
