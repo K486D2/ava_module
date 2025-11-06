@@ -101,13 +101,13 @@ init(void)
         };
         int ret = net_init(&net, net_cfg);
 
-        // net_resp_t  devs[255];
-        // const char *tx_buf = "{\"method\":\"GET\",\"reqTarget\":\"/custom\",\"cnt\":\"    "
-        //                      "0\",\"type\":true,\"mcu_fw_version\":true,\"mac_address\":true,\"static_IP\":true}";
-        // net_broadcast(&net, "192.168.137.255", 2334, tx_buf, strlen(tx_buf), devs, 1000);
+        net_resp_t  resps[255];
+        const char *tx_buf = "{\"method\":\"GET\",\"reqTarget\":\"/custom\",\"cnt\":\"    "
+                             "0\",\"type\":true,\"mcu_fw_version\":true,\"mac_address\":true,\"static_IP\":true}";
+        ret                = net_broadcast("192.168.137.255", 2334, tx_buf, strlen(tx_buf), resps, 10000);
 
-        // for (int i = 0; i < 255; i++)
-        //         printf("%s\n", devs[i].buf);
+        for (int i = 0; i < ret; i++)
+                printf("%s\n", resps[i].buf);
 
         return ret;
 }

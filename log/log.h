@@ -60,7 +60,7 @@ typedef struct {
 } log_t;
 
 HAPI void log_init(log_t *log, log_cfg_t log_cfg);
-HAPI void log_write_bin(log_t *log, const usz id, const void *data, const usz size);
+HAPI void log_write_bin(log_t *log, usz id, const void *data, usz size);
 HAPI void log_flush_bin(log_t *log);
 HAPI void log_write(log_t *log, usz id, const char *fmt, va_list args);
 HAPI void log_flush(log_t *log);

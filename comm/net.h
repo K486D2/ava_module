@@ -107,9 +107,10 @@ typedef struct net {
         net_lo_t  lo;
 } net_t;
 
+HAPI int net_set_nonblock(sockfd_t fd);
+
 HAPI int  net_init(net_t *net, net_cfg_t net_cfg);
 HAPI void net_destroy(net_t *net);
-HAPI int  net_set_nonblock(net_ch_t *ch);
 HAPI int  net_add_ch(net_t *net, net_ch_t *ch);
 
 HAPI isz net_sync_send(const net_ch_t *ch, const void *tx_buf, usz size);
@@ -124,7 +125,7 @@ HAPI isz net_send(net_t *net, net_ch_t *ch, void *tx_buf, usz size);
 HAPI isz net_recv(net_t *net, net_ch_t *ch, void *rx_buf, usz cap, u32 timeout_us);
 HAPI isz net_send_recv(net_t *net, net_ch_t *ch, void *tx_buf, usz size, void *rx_buf, usz cap, u32 timeout_us);
 
-HAPI int net_broadcast(net_t *net, const char *ip, u16 port, const void *tx_buf, u32 size, net_resp_t *resp, u32 timeout_us);
+HAPI int net_broadcast(const char *ip, u16 port, const void *tx_buf, u32 size, net_resp_t *resps, u32 timeout_us);
 
 HAPI int
 net_init(net_t *net, const net_cfg_t net_cfg)
@@ -170,18 +171,18 @@ net_destroy(net_t *net)
 }
 
 HAPI int
-net_set_nonblock(net_ch_t *ch)
+net_set_nonblock(sockfd_t fd)
 {
 #ifdef __linux__
-        int flags = fcntl(ch->fd, F_GETFL, 0);
+        int flags = fcntl(fd, F_GETFL, 0);
         if (flags < 0)
                 return flags;
 
         flags |= O_NONBLOCK;
-        return fcntl(ch->fd, F_SETFL, flags);
+        return fcntl(fd, F_SETFL, flags);
 #elif defined(_WIN32)
         unsigned long mode = 1;
-        return ioctlsocket(ch->fd, FIONBIO, &mode);
+        return ioctlsocket(fd, FIONBIO, &mode);
 #endif
 }
 
@@ -546,43 +547,50 @@ net_send_recv(net_t *net, net_ch_t *ch, void *tx_buf, const usz size, void *rx_b
 }
 
 HAPI int
-net_broadcast(
-    net_t *net, const char *ip, const u16 port, const void *tx_buf, const u32 size, net_resp_t *resp, const u32 timeout_us)
+net_broadcast(const char *ip, const u16 port, const void *tx_buf, const u32 size, net_resp_t *resps, const u32 timeout_us)
 {
-        net_ch_t ch = {
-            .e_mode   = NET_MODE_SYNC_YIELD,
-            .dst_port = port,
-        };
-        strncpy(ch.dst_ip, ip, MAX_IP_SIZE - 1);
 
-        isz ret = net_add_ch(net, &ch);
-        if (ret < 0)
-                goto cleanup;
+#ifdef __linux__
+        const sockfd_t fd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+#elif defined(_WIN32)
+        const sockfd_t fd = WSASocketW(AF_INET, SOCK_DGRAM, IPPROTO_UDP, NULL, 0, WSA_FLAG_OVERLAPPED);
+#endif
 
         const char opt = 1;
-        setsockopt(ch.fd, SOL_SOCKET, SO_BROADCAST, &opt, sizeof(opt));
+        setsockopt(fd, SOL_SOCKET, SO_BROADCAST, &opt, sizeof(opt));
+        net_set_nonblock(fd);
 
-        ret = net_send(net, &ch, (void *)tx_buf, size);
+        struct sockaddr_in dst_addr = {
+            .sin_family = AF_INET,
+            .sin_port   = htons(port),
+            .sin_addr =
+                {
+                    .s_addr = inet_addr(ip),
+                },
+        };
+        socklen_t addr_len = sizeof(dst_addr);
+        int       ret      = sendto(fd, tx_buf, (int)size, 0, (struct sockaddr *)&dst_addr, addr_len);
         if (ret <= 0)
                 goto cleanup;
 
         struct sockaddr_in src_addr;
-        socklen_t          addrlen = sizeof(src_addr);
-        recvfrom(ch.fd, resp->buf, sizeof(resp->buf), 0, (struct sockaddr *)&src_addr, &addrlen);
+        addr_len = sizeof(src_addr);
 
-        int resp_cnt = 0;
-        // while ((ret = net_recv(net, &ch, resp->buf, MAX_RESP_BUF_SIZE, timeout_us)) > 0) {
-        //         resp_cnt++;
-        //         strncpy(resp->ip, ip, MAX_IP_SIZE - 1);
-        //         resp->buf[ret] = '\0';
-        // }
-        //
+        const usz begin_ts = get_mono_ts_us();
+        int       resp_cnt = 0;
+        do {
+                if (recvfrom(fd, resps[resp_cnt].buf, sizeof(resps[resp_cnt].buf), 0, (struct sockaddr *)&src_addr, &addr_len) >
+                    0) {
+                        inet_ntop(AF_INET, &src_addr.sin_addr, resps[resp_cnt].ip, MAX_IP_SIZE);
+                        resp_cnt++;
+                }
+        } while (get_mono_ts_us() - begin_ts < timeout_us);
 
         ret = resp_cnt;
 
 cleanup:
-        CLOSE_SOCKET(ch.fd);
-        return (int)ret;
+        CLOSE_SOCKET(fd);
+        return ret;
 }
 
 #endif // !NET_H
